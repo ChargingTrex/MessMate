@@ -1,1 +1,1 @@
-# MessMate
+# MessMate - Canteen Rating Dashboard
