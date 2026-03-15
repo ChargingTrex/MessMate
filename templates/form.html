@@ -1,0 +1,284 @@
+<!--
+  MessMate Student Feedback Form (form.html)
+  ------------------------------------------
+  This Jinja2 template renders the mobile-first frontend form where students
+  can submit their daily lunch ratings, dish specific ratings, text reviews,
+  and dish suggestions. It includes inline Javascript to handle the mutual 
+  exclusivity of the emoji buttons and the conditional logic for the Rice select dropdown.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MessMate — Rate Today's Lunch 🍱</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>MessMate</h1>
+        <p>Rate Today's Lunch 🍱</p>
+    </header>
+
+    <main>
+        {% if error %}
+        <div class="alert error">{{ error }}</div>
+        {% endif %}
+        
+        <form id="feedbackForm" action="/submit" method="POST">
+            
+            <!-- SECTION 1: Overall Rating -->
+            <section class="card section-overall">
+                <h2>How was today's lunch overall?</h2>
+                <div class="emoji-group" data-input="overall_val">
+                    <button type="button" class="emoji-btn" data-value="1">😡<br><span>Terrible</span></button>
+                    <button type="button" class="emoji-btn" data-value="2">😕<br><span>Bad</span></button>
+                    <button type="button" class="emoji-btn" data-value="3">😐<br><span>Okay</span></button>
+                    <button type="button" class="emoji-btn" data-value="4">🙂<br><span>Good</span></button>
+                    <button type="button" class="emoji-btn" data-value="5">😄<br><span>Excellent</span></button>
+                </div>
+                <input type="hidden" name="overall" id="overall_val">
+            </section>
+
+            <!-- SECTION 2: Per-Item Ratings -->
+            <section class="section-items">
+                <h2>Rate individual items <span class="subtext">(optional)</span></h2>
+                <p class="subtext-line">Only rate what was served today</p>
+
+                <!-- Rice Card -->
+                <div class="card item-card" id="rice-card">
+                    <label for="rice_served" class="item-label">🍚 Rice</label>
+                    <select id="rice_served" name="rice_served" class="dropdown">
+                        <option value="">Select...</option>
+                        <option value="curry">Curry</option>
+                        <option value="rasam">Rasam</option>
+                        <option value="both">Both</option>
+                    </select>
+
+                    <div id="rice_curry_container" class="conditional-rating hidden">
+                        <p class="sub-label">Rice + Curry</p>
+                        <div class="emoji-group small-group" data-input="rice_curry_val">
+                            <button type="button" class="emoji-btn" data-value="1">😡</button>
+                            <button type="button" class="emoji-btn" data-value="2">😕</button>
+                            <button type="button" class="emoji-btn" data-value="3">😐</button>
+                            <button type="button" class="emoji-btn" data-value="4">🙂</button>
+                            <button type="button" class="emoji-btn" data-value="5">😄</button>
+                        </div>
+                        <input type="hidden" name="rice_curry" id="rice_curry_val">
+                    </div>
+
+                    <div id="rice_rasam_container" class="conditional-rating hidden">
+                        <p class="sub-label">Rice + Rasam</p>
+                        <div class="emoji-group small-group" data-input="rice_rasam_val">
+                            <button type="button" class="emoji-btn" data-value="1">😡</button>
+                            <button type="button" class="emoji-btn" data-value="2">😕</button>
+                            <button type="button" class="emoji-btn" data-value="3">😐</button>
+                            <button type="button" class="emoji-btn" data-value="4">🙂</button>
+                            <button type="button" class="emoji-btn" data-value="5">😄</button>
+                        </div>
+                        <input type="hidden" name="rice_rasam" id="rice_rasam_val">
+                    </div>
+                </div>
+
+                <!-- Standard Item Cards -->
+                <div class="card item-card">
+                    <label class="item-label">🫓 Chapati</label>
+                    <div class="emoji-group small-group" data-input="chapati_val">
+                        <button type="button" class="emoji-btn" data-value="1">😡</button>
+                        <button type="button" class="emoji-btn" data-value="2">😕</button>
+                        <button type="button" class="emoji-btn" data-value="3">😐</button>
+                        <button type="button" class="emoji-btn" data-value="4">🙂</button>
+                        <button type="button" class="emoji-btn" data-value="5">😄</button>
+                    </div>
+                    <input type="hidden" name="chapati" id="chapati_val">
+                </div>
+
+                <div class="card item-card">
+                    <label class="item-label">🫓 Chapati + Gravy / Sabzi</label>
+                    <div class="emoji-group small-group" data-input="chapati_gravy_val">
+                        <button type="button" class="emoji-btn" data-value="1">😡</button>
+                        <button type="button" class="emoji-btn" data-value="2">😕</button>
+                        <button type="button" class="emoji-btn" data-value="3">😐</button>
+                        <button type="button" class="emoji-btn" data-value="4">🙂</button>
+                        <button type="button" class="emoji-btn" data-value="5">😄</button>
+                    </div>
+                    <input type="hidden" name="chapati_gravy" id="chapati_gravy_val">
+                </div>
+
+                <div class="card item-card">
+                    <label class="item-label">🥬 Poriyal</label>
+                    <div class="emoji-group small-group" data-input="poriyal_val">
+                        <button type="button" class="emoji-btn" data-value="1">😡</button>
+                        <button type="button" class="emoji-btn" data-value="2">😕</button>
+                        <button type="button" class="emoji-btn" data-value="3">😐</button>
+                        <button type="button" class="emoji-btn" data-value="4">🙂</button>
+                        <button type="button" class="emoji-btn" data-value="5">😄</button>
+                    </div>
+                    <input type="hidden" name="poriyal" id="poriyal_val">
+                </div>
+
+                <div class="card item-card">
+                    <label class="item-label">🍮 Sweet / Fruits</label>
+                    <div class="emoji-group small-group" data-input="sweet_val">
+                        <button type="button" class="emoji-btn" data-value="1">😡</button>
+                        <button type="button" class="emoji-btn" data-value="2">😕</button>
+                        <button type="button" class="emoji-btn" data-value="3">😐</button>
+                        <button type="button" class="emoji-btn" data-value="4">🙂</button>
+                        <button type="button" class="emoji-btn" data-value="5">😄</button>
+                    </div>
+                    <input type="hidden" name="sweet" id="sweet_val">
+                </div>
+
+                <div class="card item-card">
+                    <label class="item-label">🥗 Salad</label>
+                    <div class="emoji-group small-group" data-input="salad_val">
+                        <button type="button" class="emoji-btn" data-value="1">😡</button>
+                        <button type="button" class="emoji-btn" data-value="2">😕</button>
+                        <button type="button" class="emoji-btn" data-value="3">😐</button>
+                        <button type="button" class="emoji-btn" data-value="4">🙂</button>
+                        <button type="button" class="emoji-btn" data-value="5">😄</button>
+                    </div>
+                    <input type="hidden" name="salad" id="salad_val">
+                </div>
+
+                <div class="card item-card">
+                    <label class="item-label">🥛 Curd</label>
+                    <div class="emoji-group small-group" data-input="curd_val">
+                        <button type="button" class="emoji-btn" data-value="1">😡</button>
+                        <button type="button" class="emoji-btn" data-value="2">😕</button>
+                        <button type="button" class="emoji-btn" data-value="3">😐</button>
+                        <button type="button" class="emoji-btn" data-value="4">🙂</button>
+                        <button type="button" class="emoji-btn" data-value="5">😄</button>
+                    </div>
+                    <input type="hidden" name="curd" id="curd_val">
+                </div>
+
+                <div class="card item-card">
+                    <label class="item-label">🫓 Papad</label>
+                    <div class="emoji-group small-group" data-input="papad_val">
+                        <button type="button" class="emoji-btn" data-value="1">😡</button>
+                        <button type="button" class="emoji-btn" data-value="2">😕</button>
+                        <button type="button" class="emoji-btn" data-value="3">😐</button>
+                        <button type="button" class="emoji-btn" data-value="4">🙂</button>
+                        <button type="button" class="emoji-btn" data-value="5">😄</button>
+                    </div>
+                    <input type="hidden" name="papad" id="papad_val">
+                </div>
+
+                <div class="card item-card">
+                    <label class="item-label">🫙 Pickle / Thogayal</label>
+                    <div class="emoji-group small-group" data-input="pickle_val">
+                        <button type="button" class="emoji-btn" data-value="1">😡</button>
+                        <button type="button" class="emoji-btn" data-value="2">😕</button>
+                        <button type="button" class="emoji-btn" data-value="3">😐</button>
+                        <button type="button" class="emoji-btn" data-value="4">🙂</button>
+                        <button type="button" class="emoji-btn" data-value="5">😄</button>
+                    </div>
+                    <input type="hidden" name="pickle" id="pickle_val">
+                </div>
+            </section>
+
+            <!-- SECTION 3: Text Review -->
+            <section class="card section-review">
+                <h2>Any comments? <span class="subtext">(optional)</span></h2>
+                <textarea name="review" id="review" maxlength="150" placeholder="Any comments about today's lunch?"></textarea>
+                <div class="char-counter" id="char-counter">0 / 150</div>
+            </section>
+
+            <!-- SECTION 4: Suggest a Dish -->
+            <section class="card section-suggestion">
+                <h2>Suggest a Dish <span class="subtext">(optional)</span></h2>
+                <input type="text" name="suggestion" placeholder="Suggest a dish for the mess menu..." class="suggestion-input">
+            </section>
+
+            <!-- Submit Button -->
+            <div class="submit-container">
+                <button type="submit" id="submitBtn" class="submit-btn" disabled>Submit Feedback 🚀</button>
+            </div>
+        </form>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Dropdown logic for Rice
+            const riceSelect = document.getElementById('rice_served');
+            const curryContainer = document.getElementById('rice_curry_container');
+            const rasamContainer = document.getElementById('rice_rasam_container');
+            const curryInput = document.getElementById('rice_curry_val');
+            const rasamInput = document.getElementById('rice_rasam_val');
+
+            riceSelect.addEventListener('change', (e) => {
+                const val = e.target.value;
+                
+                // Hide both initially
+                curryContainer.classList.add('hidden');
+                rasamContainer.classList.add('hidden');
+                
+                // Clear selections
+                curryInput.value = '';
+                rasamInput.value = '';
+                document.querySelectorAll('#rice_curry_container .emoji-btn, #rice_rasam_container .emoji-btn')
+                    .forEach(btn => btn.classList.remove('selected'));
+
+                // Show based on selection
+                if (val === 'curry') {
+                    curryContainer.classList.remove('hidden');
+                } else if (val === 'rasam') {
+                    rasamContainer.classList.remove('hidden');
+                } else if (val === 'both') {
+                    curryContainer.classList.remove('hidden');
+                    rasamContainer.classList.remove('hidden');
+                }
+            });
+
+            // Emoji mutually exclusive selection
+            const emojiGroups = document.querySelectorAll('.emoji-group');
+            const submitBtn = document.getElementById('submitBtn');
+
+            emojiGroups.forEach(group => {
+                const inputId = group.getAttribute('data-input');
+                const hiddenInput = document.getElementById(inputId);
+                const buttons = group.querySelectorAll('.emoji-btn');
+
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        // Deselect all others in this group
+                        buttons.forEach(b => b.classList.remove('selected'));
+                        // Select this one
+                        btn.classList.add('selected');
+                        // Update hidden input
+                        hiddenInput.value = btn.getAttribute('data-value');
+
+                        // Check if overall is selected to enable submit button
+                        if (inputId === 'overall_val') {
+                            submitBtn.disabled = false;
+                        }
+                    });
+                });
+            });
+
+            // Character counter for review
+            const reviewInput = document.getElementById('review');
+            const charCounter = document.getElementById('char-counter');
+            
+            reviewInput.addEventListener('input', () => {
+                const currentLength = reviewInput.value.length;
+                charCounter.textContent = `${currentLength} / 150`;
+            });
+
+            // Submit logic
+            const form = document.getElementById('feedbackForm');
+            form.addEventListener('submit', (e) => {
+                if (submitBtn.disabled) {
+                    e.preventDefault();
+                    return;
+                }
+                submitBtn.textContent = 'Submitting...';
+                submitBtn.disabled = true;
+                // Allow form to submit naturally
+            });
+        });
+    </script>
+</body>
+</html>
