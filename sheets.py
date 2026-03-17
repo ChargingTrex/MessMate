@@ -105,6 +105,81 @@ def get_today_responses():
             
     return today_responses
 
+def update_daily_summary_for_today():
+    """Calculates today's averages and updates or appends to the 'daily_summary' tab."""
+    # 1. Get today's responses
+    today_responses = get_today_responses()
+    response_count = len(today_responses)
+    
+    if response_count == 0:
+        return True # Nothing to update
+        
+    # 2. Calculate averages
+    def calc_avg(key):
+        scores = []
+        for r in today_responses:
+            val = r.get(key, "")
+            try:
+                if str(val).strip():
+                    scores.append(float(val))
+            except ValueError:
+                pass
+        return round(sum(scores) / len(scores), 1) if scores else 0
+        
+    avg_overall = calc_avg("Overall")
+    avg_rice_curry = calc_avg("Rice_Curry")
+    avg_rice_rasam = calc_avg("Rice_Rasam")
+    avg_chapati = calc_avg("Chapati")
+    avg_chapati_gravy = calc_avg("Chapati_Gravy")
+    avg_poriyal = calc_avg("Poriyal")
+    avg_sweet = calc_avg("Sweet")
+    avg_salad = calc_avg("Salad")
+    avg_curd = calc_avg("Curd")
+    avg_papad = calc_avg("Papad")
+    avg_pickle = calc_avg("Pickle")
+    
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    
+    row_data = [
+        today_str,
+        avg_overall,
+        response_count,
+        avg_rice_curry,
+        avg_rice_rasam,
+        avg_chapati,
+        avg_chapati_gravy,
+        avg_poriyal,
+        avg_sweet,
+        avg_salad,
+        avg_curd,
+        avg_papad,
+        avg_pickle
+    ]
+    
+    # 3. Update or append to daily_summary
+    worksheet = get_sheet("daily_summary")
+    if not worksheet:
+        return False
+        
+    try:
+        # Get all dates in column A
+        dates = worksheet.col_values(1)
+        
+        if today_str in dates:
+            # Row exists (1-indexed in gspread)
+            row_index = dates.index(today_str) + 1
+            # Update the entire row starting from col A (1)
+            cell_range = f"A{row_index}:M{row_index}"
+            worksheet.update(cell_range, [row_data])
+        else:
+            # Row doesn't exist, append it
+            worksheet.append_row(row_data)
+            
+        return True
+    except Exception as e:
+        print(f"Error updating daily summary: {e}")
+        return False
+
 def get_all_suggestions():
     """Returns all non-blank Suggestion values."""
     worksheet = get_sheet("responses")

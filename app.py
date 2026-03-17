@@ -74,6 +74,12 @@ def submit():
     try:
         success = sheets.append_response(data_dict)
         if success:
+            # Trigger background auto-update of the daily summary sheet
+            try:
+                sheets.update_daily_summary_for_today()
+            except Exception as e:
+                print(f"Failed to update daily summary: {e}")
+                
             return "<html><body><div style='text-align:center; padding: 50px; font-family: sans-serif;'><h2>Thanks! Your feedback was recorded. 🚀</h2><p><a href='/'>Go back</a></p></div></body></html>"
         else:
             return render_template("form.html", error="Failed to connect to Google Sheets. Please try again later."), 500
@@ -87,11 +93,24 @@ def dashboard():
     try:
         # 1. Get 30-Day Trend Data (For the toggle)
         summary_records = sheets.get_daily_summary()
+        # Filter out rows with empty dates AND rows where Avg_Overall is 0
+        # (Google Sheets formulas return 0 for dates with no responses)
+        valid_records = []
+        for r in summary_records:
+            date_str = str(r.get("Date", "")).strip()
+            avg_val = r.get("Avg_Overall", 0)
+            try:
+                avg_num = float(avg_val) if avg_val != "" else 0
+            except (ValueError, TypeError):
+                avg_num = 0
+            if date_str and avg_num > 0:
+                valid_records.append(r)
+        
         # Take the last 30 records if there are many
         trend_data = []
-        if summary_records:
+        if valid_records:
             # Slicing from the end to get last 30
-            last_30 = summary_records[-30:] if len(summary_records) > 30 else summary_records
+            last_30 = valid_records[-30:] if len(valid_records) > 30 else valid_records
             for row in last_30:
                 date_val = str(row.get("Date", ""))
                 avg_val = row.get("Avg_Overall", 0)
@@ -100,7 +119,19 @@ def dashboard():
                     avg_val = float(avg_val) if avg_val != "" else 0
                 except ValueError:
                     avg_val = 0
-                trend_data.append({"Date": date_val, "Avg_Overall": avg_val})
+                
+                # Also get response count
+                resp_val = row.get("Response_Count", 0)
+                try:
+                    resp_num = int(resp_val) if resp_val != "" else 0
+                except (ValueError, TypeError):
+                    resp_num = 0
+                    
+                trend_data.append({
+                    "Date": date_val, 
+                    "Avg_Overall": avg_val,
+                    "Response_Count": resp_num
+                })
         
         # 2. Get Today's Responses for Item Averages and Counts
         today_responses = sheets.get_today_responses()
@@ -154,6 +185,7 @@ def dashboard():
         # To ensure the stat card strictly matches the graph, overwrite the last graph point.
         if trend_data and today_count > 0:
             trend_data[-1]["Avg_Overall"] = today_avg
+            trend_data[-1]["Response_Count"] = today_count
                 
         # 4. Get Suggestions
         # The prompt says get ALL suggestions newest first, so we reverse the list

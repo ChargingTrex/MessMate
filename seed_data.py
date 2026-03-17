@@ -54,8 +54,8 @@ SAMPLE_SUGGESTIONS = [
     "Papad every day"
 ]
 
-def get_sheet():
-    """Authenticate and get the responses tab."""
+def get_sheet(tab_name="responses"):
+    """Authenticate and get a specific tab."""
     creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
     if creds_json:
         creds_dict = json.loads(creds_json)
@@ -76,7 +76,7 @@ def get_sheet():
         
     try:
         spreadsheet = client.open_by_key(spreadsheet_id)
-        return spreadsheet.worksheet("responses")
+        return spreadsheet.worksheet(tab_name)
     except Exception as e:
         print(f"Failed to access sheet: {e}")
         return None
@@ -144,14 +144,16 @@ def seed_data():
     from dotenv import load_dotenv
     load_dotenv()
     
-    worksheet = get_sheet()
-    if not worksheet:
+    worksheet = get_sheet("responses")
+    ds_worksheet = get_sheet("daily_summary")
+    if not worksheet or not ds_worksheet:
         print("Aborting.")
         return
 
     print("Starting data seeding...")
     
     all_rows = []
+    daily_summary_rows = []
     
     # Use 15 reviews and 12 suggestions spread across 70 rows
     reviews_pool = SAMPLE_REVIEWS.copy()
@@ -164,6 +166,7 @@ def seed_data():
         daily_scores = [1, 2, 2, 3, 3, 3, 4, 4, 4, 5]
         random.shuffle(daily_scores)
         
+        day_rows = []
         for score in daily_scores:
             # Assign review/suggestion randomly but exhaust pools
             has_review = False
@@ -180,17 +183,53 @@ def seed_data():
                 
             row = generate_row(day, score, has_review, review_text, has_suggestion, suggestion_text)
             all_rows.append(row)
+            day_rows.append(row)
+            
+        # Calculate daily averages for this day
+        date_str = (datetime.now() - timedelta(days=day)).strftime("%Y-%m-%d")
+        
+        def calc_avg(idx):
+            scores = []
+            for r in day_rows:
+                val = r[idx]
+                if val != "":
+                    try:
+                        scores.append(float(val))
+                    except ValueError:
+                        pass
+            return round(sum(scores) / len(scores), 1) if scores else 0
+            
+        summary_row = [
+            date_str,
+            calc_avg(1),   # Overall
+            len(day_rows), # Response_Count
+            calc_avg(2),   # Rice_Curry
+            calc_avg(3),   # Rice_Rasam
+            calc_avg(4),   # Chapati
+            calc_avg(5),   # Chapati_Gravy
+            calc_avg(6),   # Poriyal
+            calc_avg(7),   # Sweet
+            calc_avg(8),   # Salad
+            calc_avg(9),   # Curd
+            calc_avg(10),  # Papad
+            calc_avg(11)   # Pickle
+        ]
+        daily_summary_rows.append(summary_row)
 
     print(f"Generated {len(all_rows)} rows across 7 days. Uploading to Sheets...")
     
     worksheet.append_rows(all_rows)
+    print("✅ Seeded 70 rows into responses")
     
-    print("✅ Seeded 70 rows across 7 days")
+    print("Uploading to daily_summary sheet...")
+    # Reverse so that oldest days come first chronologically (standard sheet orientation)
+    daily_summary_rows.reverse()
+    ds_worksheet.append_rows(daily_summary_rows)
+    print("✅ Appended 7 daily averages into daily_summary")
+
     print("\n--- NEXT STEPS ---")
-    print("1. Manually refresh the daily_summary tab formulas in Google Sheets")
-    print("   (Formulas might need to be dragged down to cover new dates)")
-    print("2. Open the responses sheet to verify the new rows")
-    print("3. Reload /dashboard on your local server and confirm the charts look populated")
+    print("1. Open the responses and daily_summary sheets to verify the new rows")
+    print("2. Reload /dashboard on your local server and confirm the charts look populated")
 
 if __name__ == "__main__":
     seed_data()

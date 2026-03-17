@@ -85,7 +85,10 @@ document.addEventListener("DOMContentLoaded", function () {
             tooltip: {
               callbacks: {
                 label: function(context) {
-                  return `Score: ${context.parsed.y.toFixed(1)}`;
+                  const index = context.dataIndex;
+                  const count = window.MESSMATE_DATA.trendData[index].Response_Count;
+                  const avg = context.parsed.y.toFixed(1);
+                  return [' Avg Score: ' + avg, ' Responses: ' + count];
                 }
               }
             }
