@@ -21,6 +21,50 @@ the template, fill it in, and move it to the top.
 
 ---
 
+## [2026-04-19 14:30] — Robot Framework Test Suite & CI Integration
+
+**Files changed:** `tests/`, `TESTING.md`, `.github/workflows/messmate_tests.yml`, `templates/form.html`, `templates/thanks.html`
+**Type:** Feature
+**Status:** ✅ Working
+
+### What changed
+Implemented a comprehensive end-to-end automated testing suite using Robot Framework, added detailed documentation, and initialized GitHub Actions CI testing pipeline.
+
+### Why
+To ensure all API endpoints and UI elements continue to function smoothly during future developments, and successfully vet edge-cases, data validation, rate-limits, and DOM rendering.
+
+### Details
+- Built Form UI test suites validating conditional dropdown logic, character limits, rate triggers, and strict submissions.
+- Developed Dashboard UI tests to automatically confirm stat cards logic, dynamic Chart.js rendering, and correct HTML empty states.
+- Created Backend API tests asserting raw target statuses without browser latency, and verifying security checks (XSS stripping).
+- Added static data attributes (`data-item`, `data-rice-row`) natively to frontend templates.
+
+### How to revert
+Delete `tests/` directory, `TESTING.md`, and the contents inside `.github/`. Remove `data-` attributes from inside `form.html` and `thanks.html`.
+
+---
+
+## [2026-04-19 14:00] — Google Sheets Robustness & Filtering Fixes
+
+**Files changed:** `sheets.py`
+**Type:** Bug Fix
+**Status:** ✅ Working
+
+### What changed
+Hardened Google Sheets persistence to bypass internal automatic date re-formatting causing dashboard calculations to miss daily inputs.
+
+### Why
+Google Sheets randomly re-formats dynamically assigned cell timestamps based on generic regional settings causing string `startswith()` matches against today's date to silently fail, returning `0` live feedback metrics on the dashboard.
+
+### Details
+- Appended `value_input_option='RAW'` parameters natively into `append_row` commands.
+- Expanded `get_today_responses()` to dynamically cycle and loop through multiple timestamp formulas matching dynamically with `datetime.strptime()` for reliable data aggregation.
+
+### How to revert
+Remove `'RAW'` designation and fallback date cycles in `sheets.py`.
+
+---
+
 ## [2026-03-17 12:45] — Item Scores Tooltip Update
 
 **Files changed:** `app.py`, `static/dashboard.js`

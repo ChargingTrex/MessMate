@@ -4,3 +4,4 @@ google-auth
 flask-limiter
 gunicorn
 python-dotenv
+qrcode[pil]

@@ -1,13 +1,19 @@
 /*
  * MessMate Stylesheet (style.css)
- * -------------------------------
- * This file contains all the mobile-first CSS styling for the MessMate UI.
- * It defines the color palette, typography, form card layouts,
- * emoji rating button interactions, responsive media queries,
- * and the stakeholder dashboard layout.
+ * --------------------------------
+ * Mobile-first CSS for the MessMate feedback form and shared components.
+ * Dashboard-specific styles are in dashboard.html <style> block.
+ *
+ * Color palette:
+ *   Primary blue:  #2E75B6
+ *   Dark blue:     #1F4E79
+ *   Background:    #F7F9FC
+ *   Card white:    #FFFFFF
+ *   Error red bg:  #FFEBEE / text #B71C1C
+ *   Success green: #E8F5E9 / text #1E6B3C
  */
 
-/* Reset & Base Styles */
+/* ── Reset & Base ──────────────────────────────────────────────────────────── */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -19,7 +25,7 @@ body {
     background-color: #F7F9FC;
     color: #333333;
     line-height: 1.5;
-    font-size: 16px; /* Minimum 16px */
+    font-size: 16px; /* Minimum 16px — prevents iOS zoom on focus */
     padding-bottom: 40px;
 }
 
@@ -47,7 +53,7 @@ main {
     margin: 0 auto;
 }
 
-/* Card Styles */
+/* ── Card Styles ───────────────────────────────────────────────────────────── */
 .card {
     background-color: #FFFFFF;
     border-radius: 12px;
@@ -78,7 +84,7 @@ h2 {
     margin-bottom: 16px;
 }
 
-/* Form Elements */
+/* ── Form Elements ─────────────────────────────────────────────────────────── */
 .dropdown, .suggestion-input, textarea {
     width: 100%;
     padding: 12px;
@@ -101,6 +107,7 @@ textarea {
     min-height: 100px;
 }
 
+/* Character counter */
 .char-counter {
     text-align: right;
     font-size: 0.8rem;
@@ -121,7 +128,7 @@ textarea {
     font-size: 0.95rem;
 }
 
-/* Emoji Group */
+/* ── Emoji Rating Buttons ──────────────────────────────────────────────────── */
 .emoji-group {
     display: flex;
     justify-content: space-between;
@@ -136,11 +143,12 @@ textarea {
     cursor: pointer;
     text-align: center;
     transition: all 0.2s;
-    min-width: 44px; /* Tappable minimum */
+    min-width: 44px;  /* Tappable minimum 44×44px */
     min-height: 44px;
     flex: 1;
     margin: 0 4px;
     -webkit-tap-highlight-color: transparent;
+    font-size: 24px;
 }
 
 .emoji-btn:first-child { margin-left: 0; }
@@ -153,10 +161,7 @@ textarea {
     margin-top: 4px;
 }
 
-/* Base emoji size */
-.emoji-btn {
-    font-size: 24px;
-}
+/* Larger emojis for the overall rating section */
 .section-overall .emoji-btn {
     font-size: 32px;
 }
@@ -165,6 +170,7 @@ textarea {
     background-color: #F0F4F8;
 }
 
+/* Selected state — blue ring highlight */
 .emoji-btn.selected {
     border-color: #2E75B6;
     background-color: #E6F0FA;
@@ -175,13 +181,13 @@ textarea {
     font-weight: 600;
 }
 
-/* Small emoji group for items */
+/* Smaller emoji group for per-item ratings */
 .small-group .emoji-btn {
     padding: 8px;
     font-size: 28px;
 }
 
-/* Conditional Logic */
+/* ── Conditional Logic (Rice dropdown) ─────────────────────────────────────── */
 .hidden {
     display: none !important;
 }
@@ -192,7 +198,7 @@ textarea {
     border-top: 1px dashed #eee;
 }
 
-/* Submit Button */
+/* ── Submit Button ─────────────────────────────────────────────────────────── */
 .submit-container {
     padding: 0 10px;
 }
@@ -222,7 +228,7 @@ textarea {
     box-shadow: none;
 }
 
-/* Alerts */
+/* ── Alert Banners ─────────────────────────────────────────────────────────── */
 .alert {
     padding: 15px;
     border-radius: 8px;
@@ -230,13 +236,50 @@ textarea {
     text-align: center;
     font-weight: 500;
 }
+
 .alert.error {
     background-color: #FFEBEE;
     color: #B71C1C;
     border: 1px solid #FFCDD2;
 }
+
 .alert.success {
     background-color: #E8F5E9;
     color: #1E6B3C;
     border: 1px solid #C8E6C9;
+}
+
+/* ── Dashboard Toggle Buttons ──────────────────────────────────────────────── */
+.toggle-group {
+    display: flex;
+    gap: 8px;
+}
+
+.toggle-btn {
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: 1px solid #2E75B6;
+    background: white;
+    color: #2E75B6;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.toggle-btn.active {
+    background-color: #2E75B6;
+    color: white;
+}
+
+.toggle-btn:hover:not(.active) {
+    background-color: #E6F0FA;
+}
+
+/* ── Empty State ───────────────────────────────────────────────────────────── */
+.empty-state {
+    padding: 20px;
+    text-align: center;
+    color: #888;
+    font-style: italic;
 }

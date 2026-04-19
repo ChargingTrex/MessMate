@@ -1,24 +1,23 @@
 /**
- * MessMate Dashboard Graphics Initialization (dashboard.js)
- * ---------------------------------------------------------
- * This file initializes and renders the Chart.js visualizations found on
- * the Admin Dashboard. It parses JSON payload data injected by the Flask backend
- * (window.MESSMATE_DATA) and renders the 7-day/30-day Trend Line Chart and
- * the Today's Per-Item Scores Bar Chart. It also handles the toggle logic
- * for switching between views.
- */
-
-/**
- * MessMate Dashboard Charts Initialization
- * Expected data structure injected in window.MESSMATE_DATA by Jinja2 template.
+ * MessMate Dashboard Charts Initialization (dashboard.js)
+ * --------------------------------------------------------
+ * Renders Chart.js visualizations on the Admin Dashboard.
+ * Data is injected by the Flask backend via window.MESSMATE_DATA in the template.
+ *
+ * Charts:
+ *   1. Overall Trend Line Chart (7-day / 30-day toggle)
+ *   2. Today's Per-Item Scores Horizontal Bar Chart
+ *
+ * CRITICAL: The tooltip callback indexes into slicedData (not the full trendData array).
+ * This prevents misaligned tooltips when viewing 7-day subset of 30-day data.
  */
 
 document.addEventListener("DOMContentLoaded", function () {
-  
+
   const data = window.MESSMATE_DATA;
-  
+
   // ---------------------------------------------------------
-  // 1. Initialize Trend Chart (Line Chart)
+  // 1. Trend Chart (Line Chart) — 7 Day / 30 Day Toggle
   // ---------------------------------------------------------
   const trendCanvas = document.getElementById("trendChart");
   let trendChartInstance = null;
@@ -26,18 +25,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function renderTrendChart(days) {
     if (!trendCanvas) return;
-    
+
+    // Update chart title based on toggle
     const titleEl = document.getElementById("trendChartTitle");
     if (titleEl) {
       titleEl.innerText = days === 7 ? "7-Day Overall Trend" : "30-Day Overall Trend";
     }
 
-    // Slice the data for the requested number of days
+    // CRITICAL: Slice the data and keep a reference for the tooltip callback
     const slicedData = trendData.slice(-days);
-    
+
     let labels = [];
     let avgScores = [];
-    
+
     if (slicedData.length > 0) {
       labels = slicedData.map(row => row.Date);
       avgScores = slicedData.map(row => row.Avg_Overall);
@@ -47,10 +47,22 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (trendChartInstance) {
+      // Update existing chart instead of recreating
       trendChartInstance.data.labels = labels;
       trendChartInstance.data.datasets[0].data = avgScores;
+
+      // CRITICAL: Update the tooltip callback to use the NEW slicedData reference
+      trendChartInstance.options.plugins.tooltip.callbacks.label = function(context) {
+        const point = slicedData[context.dataIndex];
+        if (!point) return "";
+        const avg = context.parsed.y.toFixed(1);
+        const count = point.Response_Count || 0;
+        return [" Avg Score: " + avg, " Responses: " + count];
+      };
+
       trendChartInstance.update();
     } else {
+      // Create chart for the first time
       const trendCtx = trendCanvas.getContext("2d");
       trendChartInstance = new Chart(trendCtx, {
         type: "line",
@@ -85,10 +97,12 @@ document.addEventListener("DOMContentLoaded", function () {
             tooltip: {
               callbacks: {
                 label: function(context) {
-                  const index = context.dataIndex;
-                  const count = window.MESSMATE_DATA.trendData[index].Response_Count;
+                  // Use slicedData — NOT trendData — to prevent index misalignment
+                  const point = slicedData[context.dataIndex];
+                  if (!point) return "";
                   const avg = context.parsed.y.toFixed(1);
-                  return [' Avg Score: ' + avg, ' Responses: ' + count];
+                  const count = point.Response_Count || 0;
+                  return [" Avg Score: " + avg, " Responses: " + count];
                 }
               }
             }
@@ -98,10 +112,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Initial Render (7 Days)
+  // Initial render — show 7 days
   renderTrendChart(7);
 
-  // Toggle Event Listeners
+  // Toggle event listeners
   const btn7Days = document.getElementById("btn7Days");
   const btn30Days = document.getElementById("btn30Days");
 
@@ -115,110 +129,114 @@ document.addEventListener("DOMContentLoaded", function () {
     btn30Days.addEventListener("click", () => {
       btn30Days.classList.add("active");
       btn7Days.classList.remove("active");
-      // Use 30 or however many elements there are
-      renderTrendChart(30); 
+      renderTrendChart(30);
     });
   }
 
   // ---------------------------------------------------------
-  // 2. Initialize Per-Item Scores Chart (Horizontal Bar Chart)
+  // 2. Per-Item Scores Chart (Horizontal Bar Chart)
   // ---------------------------------------------------------
   const itemCanvas = document.getElementById("itemChart");
-  
+
   if (itemCanvas) {
     const itemCtx = itemCanvas.getContext("2d");
-    
-    // Parse item_data: dict of {item_name: avg_score}
     const itemDataRaw = data.itemData || {};
-    
-    // Item mapping to display names (in requested order from prompt)
-    const itemLabels = [
+
+    // Item keys in display order
+    const itemKeys = [
       "Rice_Curry", "Rice_Rasam", "Chapati", "Chapati_Gravy",
       "Poriyal", "Sweet", "Salad", "Curd", "Papad", "Pickle"
     ];
-    
+
+    // Readable display names
     const displayNames = {
       "Rice_Curry": "Rice + Curry",
       "Rice_Rasam": "Rice + Rasam",
       "Chapati": "Chapati",
       "Chapati_Gravy": "Chapati + Gravy",
       "Poriyal": "Poriyal",
-      "Sweet": "Sweet/Fruits",
+      "Sweet": "Sweet / Fruits",
       "Salad": "Salad",
       "Curd": "Curd",
       "Papad": "Papad",
-      "Pickle": "Pickle/Thogayal"
+      "Pickle": "Pickle / Thogayal"
     };
-    
+
     let chartLabels = [];
     let chartScores = [];
     let bgColors = [];
-    
-    // We only show items that have data (score > 0)
-    itemLabels.forEach(key => {
-      const score = itemDataRaw[key] || 0;
+    // Track which keys are plotted (for tooltip indexing)
+    let plottedKeys = [];
+
+    // Only show items with avg > 0 (skip unrated items)
+    itemKeys.forEach(key => {
+      const itemVal = itemDataRaw[key] || { avg: 0, count: 0 };
+      const score = itemVal.avg || 0;
       if (score > 0) {
         chartLabels.push(displayNames[key]);
         chartScores.push(score);
-        
-        // Color coding dynamically based on score
+        plottedKeys.push(key);
+
+        // Color bars by score: <2.5=red, 2.5-3.5=amber, >3.5=green
         if (score < 2.5) {
-          bgColors.push("#EF5350"); // Red
+          bgColors.push("#EF5350");  // Red
         } else if (score <= 3.5) {
-          bgColors.push("#FFB300"); // Amber
+          bgColors.push("#FFB300");  // Amber
         } else {
-          bgColors.push("#66BB6A"); // Green
+          bgColors.push("#66BB6A");  // Green
         }
       }
     });
-    
+
     // Empty state handling
     if (chartLabels.length === 0) {
-      chartLabels = ["No Data Yet"];
-      chartScores = [0];
-      bgColors = ["#e0e0e0"];
-    }
-    
-    new Chart(itemCtx, {
-      type: "bar",
-      data: {
-        labels: chartLabels,
-        datasets: [{
-          label: "Average Score",
-          data: chartScores,
-          backgroundColor: bgColors,
-          borderWidth: 0,
-          borderRadius: 4
-        }]
-      },
-      options: {
-        indexAxis: 'y', // Makes it a horizontal bar chart
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            beginAtZero: true,
-            min: 0,
-            max: 5,
-            ticks: {
-              stepSize: 1
-            }
-          }
+      // Show a centered message instead of an empty chart
+      const wrapper = itemCanvas.parentElement;
+      if (wrapper) {
+        wrapper.innerHTML = '<div class="empty-state">No item ratings yet.</div>';
+      }
+    } else {
+      new Chart(itemCtx, {
+        type: "bar",
+        data: {
+          labels: chartLabels,
+          datasets: [{
+            label: "Average Score",
+            data: chartScores,
+            backgroundColor: bgColors,
+            borderWidth: 0,
+            borderRadius: 4
+          }]
         },
-        plugins: {
-          legend: {
-            display: false
+        options: {
+          indexAxis: "y",  // Horizontal bar chart
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              beginAtZero: true,
+              min: 0,
+              max: 5,
+              ticks: { stepSize: 1 }
+            }
           },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                return `Score: ${context.parsed.x.toFixed(1)}`;
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const key = plottedKeys[context.dataIndex];
+                  const item = itemDataRaw[key];
+                  const avg = item?.avg ? item.avg.toFixed(1) : "N/A";
+                  const count = item?.count || 0;
+                  return [" Avg Score: " + avg, " Rated by: " + count + " students"];
+                }
               }
             }
           }
         }
-      }
-    });
+      });
+    }
   }
 
 });

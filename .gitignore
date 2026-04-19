@@ -3,3 +3,5 @@ credentials.json
 __pycache__/
 *.pyc
 venv/
+.venv/
+messmate_qr.pngflask.log

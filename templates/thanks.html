@@ -1,0 +1,36 @@
+<!--
+  MessMate Thank You Page (thanks.html)
+  --------------------------------------
+  Displayed after a successful form submission.
+  Same visual style as form.html — clean, friendly, mobile-first.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MessMate — Thank You! 🚀</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>MessMate</h1>
+        <p>Rate Today's Lunch 🍱</p>
+    </header>
+
+    <main>
+        <section class="card thanks-container" style="text-align: center; padding: 40px 20px;">
+            <div style="font-size: 64px; margin-bottom: 16px;">🚀</div>
+            <h2 style="margin-bottom: 12px; font-size: 1.5rem;">Thanks! Your feedback was recorded.</h2>
+            <p style="color: #666; margin-bottom: 24px; line-height: 1.6;">
+                Your response is completely anonymous — no personal data was stored.<br>
+                Your feedback helps us improve the food quality for everyone.
+            </p>
+            <a href="/" class="submit-btn" style="display: inline-block; text-decoration: none; padding: 14px 32px; width: auto;">
+                Submit another response
+            </a>
+        </section>
+    </main>
+</body>
+</html>
