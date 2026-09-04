@@ -1,0 +1,123 @@
+<!--
+  Committee Dashboard (committee_dashboard.html)
+  -----------------------------------------------
+  Committee analytics, kept separate from the student dashboard. A five-member
+  committee average and a 200-student average measure different things, so
+  they are never combined.
+
+  Test Automation Attributes:
+    - class="stat-cards" on the stat card row
+    - id="dimensionChart", id="committeeTrendChart"
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MessMate — Committee Dashboard 🍽️</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="admin-body">
+
+<div class="admin-container">
+
+  <div class="admin-header">
+    <div>
+      <h1>Food Committee Dashboard 🍽️</h1>
+      <p>{{ today_date }}</p>
+    </div>
+    <div class="admin-nav">
+      <a href="{{ url_for('dashboard') }}{{ '?token=' + request.args.get('token') if request.args.get('token') }}"
+         class="toggle-btn">Student dashboard</a>
+      {% if is_admin %}
+      <a href="{{ url_for('admin_members') }}" class="toggle-btn">Manage members</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="stat-cards">
+    {% set avg_color_class = "" %}
+    {% if today_avg > 0 %}
+      {% if today_avg < 2.5 %}{% set avg_color_class = "score-red" %}
+      {% elif today_avg <= 3.5 %}{% set avg_color_class = "score-amber" %}
+      {% else %}{% set avg_color_class = "score-green" %}{% endif %}
+    {% endif %}
+
+    <div class="stat-card {{ avg_color_class }}">
+      <h3>Today's Committee Score</h3>
+      <p class="stat-value score-value" id="stat-today-avg">
+        {% if today_avg > 0 %}{{ "%.1f"|format(today_avg) }}{% else %}--{% endif %}
+      </p>
+    </div>
+
+    <div class="stat-card">
+      <h3>Reviews Today</h3>
+      <p class="stat-value" id="stat-today-count">{{ today_count }}</p>
+    </div>
+
+    <div class="stat-card">
+      <h3>Active Members</h3>
+      <p class="stat-value" id="stat-active-members">{{ active_members }}</p>
+    </div>
+
+    <div class="stat-card">
+      <h3>Participation</h3>
+      <p class="stat-value" id="stat-participation">{{ participation }}%</p>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-row">
+    <div class="chart-container">
+      <h3>Today by Dimension</h3>
+      <div class="canvas-wrapper">
+        <canvas id="dimensionChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-head">
+        <h3 id="committeeTrendTitle">7-Day Committee Trend</h3>
+        <div class="toggle-group">
+          <button id="btnCommittee7" class="toggle-btn active">7 Days</button>
+          <button id="btnCommittee30" class="toggle-btn">1 Month</button>
+        </div>
+      </div>
+      <div class="canvas-wrapper">
+        <canvas id="committeeTrendChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reviews -->
+  <div class="suggestions-container">
+    <h3>📝 Committee Reviews</h3>
+    <div class="suggestions-list">
+      {% if reviews %}
+        {% for review in reviews %}
+        <div class="suggestion-item">
+          <p class="suggestion-text">"{{ review.text }}"</p>
+          <p class="suggestion-time">{{ review.name }} — {{ review.date }}</p>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">No written reviews yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<script>
+  window.COMMITTEE_DATA = {
+    trendData: {{ trend_data | tojson | safe }},
+    dimensionData: {{ dimension_data | tojson | safe }},
+    dimensions: {{ dimensions | tojson | safe }}
+  };
+</script>
+<script src="{{ url_for('static', filename='committee_dashboard.js') }}"></script>
+
+</body>
+</html>

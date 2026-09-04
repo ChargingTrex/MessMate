@@ -21,6 +21,35 @@ the template, fill it in, and move it to the top.
 
 ---
 
+## [2026-09-04 12:00] — Food Committee Module & Admin Member Management
+
+**Files changed:** `app.py`, `sheets.py`, `auth.py` (new), `csrf.py` (new), `manage_committee.py` (new), `templates/committee_*.html` (new), `templates/admin_*.html` (new), `static/committee*.js` (new), `static/style.css`, `test/test_committee.py` (new), `tests/committee_tests.robot` (new), `.github/workflows/messmate_tests.yml`, `README.md`
+**Type:** Feature
+**Status:** ✅ Working
+
+### What changed
+Added the SaiU Food Committee module: member login, a five-dimension rating page (taste, quality, variety, hygiene, menu) with a written review, a separate committee dashboard, and a browser UI for admins to manage the roster.
+
+### Why
+The Food Committee gives structured, attributed feedback that complements — but must not be mixed with — anonymous student ratings. A five-member committee average and a 200-student average measure different things. Committee membership rotates periodically, so admins needed to add, rotate, and reset members without a redeploy or a terminal.
+
+### Details
+- **Data:** two new tabs, `committee_members` and `committee_reviews`. Reviews store a plain-text `Date` column so filtering never parses a timestamp — the failure mode that forced the six-format fallback parser in `get_today_responses()`.
+- **Auth:** session login via `werkzeug.security` scrypt hashes (no new dependency). The roster is cached for 60s to stay inside Google's 100-reads/100s quota; every write invalidates it, so a new member can sign in immediately.
+- **Privilege separation:** the existing `?token=` credential still opens both read-only dashboards, but every roster mutation now requires an admin session. A query-string secret leaks into browser history, `Referer` headers, and hosting access logs — tolerable for a read-only page, not for one that can mint accounts.
+- **CSRF:** added for all authenticated POSTs. Previously unnecessary (the only POST was an anonymous public form); an authenticated admin session with state-changing POSTs is exactly what CSRF exploits.
+- **Member UI:** add, bulk-add from a pasted `Name, email` list (one `append_rows` call, not one per member), activate, deactivate, and password reset. Passwords are server-generated, shown once, and stored only as hashes. `Must_Change_Password` forces a rotation at first sign-in. No delete — deactivation preserves review history.
+- **Rate limiting:** committee submissions are deliberately exempt from the per-IP cap. Campus Wi-Fi puts the whole committee behind one NAT address, so a per-IP rule would lock everyone out after the first submission; duplicate control is per member per day instead.
+- **Verification:** `test/test_committee.py` runs 59 checks with no Google credentials, driving the real routes against an in-memory fake of the sheets layer. All pass.
+
+### Regressions guarded
+`templates/form.html`, `templates/dashboard.html`, and `static/dashboard.js` are byte-for-byte unmodified, so the existing form and dashboard suites are unaffected. No existing `sheets.py` function was changed. The app boots without any new env var — only the roster UI requires `ADMIN_PASSWORD_HASH`.
+
+### How to revert
+Delete `auth.py`, `csrf.py`, `manage_committee.py`, `test/test_committee.py`, `tests/committee_tests.robot`, `tests/resources/committee_keywords.resource`, the `committee_*`/`admin_*` templates, and `static/committee*.js`. In `app.py` remove the Food Committee section, the session/CSRF config block, and restore the inline token check on `/dashboard`. In `sheets.py` remove everything below the "Food Committee" banner. Revert the appended block in `static/style.css`.
+
+---
+
 ## [2026-04-19 14:30] — Robot Framework Test Suite & CI Integration
 
 **Files changed:** `tests/`, `TESTING.md`, `.github/workflows/messmate_tests.yml`, `templates/form.html`, `templates/thanks.html`

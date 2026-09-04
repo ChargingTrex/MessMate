@@ -1,0 +1,182 @@
+<!--
+  Committee Member Management (admin_members.html)
+  -------------------------------------------------
+  Roster table, single add, bulk add, and per-member actions.
+
+  The credential banner is the only place a generated password is ever shown.
+  Only the hash is stored, so it genuinely cannot be retrieved afterwards —
+  a reset is the only route back.
+
+  Test Automation Attributes:
+    - id="members-table", id="add-member-form", id="bulk-add-form"
+    - class="credential-banner" on the one-time password reveal
+    - data-member-row="<email>" on each roster row
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MessMate — Committee Members</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="admin-body">
+    <div class="admin-container">
+
+        <div class="admin-header">
+            <div>
+                <h1>Committee Members 👥</h1>
+                <p>{{ active_count }} active member{{ '' if active_count == 1 else 's' }}</p>
+            </div>
+            <div class="admin-nav">
+                <a href="{{ url_for('committee_dashboard') }}" class="toggle-btn">Committee dashboard</a>
+                <a href="{{ url_for('dashboard') }}" class="toggle-btn">Student dashboard</a>
+                <form method="POST" action="{{ url_for('admin_logout') }}" style="display:inline;">
+                    {{ csrf_field() }}
+                    <button type="submit" class="toggle-btn">Sign out</button>
+                </form>
+            </div>
+        </div>
+
+        {% if error %}
+        <div class="alert error error-banner">{{ error }}</div>
+        {% endif %}
+        {% if success %}
+        <div class="alert success">{{ success }}</div>
+        {% endif %}
+
+        <!-- One-time credential reveal — shown once, never recoverable -->
+        {% if credentials %}
+        <div class="credential-banner">
+            <h3>🔑 One-time password{{ '' if credentials|length == 1 else 's' }}</h3>
+            <p class="subtext-line">
+                Copy these now — they are hashed on save and cannot be shown again.
+                Each member must change their password at first sign-in.
+            </p>
+            <table class="credential-table">
+                <thead>
+                    <tr><th>Name</th><th>Email</th><th>Password</th></tr>
+                </thead>
+                <tbody>
+                    {% for cred in credentials %}
+                    <tr>
+                        <td>{{ cred.name }}</td>
+                        <td>{{ cred.email }}</td>
+                        <td><code class="credential-value">{{ cred.password }}</code></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="button" class="toggle-btn" id="copy-credentials">Copy all</button>
+        </div>
+        {% endif %}
+
+        <!-- Roster -->
+        <div class="card">
+            <h2>Roster</h2>
+            {% if members %}
+            <div class="table-scroll">
+                <table class="members-table" id="members-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th><th>Email</th><th>Status</th>
+                            <th>Term</th><th>Reviews<br>this month</th><th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in members %}
+                        <tr data-member-row="{{ member.email }}"
+                            class="{{ 'row-inactive' if not member.active }}">
+                            <td>{{ member.name }}</td>
+                            <td>{{ member.email }}</td>
+                            <td>
+                                {% if member.active %}
+                                    <span class="badge badge-active">Active</span>
+                                    {% if member.must_change %}
+                                    <span class="badge badge-pending">Password not set</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge badge-inactive">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="term-cell">
+                                {{ member.term_start or '—' }}
+                                {% if member.term_end %}→ {{ member.term_end }}{% endif %}
+                            </td>
+                            <td style="text-align:center;">{{ member.reviews_this_month }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('admin_members_update') }}"
+                                      class="action-form">
+                                    {{ csrf_field() }}
+                                    <input type="hidden" name="email" value="{{ member.email }}">
+                                    {% if member.active %}
+                                    <button type="submit" name="action" value="deactivate"
+                                            class="link-btn danger">Deactivate</button>
+                                    {% else %}
+                                    <button type="submit" name="action" value="activate"
+                                            class="link-btn">Reactivate</button>
+                                    {% endif %}
+                                    <button type="submit" name="action" value="reset"
+                                            class="link-btn">Reset password</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">No committee members yet. Add the first one below.</div>
+            {% endif %}
+        </div>
+
+        <div class="admin-forms">
+            <!-- Add one -->
+            <div class="card">
+                <h2>Add a member</h2>
+                <form method="POST" action="{{ url_for('admin_members_add') }}" id="add-member-form">
+                    {{ csrf_field() }}
+                    <label class="item-label" for="name">Name</label>
+                    <input class="suggestion-input" type="text" id="name" name="name" required>
+
+                    <label class="item-label" style="margin-top:16px;" for="email">Email</label>
+                    <input class="suggestion-input" type="email" id="email" name="email" required>
+
+                    <div class="submit-container" style="margin-top:20px; padding:0;">
+                        <button type="submit" id="add-btn" class="submit-btn">Add member</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Bulk add -->
+            <div class="card">
+                <h2>Add many <span class="subtext">(new rotation)</span></h2>
+                <p class="subtext-line">One per line, as <code>Name, email</code></p>
+                <form method="POST" action="{{ url_for('admin_members_bulk') }}" id="bulk-add-form">
+                    {{ csrf_field() }}
+                    <textarea name="members" id="bulk-members" rows="6"
+                              placeholder="Aarav Sharma, aarav@saiuniversity.edu.in&#10;Diya Menon, diya@saiuniversity.edu.in"></textarea>
+                    <div class="submit-container" style="margin-top:20px; padding:0;">
+                        <button type="submit" id="bulk-add-btn" class="submit-btn">Add all</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+      // Copies the revealed credentials as tab-separated rows, ready to paste
+      // into a message or a sheet. This is the only chance to capture them.
+      document.getElementById('copy-credentials')?.addEventListener('click', function () {
+        const rows = Array.from(document.querySelectorAll('.credential-table tbody tr'))
+          .map(tr => Array.from(tr.children).map(td => td.innerText.trim()).join('\t'))
+          .join('\n');
+        navigator.clipboard.writeText(rows).then(() => {
+          this.textContent = 'Copied ✓';
+          setTimeout(() => { this.textContent = 'Copy all'; }, 2000);
+        }).catch(() => { this.textContent = 'Copy failed — select manually'; });
+      });
+    </script>
+</body>
+</html>

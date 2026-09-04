@@ -34,11 +34,25 @@ jobs:
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
           DASHBOARD_TOKEN: ${{ secrets.DASHBOARD_TOKEN }}
+          ADMIN_PASSWORD_HASH: ${{ secrets.ADMIN_PASSWORD_HASH }}
+          TEST_COMMITTEE_EMAIL: ${{ secrets.TEST_COMMITTEE_EMAIL }}
+          TEST_COMMITTEE_PASSWORD: ${{ secrets.TEST_COMMITTEE_PASSWORD }}
         run: |
           python app.py &
           sleep 3
 
+      - name: Run committee logic checks (no credentials needed)
+        env:
+          FLASK_SECRET_KEY: ci-test-secret-key
+        run: |
+          python test/test_committee.py
+
       - name: Run Robot Framework tests
+        env:
+          DASHBOARD_TOKEN: ${{ secrets.DASHBOARD_TOKEN }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          TEST_COMMITTEE_EMAIL: ${{ secrets.TEST_COMMITTEE_EMAIL }}
+          TEST_COMMITTEE_PASSWORD: ${{ secrets.TEST_COMMITTEE_PASSWORD }}
         run: |
           robot --include smoke \
                 --include api \
