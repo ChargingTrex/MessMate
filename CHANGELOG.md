@@ -21,6 +21,37 @@ the template, fill it in, and move it to the top.
 
 ---
 
+## [2026-09-04 16:00] — Food Committee Test Suites (E2E + Robot UI)
+
+**Files changed:** `test/fake_sheets.py` (new), `test/fake_server.py` (new), `test/test_e2e_committee.py` (new), `test/test_committee.py`, `tests/committee_api_tests.robot` (new), `tests/committee_form_tests.robot` (new), `tests/committee_admin_tests.robot` (new), `tests/committee_dashboard_tests.robot` (new), `tests/resources/committee_keywords.resource`, `tests/resources/common.resource`, `tests/run_tests.sh`, `sheets.py`, `.github/workflows/messmate_tests.yml`, `TESTING.md`
+**Type:** Feature
+**Status:** ✅ Working
+
+### What changed
+Added a full end-to-end journey suite and four Robot Framework suites covering the Food Committee UI, all runnable without Google credentials. Fixed one real bug they exposed.
+
+### Why
+The checklist harness verified behaviours one at a time. It could not catch faults that only appear across a whole journey — a member who can sign in but whose review never reaches the dashboard, or a rotation that silently erases the outgoing term's history — and it exercised no browser at all.
+
+### Details
+- **`test/fake_sheets.py`** — the in-memory worksheet fake, extracted so the checklist harness, the journey suite, and the UI server all share one implementation. Only `get_sheet()` is replaced; the roster cache, row construction, `col_values` lookup and `update_cell` all run for real.
+- **`test/fake_server.py`** — runs the real app on that fake so the UI suites need no spreadsheet and leave nothing behind. Its `POST /__test__/reset` route lives only in this file, so no test-only route ever ships in `app.py`.
+- **`test/test_e2e_committee.py`** — 64 steps across 9 journeys: onboarding, a rating day, a rotation, a forgotten password, a privilege-escalation attempt, mid-session revocation, coexistence with the anonymous student flow, a week of history, and a backend outage.
+- **Four Robot suites** — 105 cases over the member UI, the roster UI, the dashboard, and the HTTP surface. Renumbered into TC60–TC172 after a collision with `api_tests.robot` (TC39–TC54) was found; a duplicate check across all suites now reports none across 159 cases.
+- **`common.resource`** — optional `CHROME_BINARY` / `CHROME_DRIVER` overrides, both defaulting to empty so CI behaviour is unchanged.
+- **CI** — the credential-free Python suites run first and fail fast; the committee UI suites then run against the in-memory server rather than a shared test spreadsheet.
+
+### Bug fixed
+`get_committee_roster()` and five sibling functions called `get_sheet()` outside their try blocks, so an exception from the sheets layer escaped into the route and returned a 500 on the committee login page during an outage. The call now sits inside the try in all six, making the module's "never raises into a route" contract true rather than incidentally true.
+
+### Results
+105 Robot tests: 99 passed, 0 failed, 6 skipped. The skips are the Chart.js assertions, which need `cdn.jsdelivr.net`; they skip with a stated reason where that host is blocked. All six were confirmed passing by serving Chart.js locally, so only the CDN was missing, not the behaviour. Python suites: 59/59 and 64/64.
+
+### How to revert
+Delete `test/fake_sheets.py`, `test/fake_server.py`, `test/test_e2e_committee.py`, and the four `tests/committee_*.robot` files. Revert `tests/resources/common.resource` and `tests/run_tests.sh`. In `sheets.py`, move the `get_sheet()` calls back outside their try blocks (not advised — that restores the 500).
+
+---
+
 ## [2026-09-04 12:00] — Food Committee Module & Admin Member Management
 
 **Files changed:** `app.py`, `sheets.py`, `auth.py` (new), `csrf.py` (new), `manage_committee.py` (new), `templates/committee_*.html` (new), `templates/admin_*.html` (new), `static/committee*.js` (new), `static/style.css`, `test/test_committee.py` (new), `tests/committee_tests.robot` (new), `.github/workflows/messmate_tests.yml`, `README.md`

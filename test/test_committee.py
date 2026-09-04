@@ -19,6 +19,7 @@ import sys
 
 # Import the app package from the repo root regardless of where this is run from
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Must be set before importing app — it raises at import time without a secret
 os.environ["FLASK_SECRET_KEY"] = "test-secret-key-not-for-production"
@@ -45,90 +46,20 @@ LIMITER.enabled = False
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# In-memory fake of the gspread worksheet API
+# In-memory sheets backend (shared with the e2e suite and the UI test server)
 # ══════════════════════════════════════════════════════════════════════════════
 
-class FakeWorksheet:
-    """Implements only the gspread surface sheets.py actually uses."""
+import fake_sheets  # noqa: E402
 
-    def __init__(self, headers):
-        self.headers = list(headers)
-        self.rows = []              # list of lists, excluding the header row
-        self.read_count = 0         # proves the roster TTL cache works
-        self.append_row_calls = 0
-        self.append_rows_calls = 0
-
-    def get_all_records(self):
-        self.read_count += 1
-        return [dict(zip(self.headers, row)) for row in self.rows]
-
-    def append_row(self, row, value_input_option=None):
-        self.append_row_calls += 1
-        self.rows.append(list(row))
-
-    def append_rows(self, rows, value_input_option=None):
-        self.append_rows_calls += 1
-        for row in rows:
-            self.rows.append(list(row))
-
-    def col_values(self, index):
-        # gspread is 1-indexed and includes the header cell
-        values = [self.headers[index - 1]]
-        for row in self.rows:
-            values.append(row[index - 1] if index - 1 < len(row) else "")
-        return values
-
-    def update_cell(self, row_index, col_index, value):
-        # row_index 1 is the header, so data starts at 2
-        self.rows[row_index - 2][col_index - 1] = value
-
-    def update(self, cell_range, values):
-        pass  # used only by the student daily-summary path
-
-    def all_cell_text(self):
-        """Every stored value as one string — used to prove no plaintext leaks."""
-        return " ".join(str(cell) for row in self.rows for cell in row)
+BOOK = fake_sheets.install()
 
 
-class FakeBook:
-    """Registry of tab name -> FakeWorksheet, standing in for the spreadsheet."""
-
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.tabs = {
-            sheets.COMMITTEE_MEMBERS_TAB: FakeWorksheet(sheets.MEMBER_HEADERS),
-            sheets.COMMITTEE_REVIEWS_TAB: FakeWorksheet(sheets.REVIEW_HEADERS),
-            "responses": FakeWorksheet([
-                "Timestamp", "Overall", "Rice_Curry", "Rice_Rasam", "Chapati",
-                "Chapati_Gravy", "Poriyal", "Sweet", "Salad", "Curd", "Papad",
-                "Pickle", "Review", "Suggestion"]),
-            "daily_summary": FakeWorksheet([
-                "Date", "Avg_Overall", "Response_Count", "Avg_Rice_Curry",
-                "Avg_Rice_Rasam", "Avg_Chapati", "Avg_Chapati_Gravy",
-                "Avg_Poriyal", "Avg_Sweet", "Avg_Salad", "Avg_Curd",
-                "Avg_Papad", "Avg_Pickle"]),
-        }
-        self.mode = "ok"  # "ok" | "unavailable" (returns None) | "raise"
-        sheets.invalidate_roster_cache()
-
-    def get_sheet(self, tab_name):
-        if self.mode == "raise":
-            raise RuntimeError("simulated Google Sheets outage")
-        if self.mode == "unavailable":
-            return None
-        return self.tabs.get(tab_name)
-
-    def members(self):
-        return self.tabs[sheets.COMMITTEE_MEMBERS_TAB]
-
-    def reviews(self):
-        return self.tabs[sheets.COMMITTEE_REVIEWS_TAB]
+def seed_member(email, name, password, active=True, must_change=False):
+    BOOK.seed_member(email, name, password, active=active, must_change=must_change)
 
 
-BOOK = FakeBook()
-sheets.get_sheet = BOOK.get_sheet
+def seed_review(email, name, date, scores, review=""):
+    BOOK.seed_review(email, name, date, scores, review)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -188,22 +119,6 @@ def extract_password(html, email):
         r"<td>[^<]*</td>\s*<td>" + re.escape(email) +
         r"</td>\s*<td><code[^>]*>([^<]+)</code>", html)
     return row.group(1) if row else None
-
-
-def seed_member(email, name, password, active=True, must_change=False):
-    """Writes a member straight into the fake sheet, bypassing the UI."""
-    BOOK.members().rows.append([
-        email, name, auth.hash_password(password),
-        "TRUE" if active else "FALSE",
-        "TRUE" if must_change else "FALSE",
-        "2026-01-01", "", "2026-01-01 09:00:00"
-    ])
-    sheets.invalidate_roster_cache()
-
-
-def seed_review(email, name, date, scores, review=""):
-    BOOK.reviews().rows.append(
-        [f"{date} 13:00:00", date, email, name] + list(scores) + [review])
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -188,3 +188,67 @@ a route that redirects on 429 fails in a way that resembles an auth bug.
 
 The AUTO harness covers the logic these would exercise; what remains untested is
 the Google Sheets round trip itself and real browser rendering.
+
+
+---
+
+## Test suites (added after the checklist was closed)
+
+The checklist above verifies the implementation item by item. Three further
+suites were added to cover journeys and the browser UI, none of which need
+Google credentials.
+
+| Suite | What it covers | Count | Needs |
+|---|---|---|---|
+| `test/test_committee.py` | One check per checklist item | 59 checks | nothing |
+| `test/test_e2e_committee.py` | 9 complete user journeys | 64 steps | nothing |
+| `tests/committee_api_tests.robot` | HTTP status, redirects, CSRF, privilege boundary | 23 (TC150–TC172) | a running server |
+| `tests/committee_form_tests.robot` | Member UI: login, password change, rating widget | 26 (TC60–TC85) | server + browser |
+| `tests/committee_admin_tests.robot` | Roster UI: add, bulk add, rotate, reset | 29 (TC90–TC118) | server + browser |
+| `tests/committee_dashboard_tests.robot` | Stat cards, charts, toggles, feed, separation | 27 (TC120–TC146) | server + browser |
+
+**Latest full run: 105 Robot tests — 99 passed, 0 failed, 6 skipped**, plus
+59/59 and 64/64 on the Python suites.
+
+The 6 skips are the Chart.js assertions, which need `cdn.jsdelivr.net`. They
+skip with a stated reason where that host is blocked rather than failing. All
+six were confirmed passing by serving Chart.js locally, so the assertions
+themselves are verified — only the CDN was missing.
+
+`test/fake_server.py` runs the real app on the in-memory sheets backend, so
+the UI suites need no spreadsheet and leave nothing behind. Its
+`POST /__test__/reset` route exists only in that file, never in `app.py`.
+
+### The journeys
+
+| Journey | What it proves |
+|---|---|
+| J1 Onboarding | Add → one-time password → forced change → rate → visible on the dashboard |
+| J2 Rating day | Three of four members rate; averages and participation are right; repeats refused |
+| J3 Rotation | Outgoing term retired, incoming term added in one write, history preserved |
+| J4 Password reset | Old password dies, new one works and forces another change |
+| J5 Privilege boundary | A leaked token reads dashboards but cannot mint accounts; CSRF holds |
+| J6 Revocation | A member removed mid-session loses access on the next request |
+| J7 Coexistence | Student anonymity and committee attribution never mix |
+| J8 History | A week of reviews builds a correctly ordered trend |
+| J9 Outage | A Sheets failure degrades instead of 500ing |
+
+### What these suites caught
+
+Beyond the two defects the checklist run found:
+
+**A real bug — a 500 on the login page during a Sheets outage.** J9 exposed
+that `get_committee_roster()` called `get_sheet()` outside its try block, so
+an exception escaped into the route. All six committee data functions now
+hold the call inside, making the "never raises" contract true rather than
+incidentally true.
+
+**A test-ID collision.** The committee suites were numbered TC40–TC152, which
+overlapped `api_tests.robot` (TC39–TC54). Renumbered into free ranges; a
+duplicate-ID check across `tests/*.robot` now reports none across 159 cases.
+
+**Three UI races.** `Act On Member`, `Add Member Via UI`, and `Sign Out Of
+Admin` each returned before their POST landed, so a following navigation
+could overtake it. Each failed intermittently and in a different place per
+run — the signature of a race, not a defect. All three now wait for the
+outcome the server actually renders.

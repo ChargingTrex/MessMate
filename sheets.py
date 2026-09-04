@@ -310,6 +310,13 @@ def get_all_suggestions():
 # conventions as the student-feedback functions above: never raise into a
 # route, log to stdout, and return []/False/None on failure.
 #
+# The get_sheet() call sits INSIDE each try block deliberately. get_sheet()
+# swallows its own errors today, so this looks redundant — but if it ever
+# raises, an exception escaping from here reaches a route that has no handler
+# for it, and a member sees a 500 on the login page instead of a normal
+# failure. Keeping it inside makes the "never raises" contract true rather
+# than incidentally true.
+#
 # CRITICAL: 'Email' must stay in column A of committee_members — the row-lookup
 # used by update_committee_member() reads col_values(1), the same pattern
 # update_daily_summary_for_today() uses for dates.
@@ -364,11 +371,10 @@ def get_committee_roster(force_refresh=False):
         if (time.monotonic() - fetched_at) < ROSTER_TTL_SECONDS:
             return records
 
-    worksheet = get_sheet(COMMITTEE_MEMBERS_TAB)
-    if not worksheet:
-        return []
-
     try:
+        worksheet = get_sheet(COMMITTEE_MEMBERS_TAB)
+        if not worksheet:
+            return []
         records = worksheet.get_all_records()
         _roster_cache = (time.monotonic(), records)
         return records
@@ -423,11 +429,10 @@ def add_committee_member(email, name, password_hash):
     Appends one member. Returns True on success, False on failure.
     Caller is responsible for duplicate checking (see auth.normalize_email).
     """
-    worksheet = get_sheet(COMMITTEE_MEMBERS_TAB)
-    if not worksheet:
-        return False
-
     try:
+        worksheet = get_sheet(COMMITTEE_MEMBERS_TAB)
+        if not worksheet:
+            return False
         today = datetime.now().strftime("%Y-%m-%d")
         worksheet.append_row(_member_row(email, name, password_hash, today),
                              value_input_option="RAW")
@@ -450,11 +455,10 @@ def add_committee_members_bulk(members):
     if not members:
         return True
 
-    worksheet = get_sheet(COMMITTEE_MEMBERS_TAB)
-    if not worksheet:
-        return False
-
     try:
+        worksheet = get_sheet(COMMITTEE_MEMBERS_TAB)
+        if not worksheet:
+            return False
         today = datetime.now().strftime("%Y-%m-%d")
         rows = [_member_row(e, n, h, today) for e, n, h in members]
         # One append_rows beats N append_row calls against the quota
@@ -475,11 +479,10 @@ def update_committee_member(email, **fields):
 
     Returns True on success, False if the member or sheet is missing.
     """
-    worksheet = get_sheet(COMMITTEE_MEMBERS_TAB)
-    if not worksheet:
-        return False
-
     try:
+        worksheet = get_sheet(COMMITTEE_MEMBERS_TAB)
+        if not worksheet:
+            return False
         target = str(email).strip().lower()
         # Column A holds emails; row 1 is the header
         emails = [str(v).strip().lower() for v in worksheet.col_values(1)]
@@ -514,11 +517,10 @@ def append_committee_review(data_dict):
 
     Returns True on success, False on failure.
     """
-    worksheet = get_sheet(COMMITTEE_REVIEWS_TAB)
-    if not worksheet:
-        return False
-
     try:
+        worksheet = get_sheet(COMMITTEE_REVIEWS_TAB)
+        if not worksheet:
+            return False
         now = datetime.now()
         row_data = [
             now.strftime("%Y-%m-%d %H:%M:%S"),   # Timestamp
@@ -550,11 +552,10 @@ def get_committee_reviews(days=None):
 
     Returns a list of record dicts, oldest first. [] on error.
     """
-    worksheet = get_sheet(COMMITTEE_REVIEWS_TAB)
-    if not worksheet:
-        return []
-
     try:
+        worksheet = get_sheet(COMMITTEE_REVIEWS_TAB)
+        if not worksheet:
+            return []
         records = worksheet.get_all_records()
 
         if days is None:
