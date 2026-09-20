@@ -105,11 +105,13 @@ tests/
 test/
 ├── fake_sheets.py            # In-memory stand-in for the gspread API
 ├── fake_server.py            # Runs the app on that fake, for UI tests
-├── test_committee.py         # 59 checklist checks, no credentials
-└── test_e2e_committee.py     # 64 steps across 9 end-to-end journeys
+├── test_smoke.py             # 26 checks across 15 features, ~1 second
+├── test_committee.py         # 59 checklist checks
+├── test_e2e_committee.py     # 64 steps across 9 committee journeys
+└── test_e2e_student.py       # 53 steps across 9 student journeys
 ```
 
-**159 Robot test cases** in total, plus **123 credential-free Python checks**.
+**159 Robot test cases** in total, plus **202 credential-free Python checks**.
 
 ---
 
@@ -399,9 +401,41 @@ need no Google credentials, no browser, and no running server. They are the
 fastest way to know whether the committee module is sound.
 
 ```bash
+python test/test_smoke.py            # 26 checks, 15 features, ~1 second
 python test/test_committee.py        # 59 checks, one per checklist item
-python test/test_e2e_committee.py    # 64 steps across 9 user journeys
+python test/test_e2e_committee.py    # 64 steps across 9 committee journeys
+python test/test_e2e_student.py      # 53 steps across 9 student journeys
 ```
+
+### Smoke tests
+
+`test_smoke.py` answers one question per feature: is it switched on at all?
+It is the check to run before a demo, after a deploy, or to decide whether a
+longer suite is worth starting. It covers 15 features — service, static
+assets, the student form, submission, thank-you page, student dashboard,
+committee login, committee auth, committee submission, admin login, admin
+roster, member management, committee dashboard, the privilege split, and
+CSRF.
+
+It also runs against a **live deployment**, where it executes only the
+read-only checks, so pointing it at production cannot submit feedback,
+create members, or write to a real spreadsheet:
+
+```bash
+python test/test_smoke.py --url https://your-app.onrender.com --token YOUR_TOKEN
+```
+
+Write checks report as `SKIP` with the reason, rather than passing silently.
+
+### Student journeys
+
+`test_e2e_student.py` covers the original anonymous flow, which previously had
+no credential-free coverage at all — its only tests were the Robot suites,
+which need a live spreadsheet. The journeys are: a first submission, partial
+ratings when only some dishes were served, validation and hostile input, the
+per-IP rate limiter, a full service of ten students, the daily-summary upsert,
+a week of history, access control and outages, and separation from the
+committee module.
 
 `test_committee.py` verifies each item in `docs/FoodCommittee_Checklist.md`
 individually. `test_e2e_committee.py` walks whole journeys instead —
@@ -421,6 +455,11 @@ code path.
 - **A 500 on the login page during a Sheets outage.** `get_committee_roster()`
   called `get_sheet()` outside its try block, so an exception escaped into the
   route. All six committee functions now hold the call inside.
+- **A fake that silently accepted writes.** `FakeWorksheet.update()` was a
+  no-op stub, which disabled the only path using it: the `daily_summary`
+  upsert branch appeared to work while writing nothing. The student journeys
+  caught it. A fake that quietly swallows writes is worse than no fake — it
+  makes a suite green without testing anything.
 
 ### A trap worth knowing
 
@@ -436,3 +475,18 @@ app_module.limiter.enabled = False
 Set the config key instead and your logins silently consume the real 10/hour
 admin cap; later tests then get a 429 and a redirect, which looks exactly like
 an authentication bug.
+
+---
+
+## Known limitation pinned by the suites
+
+The student dashboard builds its trend chart from `daily_summary` in **sheet
+row order**, without sorting on `Date`. That is correct for data the app
+writes — daily operation appends today's row, and `seed_data.py` backfills
+with `range(29, -1, -1)` — but the chart would misorder if the tab were
+manually sorted or backfilled out of sequence.
+
+Journey S7 in `test_e2e_student.py` pins this deliberately: it asserts the
+current row-order behaviour, so if the dashboard ever gains a date sort, that
+step fails and tells you to update the note. The committee dashboard does sort
+by date, so the two differ on purpose rather than by oversight.

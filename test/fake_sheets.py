@@ -16,6 +16,7 @@ Shared by:
 """
 
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -70,8 +71,37 @@ class FakeWorksheet:
         self.rows[row_index - 2][col_index - 1] = value
 
     def update(self, cell_range, values):
-        """Used only by the student daily-summary path; a no-op is enough."""
-        pass
+        """
+        Writes a block of values into an A1-style range, e.g. "A5:M5".
+
+        This was a no-op stub, which silently disabled the one path that uses
+        it: update_daily_summary_for_today() calls update() when today's row
+        already exists, so the upsert branch appeared to work while writing
+        nothing. A fake that quietly accepts writes is worse than no fake —
+        it makes a suite green without testing anything.
+        """
+        match = re.match(r"^([A-Z]+)(\d+):([A-Z]+)(\d+)$", cell_range.strip())
+        if not match:
+            raise ValueError(f"unsupported range for the fake: {cell_range!r}")
+
+        start_col, start_row, _, _ = match.groups()
+        first_col = self._col_index(start_col)
+        first_row = int(start_row)
+
+        for offset, row_values in enumerate(values):
+            target = first_row + offset - 2   # row 1 is the header
+            if target < 0 or target >= len(self.rows):
+                raise IndexError(f"range {cell_range} is outside the fake sheet")
+            for i, value in enumerate(row_values):
+                self.rows[target][first_col + i] = value
+
+    @staticmethod
+    def _col_index(letters):
+        """'A' -> 0, 'M' -> 12, 'AA' -> 26."""
+        index = 0
+        for char in letters:
+            index = index * 26 + (ord(char) - ord("A") + 1)
+        return index - 1
 
     def all_cell_text(self):
         """Every stored value as one string — proves no plaintext leaks."""

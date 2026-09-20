@@ -28,12 +28,21 @@ jobs:
           pip install webdriver-manager
           python -c "from webdriver_manager.chrome import ChromeDriverManager; ChromeDriverManager().install()"
 
-      - name: Run committee checks (no credentials needed)
+      - name: Smoke tests (no credentials needed)
+        env:
+          FLASK_SECRET_KEY: ci-test-secret-key
+        run: |
+          # One or two checks per feature. Fails in seconds if something is
+          # broadly broken, before the longer suites spend a runner minute.
+          python test/test_smoke.py
+
+      - name: End-to-end journeys (no credentials needed)
         env:
           FLASK_SECRET_KEY: ci-test-secret-key
         run: |
           python test/test_committee.py
           python test/test_e2e_committee.py
+          python test/test_e2e_student.py
 
       - name: Start committee UI test server (in-memory backend)
         run: |
