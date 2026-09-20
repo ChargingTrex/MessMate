@@ -589,3 +589,220 @@ def has_submitted_today(email, date_str=None):
                 str(record.get("Member_Email", "")).strip().lower() == target_email):
             return True
     return False
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Daily menu and quick meal ratings
+# ══════════════════════════════════════════════════════════════════════════════
+# Backs the student home page: today's breakfast/lunch/dinner, and a one-tap
+# good / bad / skip reaction per meal.
+#
+# This is deliberately NOT the same data as the student per-dish form or the
+# committee's five-dimension review. It answers a cruder question — "was that
+# meal alright, and did you even turn up" — which is the question most students
+# will actually stop to answer.
+#
+# Same conventions as above: never raise into a route, log to stdout, return
+# []/False/None on failure. Date is plain text so Sheets cannot reformat it
+# out from under the lookup.
+
+MENU_TAB = "menu"
+MEAL_RATINGS_TAB = "meal_ratings"
+
+MENU_HEADERS = ["Date", "Breakfast", "Lunch", "Dinner"]
+MEAL_RATING_HEADERS = ["Timestamp", "Date", "Meal", "Rating", "Suggestion"]
+
+MEALS = ["Breakfast", "Lunch", "Dinner"]
+
+# Display-only serving windows. Shown on the home page so students know whether
+# they are early or late; nothing in the app enforces them.
+MEAL_TIMINGS = {
+    "Breakfast": "7:30 – 9:30 am",
+    "Lunch": "12:00 – 2:30 pm",
+    "Dinner": "7:30 – 9:30 pm",
+}
+
+RATINGS = ["good", "bad", "skip"]
+
+# Menu reads happen on every home-page load, so they are cached like the roster.
+# A shorter TTL than the roster: a menu correction should appear quickly.
+MENU_TTL_SECONDS = 30
+_menu_cache = None  # (fetched_at_monotonic, [records]) or None
+
+
+def invalidate_menu_cache():
+    """Drops the cached menu. Called after every menu write."""
+    global _menu_cache
+    _menu_cache = None
+
+
+def get_menu_records(force_refresh=False):
+    """All rows of the menu tab as dicts, cached. [] on error."""
+    global _menu_cache
+
+    if not force_refresh and _menu_cache is not None:
+        fetched_at, records = _menu_cache
+        if (time.monotonic() - fetched_at) < MENU_TTL_SECONDS:
+            return records
+
+    try:
+        worksheet = get_sheet(MENU_TAB)
+        if not worksheet:
+            return []
+        records = worksheet.get_all_records()
+        _menu_cache = (time.monotonic(), records)
+        return records
+    except Exception as e:
+        print(f"Error reading menu: {e}")
+        return []
+
+
+def _split_items(raw):
+    """
+    'Idli, Sambar, Coconut Chutney' -> ['Idli', 'Sambar', 'Coconut Chutney'].
+    Accepts commas or newlines so staff can type it either way.
+    """
+    text = str(raw or "").replace("\n", ",")
+    return [part.strip() for part in text.split(",") if part.strip()]
+
+
+def get_menu_for_date(date_str=None):
+    """
+    Returns {"Breakfast": [...], "Lunch": [...], "Dinner": [...]} for one date.
+    Meals with nothing published come back as empty lists, which the home page
+    renders as "not published yet" rather than pretending the mess is closed.
+    """
+    target = date_str or datetime.now().strftime("%Y-%m-%d")
+
+    for record in get_menu_records():
+        if str(record.get("Date", "")).strip() == target:
+            return {meal: _split_items(record.get(meal, "")) for meal in MEALS}
+
+    return {meal: [] for meal in MEALS}
+
+
+def get_menu_week(start_date=None, days=7):
+    """
+    Menu rows for `days` days from start_date, for the admin editor.
+    Always returns one entry per day, with blanks for days not yet published.
+    """
+    start = (datetime.strptime(start_date, "%Y-%m-%d") if start_date
+             else datetime.now())
+    published = {str(r.get("Date", "")).strip(): r for r in get_menu_records()}
+
+    week = []
+    for offset in range(days):
+        day = start + timedelta(days=offset)
+        date_str = day.strftime("%Y-%m-%d")
+        row = published.get(date_str, {})
+        week.append({
+            "date": date_str,
+            "label": day.strftime("%a %d %b"),
+            "is_today": date_str == datetime.now().strftime("%Y-%m-%d"),
+            "Breakfast": str(row.get("Breakfast", "")),
+            "Lunch": str(row.get("Lunch", "")),
+            "Dinner": str(row.get("Dinner", "")),
+        })
+    return week
+
+
+def save_menu_for_date(date_str, breakfast, lunch, dinner):
+    """
+    Upserts one day's menu: updates the row if that date exists, appends if not.
+    Mirrors update_daily_summary_for_today()'s row-lookup pattern, which is why
+    Date must stay in column A.
+
+    Returns True on success, False on failure.
+    """
+    try:
+        worksheet = get_sheet(MENU_TAB)
+        if not worksheet:
+            return False
+
+        row_data = [date_str, breakfast, lunch, dinner]
+        dates = [str(v).strip() for v in worksheet.col_values(1)]
+
+        if date_str in dates:
+            row_index = dates.index(date_str) + 1   # gspread is 1-indexed
+            worksheet.update(f"A{row_index}:D{row_index}", [row_data])
+        else:
+            worksheet.append_row(row_data, value_input_option="RAW")
+
+        invalidate_menu_cache()
+        return True
+    except Exception as e:
+        print(f"Error saving menu for {date_str}: {e}")
+        return False
+
+
+def append_meal_rating(meal, rating, suggestion=""):
+    """
+    Stores one quick reaction. Anonymous: no identity, no IP, nothing that
+    could tie the row to a student — the same promise the per-dish form makes.
+
+    Suggestion is stored RAW; Jinja escapes it when the dashboard renders it.
+
+    Returns True on success, False on failure.
+    """
+    try:
+        worksheet = get_sheet(MEAL_RATINGS_TAB)
+        if not worksheet:
+            return False
+
+        now = datetime.now()
+        worksheet.append_row([
+            now.strftime("%Y-%m-%d %H:%M:%S"),
+            now.strftime("%Y-%m-%d"),
+            meal,
+            rating,
+            suggestion,
+        ], value_input_option="RAW")
+        return True
+    except Exception as e:
+        print(f"Error appending meal rating: {e}")
+        return False
+
+
+def get_meal_ratings(date_str=None):
+    """
+    Meal ratings, optionally for one date. [] on error.
+    """
+    try:
+        worksheet = get_sheet(MEAL_RATINGS_TAB)
+        if not worksheet:
+            return []
+        records = worksheet.get_all_records()
+        if date_str is None:
+            return records
+        return [r for r in records
+                if str(r.get("Date", "")).strip() == date_str]
+    except Exception as e:
+        print(f"Error reading meal ratings: {e}")
+        return []
+
+
+def summarise_meal_ratings(date_str=None):
+    """
+    Per-meal tallies for one day:
+        {"Lunch": {"good": 12, "bad": 3, "skip": 5, "total": 20, "score": 80}, ...}
+
+    `score` is good as a percentage of those who actually ate (good + bad).
+    Skips are counted but deliberately excluded from it — a student who never
+    turned up is telling you about attendance, not about the food.
+    """
+    target = date_str or datetime.now().strftime("%Y-%m-%d")
+    summary = {meal: {"good": 0, "bad": 0, "skip": 0, "total": 0, "score": 0}
+               for meal in MEALS}
+
+    for record in get_meal_ratings(target):
+        meal = str(record.get("Meal", "")).strip().title()
+        rating = str(record.get("Rating", "")).strip().lower()
+        if meal in summary and rating in RATINGS:
+            summary[meal][rating] += 1
+            summary[meal]["total"] += 1
+
+    for meal in MEALS:
+        ate = summary[meal]["good"] + summary[meal]["bad"]
+        summary[meal]["score"] = round(summary[meal]["good"] / ate * 100) if ate else 0
+
+    return summary

@@ -43,6 +43,7 @@ jobs:
           python test/test_committee.py
           python test/test_e2e_committee.py
           python test/test_e2e_student.py
+          python test/test_e2e_home.py
 
       - name: Start committee UI test server (in-memory backend)
         run: |
@@ -62,7 +63,8 @@ jobs:
                 tests/committee_api_tests.robot \
                 tests/committee_form_tests.robot \
                 tests/committee_admin_tests.robot \
-                tests/committee_dashboard_tests.robot
+                tests/committee_dashboard_tests.robot \
+                tests/home_tests.robot
 
       - name: Start MessMate app (needs live Google Sheets secrets)
         env:

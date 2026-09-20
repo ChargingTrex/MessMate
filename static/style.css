@@ -576,3 +576,186 @@ textarea {
     .chart-container { min-width: 100%; }
     .admin-header { flex-direction: column; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * STUDENT HOME — today's menu and quick reactions
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+.home-header {
+    background: linear-gradient(135deg, #2E75B6 0%, #1F4E79 100%);
+    color: white;
+    padding: 24px 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.home-header h1 { font-size: 1.6rem; margin-bottom: 4px; }
+.home-header p { font-size: 1rem; opacity: 0.92; }
+
+.home-date {
+    font-size: 0.85rem !important;
+    opacity: 0.75 !important;
+    margin-top: 6px;
+}
+
+/* ── Meal cards ────────────────────────────────────────────────────────────── */
+.meal-card { padding: 20px; }
+
+.meal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.meal-title {
+    font-size: 1.2rem;
+    margin-bottom: 2px;
+}
+
+.meal-time {
+    font-size: 0.82rem;
+    color: #888;
+}
+
+/* Today's tally, shown only once someone has rated */
+.meal-tally {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.tally-score {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.tally-good  { color: #1E6B3C; }
+.tally-mixed { color: #BF5700; }
+.tally-poor  { color: #B71C1C; }
+
+.tally-count {
+    font-size: 0.72rem;
+    color: #999;
+}
+
+/* ── Menu items ────────────────────────────────────────────────────────────── */
+.menu-items {
+    list-style: none;
+    margin: 0 0 16px 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.menu-items li {
+    background-color: #F0F4F8;
+    border: 1px solid #E1E8F0;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.9rem;
+    color: #37474F;
+}
+
+.menu-empty {
+    background-color: transparent !important;
+    border: 1px dashed #ddd !important;
+    color: #999 !important;
+    font-style: italic;
+}
+
+/* ── Reaction buttons ──────────────────────────────────────────────────────── */
+.rate-row {
+    display: flex;
+    gap: 10px;
+}
+
+.rate-btn {
+    flex: 1;
+    background: #FFFFFF;
+    border: 2px solid #E0E6ED;
+    border-radius: 12px;
+    padding: 12px 6px;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-height: 64px;          /* comfortably tappable */
+    -webkit-tap-highlight-color: transparent;
+}
+
+.rate-btn span {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #555;
+    margin-top: 2px;
+}
+
+.rate-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.rate-good:hover:not(:disabled) { border-color: #66BB6A; background-color: #F1F8F2; }
+.rate-bad:hover:not(:disabled)  { border-color: #EF5350; background-color: #FDF2F2; }
+.rate-skip:hover:not(:disabled) { border-color: #90A4AE; background-color: #F5F7F8; }
+
+.rate-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.rate-btn-sending { border-color: #2E75B6; }
+
+/* ── Suggestion disclosure ─────────────────────────────────────────────────── */
+.suggestion-details { margin-top: 14px; }
+
+.suggestion-details summary {
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #2E75B6;
+    padding: 6px 0;
+    list-style: none;
+}
+
+.suggestion-details summary::-webkit-details-marker { display: none; }
+.suggestion-details summary::before { content: "＋ "; font-weight: 600; }
+.suggestion-details[open] summary::before { content: "－ "; }
+.suggestion-details .suggestion-input { margin-top: 8px; }
+
+/* ── Link through to the detailed form ─────────────────────────────────────── */
+.detail-cta { text-align: center; }
+
+.detail-link {
+    display: inline-block;
+    width: auto;
+    padding: 14px 28px;
+    text-decoration: none;
+    margin-top: 6px;
+}
+
+/* ── Admin menu editor ─────────────────────────────────────────────────────── */
+.menu-day { padding: 18px 20px; }
+
+.menu-day-today {
+    border-left: 4px solid #2E75B6;
+}
+
+.menu-day-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.menu-day-head h2 { font-size: 1.05rem; margin: 0; }
+
+.menu-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+}
+
+.menu-field .item-label { font-size: 0.85rem; color: #555; }
+
+@media (max-width: 600px) {
+    .rate-btn { font-size: 20px; min-height: 58px; }
+    .meal-head { flex-direction: column; }
+    .meal-tally { text-align: left; }
+}

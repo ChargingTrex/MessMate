@@ -18,6 +18,10 @@ A web app for students to anonymously rate their daily mess lunch. Admins, deans
 - 🔒 Dashboard protected by secret token
 - 🛡️ Rate limiting prevents spam (1 submit per IP per day)
 - 🔐 Fully anonymous — no student identity stored
+- 🍽️ **Student home page** (`/home`) — today's breakfast, lunch and dinner menu
+  with a one-tap reaction per meal: good, bad or skipped, plus a suggestion
+- 📝 **Menu editor** — publish the week from `/admin/menu`, or type straight into
+  the `menu` tab; both write the same rows
 - 🍽️ **Food Committee module** — member login, a five-dimension review page
   (taste, quality, variety, hygiene, menu), and a separate committee dashboard
 - 👥 **Admin member management UI** — add, bulk-add, rotate, and reset passwords
@@ -68,6 +72,16 @@ Email | Name | Password_Hash | Active | Must_Change_Password | Term_Start | Term
 Timestamp | Date | Member_Email | Member_Name | Taste | Quality | Variety | Hygiene | Menu | Review
 ```
 
+**Tab 5: `menu`** (headers in row 1):
+```
+Date | Breakfast | Lunch | Dinner
+```
+
+**Tab 6: `meal_ratings`** (headers in row 1):
+```
+Timestamp | Date | Meal | Rating | Suggestion
+```
+
 > Headers must match **exactly** — `get_all_records()` maps row 1 to dict keys,
 > so a rename silently breaks every lookup. Run `python manage_committee.py list`
 > to validate them.
@@ -76,8 +90,8 @@ Timestamp | Date | Member_Email | Member_Name | Taste | Quality | Variety | Hygi
 > Google Sheets reformats date-looking cells, and all committee filtering reads
 > that column as a literal `YYYY-MM-DD` string.
 >
-> `Email` must stay in column A of `committee_members` — roster edits find the
-> row by scanning that column.
+> `Email` must stay in column A of `committee_members`, and `Date` in column A
+> of `menu` — roster and menu edits find the row by scanning that column.
 
 ### 4. Environment Variables
 
@@ -173,7 +187,10 @@ messmate/
 ├── seed_data.py           # Demo data seeding script
 ├── manage_committee.py    # Break-glass roster CLI (admin hash, add, list)
 ├── generate_qr.py         # QR code generator for the mess poster
+├── CONTRIBUTING.md        # Architecture, conventions, how to run the tests
 ├── templates/
+│   ├── home.html              # Student home — menu + quick reactions
+│   ├── admin_menu.html        # Menu editor
 │   ├── form.html              # Student feedback form
 │   ├── thanks.html            # Post-submission thank-you page
 │   ├── dashboard.html         # Stakeholder dashboard
@@ -202,6 +219,10 @@ messmate/
 | `/thanks` | GET | Thank-you page |
 | `/dashboard?token=TOKEN` | GET | Admin dashboard (403 without token) |
 | `/health` | GET | Health check → `{"status": "ok"}` |
+| `/home` | GET | Today's menu with a one-tap reaction per meal |
+| `/home/rate` | POST | Record good / bad / skip (3 per IP per day) |
+| `/admin/menu` | GET | Week-at-a-glance menu editor |
+| `/admin/menu/save` | POST | Publish one day's menu |
 | `/committee/login` | GET, POST | Committee member login |
 | `/committee/logout` | POST | Clear member session |
 | `/committee/password` | GET, POST | Forced password change at first sign-in |
@@ -235,6 +256,38 @@ requires a real admin session**.
 - **Anonymity**: No student name, email, or identity is ever collected or stored.
 - **Timestamp format**: `YYYY-MM-DD HH:MM:SS` everywhere. Never change this — date filtering depends on it.
 
+## The three feedback layers
+
+MessMate asks for feedback three ways, and **never mixes their numbers** — a
+tally of taps, a mean of 1–5 dish scores and a committee review measure
+different things from different populations.
+
+| Surface | Who | What it asks |
+|---|---|---|
+| `/home` | any student, no login | One tap per meal: good / bad / skip, plus a suggestion |
+| `/` | any student, no login | Per-dish 1–5 ratings, a review and a suggestion |
+| `/committee` | committee members | Taste, quality, variety, hygiene, menu — attributed |
+
+The home page is the low-effort one, and the one most students will actually
+use; it links through to the per-dish form for anyone with more to say.
+
+## Publishing the menu
+
+Two equally valid editors, both writing the same rows to the `menu` tab:
+
+1. **The spreadsheet** — type straight into the `menu` tab.
+2. **The admin UI** at `/admin/menu` — a week at a glance, one row per day,
+   each saved independently. Needs an admin session.
+
+Items are comma-separated (`Idli, Sambar, Coconut Chutney`); newlines work too.
+A blank meal shows as "Menu not published yet" rather than an empty card.
+
+Skips are counted but kept out of a meal's score, which is `good` as a share of
+those who actually ate — a student who never turned up is telling you about
+attendance, not about the food.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the conventions behind all of this.
+
 ## Food Committee
 
 ### Setting up the first members
@@ -262,7 +315,11 @@ says so explicitly.
 ### Running the checks
 
 ```bash
+python test/test_smoke.py          # 34 checks, 18 features, ~1 second
 python test/test_committee.py      # no credentials required
+python test/test_e2e_committee.py
+python test/test_e2e_student.py
+python test/test_e2e_home.py
 ```
 
 This drives the real routes against an in-memory fake of the sheets layer and

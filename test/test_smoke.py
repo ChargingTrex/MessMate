@@ -95,9 +95,12 @@ class LocalTransport:
     def _seed(self):
         self.book.reset()
         self.book.seed_member("smoke@sai.edu", "Smoke Member", "smoke-password")
+        today = __import__("datetime").datetime.now().strftime("%Y-%m-%d")
         self.book.seed_student_response(
-            __import__("datetime").datetime.now().strftime("%Y-%m-%d"),
-            4, "Smoke review", "Smoke suggestion", items=[4] * 10)
+            today, 4, "Smoke review", "Smoke suggestion", items=[4] * 10)
+        self.book.seed_menu(today, breakfast="Idli, Sambar",
+                            lunch="Rice, Rasam, Poriyal",
+                            dinner="Chapati, Dal")
 
     def session(self):
         return self.app.test_client()
@@ -178,6 +181,33 @@ def smoke(t):
     else:
         skipped("submission accepted", "write check, live mode is read-only")
 
+    feature("student home")
+    status, body = t.get(client, "/home")
+    check("menu page renders", status == 200, f"status={status}")
+    check("all three meals are shown",
+          all(f'data-meal="{meal}"' in body
+              for meal in ("Breakfast", "Lunch", "Dinner")))
+    check("good / bad / skip are offered",
+          all(f'data-rating="{r}"' in body for r in ("good", "bad", "skip")))
+
+    feature("quick rating")
+    if t.writes_allowed:
+        status, _ = t.post(t.session(), "/home/rate",
+                           {"meal": "Lunch", "rating": "good",
+                            "suggestion": "smoke suggestion"})
+        check("a reaction is accepted", status == 302, f"status={status}")
+        status, _ = t.post(t.session(), "/home/rate",
+                           {"meal": "Brunch", "rating": "good"})
+        check("an unknown meal is refused",
+              status == 302 and True, f"status={status}")
+    else:
+        skipped("reaction accepted", "write check, live mode is read-only")
+
+    feature("menu editor")
+    status, _ = t.get(client, "/admin/menu")
+    check("editor is closed without an admin session", status == 302,
+          f"status={status}")
+
     feature("thank-you page")
     status, body = t.get(client, "/thanks")
     check("renders after submission", status == 200 and "Thanks" in body,
@@ -252,6 +282,11 @@ def smoke(t):
         check("add and bulk-add forms are present",
               'id="add-member-form"' in body and 'id="bulk-add-form"' in body)
 
+        feature("menu editor")
+        status, body = t.get(admin, "/admin/menu")
+        check("editor opens with an admin session",
+              status == 200 and 'id="menu-editor"' in body, f"status={status}")
+
         feature("member management")
         token = CSRF_RE.search(body).group(1)
         status, body = t.post(admin, "/admin/members/add",
@@ -277,6 +312,9 @@ def smoke(t):
     status, _ = t.get(client, f"/admin/members?token={t.token}")
     check("the dashboard token cannot open the roster", status == 302,
           f"status={status} — a read-only token must not reach member management")
+    status, _ = t.get(client, f"/admin/menu?token={t.token}")
+    check("the dashboard token cannot open the menu editor", status == 302,
+          f"status={status}")
 
     feature("csrf")
     status, _ = t.post(t.session(), "/committee/login",

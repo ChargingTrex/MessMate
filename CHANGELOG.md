@@ -21,6 +21,39 @@ the template, fill it in, and move it to the top.
 
 ---
 
+## [2026-09-20 19:40] — Student Home: Daily Menu & Quick Meal Ratings
+
+**Files changed:** `app.py`, `sheets.py`, `templates/home.html` (new), `templates/admin_menu.html` (new), `static/home.js` (new), `static/style.css`, `test/fake_sheets.py`, `test/fake_server.py`, `test/test_smoke.py`, `test/test_e2e_home.py` (new), `tests/home_tests.robot` (new), `.github/workflows/messmate_tests.yml`, `README.md`, `CONTRIBUTING.md` (new)
+**Type:** Feature
+**Status:** ✅ Working
+
+### What changed
+Added a student home page at `/home` showing today's breakfast, lunch and dinner with a one-tap reaction per meal — good, bad or skipped — and an optional suggestion. Added a menu editor at `/admin/menu` so the week can be published without opening the spreadsheet.
+
+### Why
+The per-dish form asks for eleven decisions. Most students will not stop for that, so the feedback that arrives skews toward people with a complaint. One tap per meal is cheap enough that ordinary days get recorded too. Showing the menu also gives students a reason to open the page before they have an opinion.
+
+### Details
+- **Two new tabs:** `menu` (Date, Breakfast, Lunch, Dinner) and `meal_ratings` (Timestamp, Date, Meal, Rating, Suggestion). Both store Date as plain text.
+- **Two editors, neither authoritative:** mess staff can type into the `menu` tab, or use `/admin/menu`. Both call `save_menu_for_date()`, which upserts by date — hence Date must stay in column A.
+- **Skips are counted but excluded from the score.** A meal's score is `good` as a share of those who actually ate; a student who never turned up is reporting attendance, not food quality. A meal everyone skipped scores 0 rather than dividing by zero.
+- **Three taps per IP per day**, matching three meals, against one per day for the per-dish form. A student who ate breakfast and dinner has two separate things to say.
+- **Kept separate from the other two layers.** Quick reactions never reach the per-dish dashboard or the committee dashboard, and never enter a 1-5 average. `/` is untouched, so printed QR codes still land on the per-dish form.
+- **Unpublished days say "Menu not published yet"** rather than rendering an empty card, which would read as "the mess is closed".
+
+### Bugs fixed, both found only by the browser suite
+The Python journey suites POST fields directly and so could not see either:
+- **A hidden `<input name="rating">` alongside submit buttons of the same name.** A browser sends both, the empty hidden one first, so `request.form.get("rating")` read empty and *every* tap was rejected as no choice. The feature would have shipped completely non-functional.
+- **Disabling the submit button inside its own `submit` handler.** Each button is the form's submitter carrying `name="rating"`; disabling it there drops its name/value from the payload. Fixed by deferring the disable to a later tick and guarding repeat submits with a flag.
+
+### Tests
+`test/test_e2e_home.py` — 51 steps across 7 journeys. `tests/home_tests.robot` — 20 browser tests (TC180–TC199). Smoke extended to 34 checks across 18 features. Full sweep: 125 browser tests, 0 failed; 5 credential-free Python suites, all passing.
+
+### How to revert
+Delete `templates/home.html`, `templates/admin_menu.html`, `static/home.js`, `test/test_e2e_home.py`, `tests/home_tests.robot`. Remove the "STUDENT HOME" route block from `app.py` and the "Daily menu and quick meal ratings" block from `sheets.py`. Revert the appended block in `static/style.css` and the menu seeding in `test/fake_server.py`.
+
+---
+
 ## [2026-09-04 16:00] — Food Committee Test Suites (E2E + Robot UI)
 
 **Files changed:** `test/fake_sheets.py` (new), `test/fake_server.py` (new), `test/test_e2e_committee.py` (new), `test/test_committee.py`, `tests/committee_api_tests.robot` (new), `tests/committee_form_tests.robot` (new), `tests/committee_admin_tests.robot` (new), `tests/committee_dashboard_tests.robot` (new), `tests/resources/committee_keywords.resource`, `tests/resources/common.resource`, `tests/run_tests.sh`, `sheets.py`, `.github/workflows/messmate_tests.yml`, `TESTING.md`

@@ -1,0 +1,126 @@
+<!--
+  MessMate Student Home (home.html)
+  ----------------------------------
+  Today's menu, with one tap per meal: good, bad, or skip.
+
+  Deliberately the lowest-effort feedback surface in the app. The per-dish form
+  at / asks for eleven decisions; this asks for one. Students who want to say
+  more are pointed there from each card.
+
+  Test Automation Attributes:
+    - data-meal="<Breakfast|Lunch|Dinner>" on each meal card
+    - data-rating="<good|bad|skip>" on each reaction button
+    - id="menu-<meal>" on each item list
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MessMate — Today's Menu 🍽️</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="home-header">
+        <h1>MessMate</h1>
+        <p>Today's Menu 🍽️</p>
+        <p class="home-date">{{ today_date }}</p>
+    </header>
+
+    <main>
+        {% if rated and rated not in ('invalid', 'failed') %}
+        <div class="alert success" id="rated-banner">
+            Thanks — your {{ rated }} rating was recorded. 🙌
+        </div>
+        {% elif rated == 'failed' %}
+        <div class="alert error error-banner">
+            Couldn't save that just now. Please try again.
+        </div>
+        {% elif rated == 'invalid' %}
+        <div class="alert error error-banner">
+            Please pick good, bad or skip.
+        </div>
+        {% endif %}
+
+        {% for meal in meals %}
+        <section class="card meal-card" data-meal="{{ meal }}">
+            <div class="meal-head">
+                <div>
+                    <h2 class="meal-title">
+                        {% if meal == 'Breakfast' %}🌅{% elif meal == 'Lunch' %}🍛{% else %}🌙{% endif %}
+                        {{ meal }}
+                    </h2>
+                    <p class="meal-time">{{ timings[meal] }}</p>
+                </div>
+                {% set tally = tallies[meal] %}
+                {% if tally.total > 0 %}
+                <div class="meal-tally" title="{{ tally.good }} good, {{ tally.bad }} bad, {{ tally.skip }} skipped">
+                    <span class="tally-score
+                        {%- if tally.score >= 70 %} tally-good
+                        {%- elif tally.score >= 40 %} tally-mixed
+                        {%- else %} tally-poor{% endif %}">{{ tally.score }}%</span>
+                    <span class="tally-count">{{ tally.total }} rated</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <ul class="menu-items" id="menu-{{ meal|lower }}">
+                {% if menu[meal] %}
+                    {% for item in menu[meal] %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                {% else %}
+                    <li class="menu-empty">Menu not published yet</li>
+                {% endif %}
+            </ul>
+
+            <form method="POST" action="{{ url_for('home_rate') }}" class="rate-form">
+                <input type="hidden" name="meal" value="{{ meal }}">
+                <!--
+                  No hidden "rating" field here on purpose. Each button below
+                  is a submit carrying name="rating", and a browser sends every
+                  field of that name — so an empty hidden one would be sent
+                  first and win request.form.get("rating"), making every tap
+                  read as no choice at all.
+                -->
+
+                <div class="rate-row">
+                    <button type="submit" name="rating" value="good"
+                            class="rate-btn rate-good" data-rating="good">
+                        👍<span>Good</span>
+                    </button>
+                    <button type="submit" name="rating" value="bad"
+                            class="rate-btn rate-bad" data-rating="bad">
+                        👎<span>Bad</span>
+                    </button>
+                    <button type="submit" name="rating" value="skip"
+                            class="rate-btn rate-skip" data-rating="skip">
+                        ⏭️<span>Skipped</span>
+                    </button>
+                </div>
+
+                <details class="suggestion-details">
+                    <summary>Add a suggestion <span class="subtext">(optional)</span></summary>
+                    <input type="text" name="suggestion" maxlength="200"
+                           class="suggestion-input"
+                           placeholder="What would you like to see instead?">
+                </details>
+            </form>
+        </section>
+        {% endfor %}
+
+        <section class="card detail-cta">
+            <h2>Want to say more?</h2>
+            <p class="subtext-line">
+                Rate each dish individually — rice, chapati, poriyal and the rest.
+                Still completely anonymous.
+            </p>
+            <a href="{{ url_for('index') }}" class="submit-btn detail-link">
+                Rate dish by dish →
+            </a>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='home.js') }}"></script>
+</body>
+</html>

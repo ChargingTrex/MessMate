@@ -22,7 +22,7 @@ Seeded fixture:
     robot-test-newbie@sai.edu         robot-test-newbie      (must change password)
     robot-test-retired@sai.edu        robot-test-retired     (deactivated)
     robot-test-rated@sai.edu          robot-test-rated       (already rated today)
-    plus six days of review history for the trend chart
+    plus six days of review history for the trend chart, and today's menu
 """
 
 import os
@@ -78,6 +78,13 @@ def seed():
         score = 3 + (offset % 3)
         BOOK.seed_review("robot-test-member@sai.edu", "Robot Test Member",
                          date, [score] * 5, f"Historic review from day -{offset}")
+
+    # Today's menu, so the home page has something to show. Comma-separated
+    # exactly as mess staff would type it into the sheet or the editor.
+    BOOK.seed_menu(today,
+                   breakfast="Idli, Sambar, Coconut Chutney",
+                   lunch="Rice, Sambar, Poriyal, Curd, Papad",
+                   dinner="Chapati, Paneer Gravy, Salad")
 
     # Student-side data so the student dashboard has something to render.
     # The per-item scores matter: with all ten blank, dashboard.js takes its

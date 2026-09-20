@@ -120,10 +120,13 @@ class FakeBook:
             sheets.COMMITTEE_REVIEWS_TAB: FakeWorksheet(sheets.REVIEW_HEADERS),
             "responses": FakeWorksheet(STUDENT_HEADERS),
             "daily_summary": FakeWorksheet(SUMMARY_HEADERS),
+            sheets.MENU_TAB: FakeWorksheet(sheets.MENU_HEADERS),
+            sheets.MEAL_RATINGS_TAB: FakeWorksheet(sheets.MEAL_RATING_HEADERS),
         }
         # "ok" | "unavailable" (get_sheet returns None) | "raise" (simulated outage)
         self.mode = "ok"
         sheets.invalidate_roster_cache()
+        sheets.invalidate_menu_cache()
 
     def get_sheet(self, tab_name):
         if self.mode == "raise":
@@ -180,6 +183,22 @@ class FakeBook:
             raise ValueError(f"items must have 10 values, got {len(scores)}")
         row = [f"{date} 12:30:00", overall] + scores + [review, suggestion]
         self.responses().rows.append(row)
+
+
+    def menu(self):
+        return self.tabs[sheets.MENU_TAB]
+
+    def meal_ratings(self):
+        return self.tabs[sheets.MEAL_RATINGS_TAB]
+
+    def seed_menu(self, date, breakfast="", lunch="", dinner=""):
+        """Publishes one day's menu. Items are comma-separated, as staff type them."""
+        self.menu().rows.append([date, breakfast, lunch, dinner])
+        sheets.invalidate_menu_cache()
+
+    def seed_meal_rating(self, date, meal, rating, suggestion=""):
+        self.meal_ratings().rows.append(
+            [f"{date} 13:00:00", date, meal, rating, suggestion])
 
 
 def install():

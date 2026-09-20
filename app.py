@@ -17,6 +17,7 @@ Routes:
 # CRITICAL: ALL imports at the TOP of the file — never inside route functions
 import os
 import html
+import re
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from flask_limiter import Limiter
@@ -829,6 +830,118 @@ def committee_dashboard():
             reviews=[], today_date=datetime.now().strftime("%A, %d %B %Y"),
             is_admin=auth.is_admin_session(),
         )
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# STUDENT HOME — today's menu and a one-tap reaction per meal
+# ══════════════════════════════════════════════════════════════════════════════
+# Three layers of feedback now exist, deliberately kept apart:
+#
+#   /home      one tap per meal — good / bad / skip, plus a suggestion.
+#              The thing a student will actually stop to do.
+#   /          the per-dish 1-5 form, for students with more to say.
+#   /committee the five-dimension review, attributed, committee only.
+#
+# They are never mixed into one average: a tally of taps and a mean of 1-5
+# scores are different measurements of different populations.
+
+
+@app.route("/home", methods=["GET"])
+def home():
+    """Today's menu with a quick reaction per meal."""
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    try:
+        menu = sheets.get_menu_for_date(today)
+        tallies = sheets.summarise_meal_ratings(today)
+    except Exception as e:
+        # Same posture as the dashboards: a Sheets problem must not take the
+        # student-facing page down with it
+        print(f"Error loading home page: {e}")
+        menu = {meal: [] for meal in sheets.MEALS}
+        tallies = {meal: {"good": 0, "bad": 0, "skip": 0, "total": 0, "score": 0}
+                   for meal in sheets.MEALS}
+
+    return render_template(
+        "home.html",
+        meals=sheets.MEALS,
+        menu=menu,
+        timings=sheets.MEAL_TIMINGS,
+        tallies=tallies,
+        today_date=datetime.now().strftime("%A, %d %B %Y"),
+        rated=request.args.get("rated", ""),
+    )
+
+
+@app.route("/home/rate", methods=["POST"])
+@limiter.limit("3 per day")  # one per meal per IP per day
+def home_rate():
+    """
+    Records one quick reaction. Anonymous — nothing identifying is stored.
+
+    Limited to three a day per IP, matching the three meals. The per-dish form
+    allows one a day; this allows one per meal, because a student who eats
+    breakfast and dinner has two separate things to say.
+    """
+    meal = str(request.form.get("meal", "")).strip().title()
+    rating = str(request.form.get("rating", "")).strip().lower()
+    suggestion = request.form.get("suggestion", "")[:200]
+
+    if meal not in sheets.MEALS or rating not in sheets.RATINGS:
+        return redirect(url_for("home", rated="invalid"))
+
+    try:
+        if sheets.append_meal_rating(meal, rating, suggestion):
+            return redirect(url_for("home", rated=meal.lower()))
+        return redirect(url_for("home", rated="failed"))
+    except Exception as e:
+        print(f"Error recording meal rating: {e}")
+        return redirect(url_for("home", rated="failed"))
+
+
+# ── Admin: menu editor ────────────────────────────────────────────────────────
+
+@app.route("/admin/menu", methods=["GET"])
+@auth.admin_required
+def admin_menu():
+    """
+    Week-at-a-glance menu editor.
+
+    The menu tab can also be edited directly in the spreadsheet — this page is
+    for whoever does not want to open it. Both routes write the same rows.
+    """
+    return render_template("admin_menu.html", week=sheets.get_menu_week(),
+                           meals=sheets.MEALS)
+
+
+@app.route("/admin/menu/save", methods=["POST"])
+@auth.admin_required
+@csrf.protect
+def admin_menu_save():
+    """Upserts one day's menu from the editor."""
+    date_str = str(request.form.get("date", "")).strip()
+
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_str):
+        return render_template("admin_menu.html", week=sheets.get_menu_week(),
+                               meals=sheets.MEALS,
+                               error="That date is not valid."), 400
+
+    ok = sheets.save_menu_for_date(
+        date_str,
+        request.form.get("Breakfast", "").strip(),
+        request.form.get("Lunch", "").strip(),
+        request.form.get("Dinner", "").strip(),
+    )
+
+    if not ok:
+        return render_template("admin_menu.html", week=sheets.get_menu_week(),
+                               meals=sheets.MEALS,
+                               error="Could not save the menu."), 500
+
+    return render_template("admin_menu.html", week=sheets.get_menu_week(),
+                           meals=sheets.MEALS,
+                           success=f"Menu saved for {date_str}.")
 
 
 @app.route("/health", methods=["GET"])
