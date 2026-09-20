@@ -48,17 +48,6 @@ jobs:
           python test/test_committee.py
           python test/test_e2e_committee.py
 
-      - name: Run Robot Framework tests (student suites, live sheet)
-        env:
-          DASHBOARD_TOKEN: ${{ secrets.DASHBOARD_TOKEN }}
-        run: |
-          robot --include smoke \
-                --include api \
-                --outputdir tests/results/student \
-                tests/form_tests.robot \
-                tests/dashboard_tests.robot \
-                tests/api_tests.robot
-
       - name: Start committee UI test server (in-memory backend)
         run: |
           python test/fake_server.py 5001 &
@@ -79,9 +68,20 @@ jobs:
                 tests/committee_admin_tests.robot \
                 tests/committee_dashboard_tests.robot
 
+      - name: Run Robot Framework tests (student suites, live sheet)
+        env:
+          DASHBOARD_TOKEN: ${{ secrets.DASHBOARD_TOKEN }}
+        run: |
+          robot --include smoke \
+                --include api \
+                --outputdir tests/results/student \
+                tests/form_tests.robot \
+                tests/dashboard_tests.robot \
+                tests/api_tests.robot
+
       - name: Upload test report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: robot-results
           path: tests/results/
