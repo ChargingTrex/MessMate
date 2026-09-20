@@ -79,11 +79,15 @@ def seed():
         BOOK.seed_review("robot-test-member@sai.edu", "Robot Test Member",
                          date, [score] * 5, f"Historic review from day -{offset}")
 
-    # Student-side data so the student dashboard has something to render
+    # Student-side data so the student dashboard has something to render.
+    # The per-item scores matter: with all ten blank, dashboard.js takes its
+    # empty-state path and replaces the #itemChart canvas with a message, so
+    # the dashboard renders without an element it normally has.
+    student_items = [4, 3, 5, 4, 4, 3, 5, 4, 3, 4]
     for offset in range(0, 3):
         date = (datetime.now() - timedelta(days=offset)).strftime("%Y-%m-%d")
         BOOK.seed_student_response(date, 4, "Student review",
-                                   "Student suggestion")
+                                   "Student suggestion", items=student_items)
 
 
 def reset_endpoint():

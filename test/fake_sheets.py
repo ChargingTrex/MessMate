@@ -130,8 +130,25 @@ class FakeBook:
         self.reviews().rows.append(
             [f"{date} 13:00:00", date, email.lower(), name] + list(scores) + [review])
 
-    def seed_student_response(self, date, overall, review="", suggestion=""):
-        row = [f"{date} 12:30:00", overall] + [""] * 10 + [review, suggestion]
+    def seed_student_response(self, date, overall, review="", suggestion="",
+                              items=None):
+        """
+        Seeds one student response.
+
+        `items` is the ten per-item scores in column order (Rice_Curry,
+        Rice_Rasam, Chapati, Chapati_Gravy, Poriyal, Sweet, Salad, Curd,
+        Papad, Pickle); blanks are allowed and mean "not rated".
+
+        Defaulting these to blank makes the student dashboard take its
+        empty-state path, where dashboard.js REPLACES the #itemChart canvas
+        with a message — so a fixture with no item scores removes an element
+        the dashboard normally has. Pass real scores unless the empty state is
+        what you are testing.
+        """
+        scores = list(items) if items else [""] * 10
+        if len(scores) != 10:
+            raise ValueError(f"items must have 10 values, got {len(scores)}")
+        row = [f"{date} 12:30:00", overall] + scores + [review, suggestion]
         self.responses().rows.append(row)
 
 
