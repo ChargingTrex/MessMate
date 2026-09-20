@@ -28,19 +28,6 @@ jobs:
           pip install webdriver-manager
           python -c "from webdriver_manager.chrome import ChromeDriverManager; ChromeDriverManager().install()"
 
-      - name: Start MessMate app
-        env:
-          FLASK_SECRET_KEY: ${{ secrets.FLASK_SECRET_KEY }}
-          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
-          DASHBOARD_TOKEN: ${{ secrets.DASHBOARD_TOKEN }}
-          ADMIN_PASSWORD_HASH: ${{ secrets.ADMIN_PASSWORD_HASH }}
-          TEST_COMMITTEE_EMAIL: ${{ secrets.TEST_COMMITTEE_EMAIL }}
-          TEST_COMMITTEE_PASSWORD: ${{ secrets.TEST_COMMITTEE_PASSWORD }}
-        run: |
-          python app.py &
-          sleep 3
-
       - name: Run committee checks (no credentials needed)
         env:
           FLASK_SECRET_KEY: ci-test-secret-key
@@ -67,6 +54,35 @@ jobs:
                 tests/committee_form_tests.robot \
                 tests/committee_admin_tests.robot \
                 tests/committee_dashboard_tests.robot
+
+      - name: Start MessMate app (needs live Google Sheets secrets)
+        env:
+          FLASK_SECRET_KEY: ${{ secrets.FLASK_SECRET_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          DASHBOARD_TOKEN: ${{ secrets.DASHBOARD_TOKEN }}
+        run: |
+          # app.py raises at import when FLASK_SECRET_KEY is missing. Backgrounding
+          # it hides that: the step exits 0 and the student suites below then fail
+          # with 22 connection-refused errors that name no cause. Check up front so
+          # the log says what is actually wrong.
+          if [ -z "$FLASK_SECRET_KEY" ]; then
+            echo "::error::FLASK_SECRET_KEY repository secret is not set, so app.py cannot boot."
+            echo "The student suites need a live spreadsheet: set FLASK_SECRET_KEY, SPREADSHEET_ID,"
+            echo "GOOGLE_CREDENTIALS_JSON and DASHBOARD_TOKEN under Settings > Secrets and variables > Actions."
+            echo "The committee suites above need none of these and have already run."
+            exit 1
+          fi
+
+          python app.py &
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:5000/health >/dev/null && break
+            sleep 1
+          done
+          if ! curl -sf http://127.0.0.1:5000/health >/dev/null; then
+            echo "::error::app.py never became healthy on port 5000 — see the traceback above."
+            exit 1
+          fi
 
       - name: Run Robot Framework tests (student suites, live sheet)
         env:
