@@ -1,0 +1,57 @@
+<!--
+  Food Committee Login (committee_login.html)
+  -------------------------------------------
+  Member sign-in. Note the anonymity notice: unlike the student form, the
+  committee's reviews are attributed, and members should know that up front.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MessMate — Food Committee Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>MessMate</h1>
+        <p>Food Committee 🍽️</p>
+    </header>
+
+    <main>
+        {% if error %}
+        <div class="alert error error-banner">{{ error }}</div>
+        {% endif %}
+
+        <section class="card">
+            <h2>Committee sign in</h2>
+            <p class="subtext-line">
+                For members of the SaiU Food Committee. Students can rate today's
+                lunch anonymously on the <a href="/">main form</a>.
+            </p>
+
+            <form method="POST" action="{{ url_for('committee_login') }}" id="loginForm">
+                {{ csrf_field() }}
+
+                <label class="item-label" for="email">Email</label>
+                <input class="suggestion-input" type="email" id="email" name="email"
+                       autocomplete="username" required autofocus>
+
+                <label class="item-label" style="margin-top:16px;" for="password">Password</label>
+                <input class="suggestion-input" type="password" id="password" name="password"
+                       autocomplete="current-password" required>
+
+                <div class="submit-container" style="margin-top:24px; padding:0;">
+                    <button type="submit" id="login-btn" class="submit-btn">Sign in</button>
+                </div>
+            </form>
+
+            <p class="notice-box">
+                🔍 Committee reviews are <strong>not anonymous</strong>. Your name is
+                recorded with each review so the administration can follow up on
+                what you report. Student feedback stays fully anonymous.
+            </p>
+        </section>
+    </main>
+</body>
+</html>

@@ -20,9 +20,10 @@ Functions:
 
 import os
 import json
+import time
 import gspread
 from google.oauth2.service_account import Credentials
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 SCOPES = [
@@ -300,3 +301,508 @@ def get_all_suggestions():
     except Exception as e:
         print(f"Error reading suggestions: {e}")
         return []
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Food Committee — roster and review storage
+# ══════════════════════════════════════════════════════════════════════════════
+# These functions back the Food Committee module. They follow the same
+# conventions as the student-feedback functions above: never raise into a
+# route, log to stdout, and return []/False/None on failure.
+#
+# The get_sheet() call sits INSIDE each try block deliberately. get_sheet()
+# swallows its own errors today, so this looks redundant — but if it ever
+# raises, an exception escaping from here reaches a route that has no handler
+# for it, and a member sees a 500 on the login page instead of a normal
+# failure. Keeping it inside makes the "never raises" contract true rather
+# than incidentally true.
+#
+# CRITICAL: 'Email' must stay in column A of committee_members — the row-lookup
+# used by update_committee_member() reads col_values(1), the same pattern
+# update_daily_summary_for_today() uses for dates.
+
+COMMITTEE_MEMBERS_TAB = "committee_members"
+COMMITTEE_REVIEWS_TAB = "committee_reviews"
+
+# Row 1 of each tab must match these exactly — get_all_records() maps them to
+# dict keys, so a rename here silently breaks every lookup downstream.
+MEMBER_HEADERS = [
+    "Email", "Name", "Password_Hash", "Active",
+    "Must_Change_Password", "Term_Start", "Term_End", "Created_At"
+]
+
+REVIEW_HEADERS = [
+    "Timestamp", "Date", "Member_Email", "Member_Name",
+    "Taste", "Quality", "Variety", "Hygiene", "Menu", "Review"
+]
+
+# The five dimensions the committee rates. Order matters — it drives the
+# column order on write and the display order on the dashboard.
+DIMENSIONS = ["Taste", "Quality", "Variety", "Hygiene", "Menu"]
+
+# ── Roster cache ──────────────────────────────────────────────────────────────
+# A roster read costs 0.5-2s and counts against Google's 100-reads/100s quota,
+# so it is cached. Writes invalidate it immediately, which is what makes a
+# newly added member able to log in at once rather than up to a minute later.
+#
+# Each gunicorn worker holds its own cache. A member added in worker A is
+# invisible to worker B until the TTL lapses — self-healing, and the admin who
+# did the adding always sees their own change because that worker was
+# invalidated by the write.
+ROSTER_TTL_SECONDS = 60
+_roster_cache = None  # tuple: (fetched_at_monotonic, [records]) or None
+
+
+def invalidate_roster_cache():
+    """Drops the cached roster so the next read hits Sheets. Call after every write."""
+    global _roster_cache
+    _roster_cache = None
+
+
+def get_committee_roster(force_refresh=False):
+    """
+    Returns all committee_members rows as dicts, cached for ROSTER_TTL_SECONDS.
+    Returns [] on error (never raises).
+    """
+    global _roster_cache
+
+    if not force_refresh and _roster_cache is not None:
+        fetched_at, records = _roster_cache
+        if (time.monotonic() - fetched_at) < ROSTER_TTL_SECONDS:
+            return records
+
+    try:
+        worksheet = get_sheet(COMMITTEE_MEMBERS_TAB)
+        if not worksheet:
+            return []
+        records = worksheet.get_all_records()
+        _roster_cache = (time.monotonic(), records)
+        return records
+    except Exception as e:
+        print(f"Error reading committee roster: {e}")
+        return []
+
+
+def _is_true(val):
+    """
+    Sheets returns booleans inconsistently — TRUE, 'TRUE', 'true', True, 1.
+    Treats all of those as True and everything else (including '') as False.
+    """
+    return str(val).strip().upper() in ("TRUE", "1", "YES")
+
+
+def get_committee_member(email):
+    """
+    Case-insensitive roster lookup. Returns the member dict or None.
+    The returned dict carries the sheet's raw values plus normalised
+    'is_active' / 'must_change_password' booleans.
+    """
+    if not email:
+        return None
+
+    target = str(email).strip().lower()
+    for record in get_committee_roster():
+        if str(record.get("Email", "")).strip().lower() == target:
+            member = dict(record)
+            member["is_active"] = _is_true(record.get("Active"))
+            member["must_change_password"] = _is_true(record.get("Must_Change_Password"))
+            return member
+    return None
+
+
+def _member_row(email, name, password_hash, today):
+    """Builds one committee_members row in MEMBER_HEADERS order."""
+    return [
+        str(email).strip().lower(),
+        name,
+        password_hash,
+        "TRUE",   # Active
+        "TRUE",   # Must_Change_Password — the generated password is single-use
+        today,    # Term_Start
+        "",       # Term_End
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ]
+
+
+def add_committee_member(email, name, password_hash):
+    """
+    Appends one member. Returns True on success, False on failure.
+    Caller is responsible for duplicate checking (see auth.normalize_email).
+    """
+    try:
+        worksheet = get_sheet(COMMITTEE_MEMBERS_TAB)
+        if not worksheet:
+            return False
+        today = datetime.now().strftime("%Y-%m-%d")
+        worksheet.append_row(_member_row(email, name, password_hash, today),
+                             value_input_option="RAW")
+        invalidate_roster_cache()
+        return True
+    except Exception as e:
+        print(f"Error adding committee member: {e}")
+        return False
+
+
+def add_committee_members_bulk(members):
+    """
+    Appends many members in a SINGLE API call.
+
+    Args:
+        members: list of (email, name, password_hash) tuples.
+
+    Returns True on success, False on failure.
+    """
+    if not members:
+        return True
+
+    try:
+        worksheet = get_sheet(COMMITTEE_MEMBERS_TAB)
+        if not worksheet:
+            return False
+        today = datetime.now().strftime("%Y-%m-%d")
+        rows = [_member_row(e, n, h, today) for e, n, h in members]
+        # One append_rows beats N append_row calls against the quota
+        worksheet.append_rows(rows, value_input_option="RAW")
+        invalidate_roster_cache()
+        return True
+    except Exception as e:
+        print(f"Error bulk-adding committee members: {e}")
+        return False
+
+
+def update_committee_member(email, **fields):
+    """
+    Updates named columns of one member row, found by email in column A.
+
+    Accepts any MEMBER_HEADERS name as a keyword, e.g.
+        update_committee_member(e, Active="FALSE", Term_End="2026-09-04")
+
+    Returns True on success, False if the member or sheet is missing.
+    """
+    try:
+        worksheet = get_sheet(COMMITTEE_MEMBERS_TAB)
+        if not worksheet:
+            return False
+        target = str(email).strip().lower()
+        # Column A holds emails; row 1 is the header
+        emails = [str(v).strip().lower() for v in worksheet.col_values(1)]
+        if target not in emails:
+            print(f"Cannot update unknown committee member: {email}")
+            return False
+
+        row_index = emails.index(target) + 1  # gspread is 1-indexed
+
+        for key, value in fields.items():
+            if key not in MEMBER_HEADERS:
+                print(f"Ignoring unknown member field: {key}")
+                continue
+            col_index = MEMBER_HEADERS.index(key) + 1
+            worksheet.update_cell(row_index, col_index, value)
+
+        invalidate_roster_cache()
+        return True
+    except Exception as e:
+        print(f"Error updating committee member: {e}")
+        return False
+
+
+def append_committee_review(data_dict):
+    """
+    Appends one committee review row in REVIEW_HEADERS order.
+
+    CRITICAL: Review is stored RAW, not html.escape()d. It is rendered through
+    Jinja2 on the dashboard, which auto-escapes — escaping here too would show
+    literal "&amp;" to admins. This mirrors how Suggestion is handled in
+    append_response().
+
+    Returns True on success, False on failure.
+    """
+    try:
+        worksheet = get_sheet(COMMITTEE_REVIEWS_TAB)
+        if not worksheet:
+            return False
+        now = datetime.now()
+        row_data = [
+            now.strftime("%Y-%m-%d %H:%M:%S"),   # Timestamp
+            now.strftime("%Y-%m-%d"),            # Date — plain text, never parsed
+            str(data_dict.get("Member_Email", "")).strip().lower(),
+            data_dict.get("Member_Name", ""),
+            data_dict.get("Taste", ""),
+            data_dict.get("Quality", ""),
+            data_dict.get("Variety", ""),
+            data_dict.get("Hygiene", ""),
+            data_dict.get("Menu", ""),
+            data_dict.get("Review", "")
+        ]
+        worksheet.append_row(row_data, value_input_option="RAW")
+        return True
+    except Exception as e:
+        print(f"Error appending committee review: {e}")
+        return False
+
+
+def get_committee_reviews(days=None):
+    """
+    Reads committee_reviews, optionally limited to the last `days` days.
+
+    Filtering uses the plain-text Date column rather than parsing Timestamp —
+    Google Sheets reformats date-looking cells, which is why
+    get_today_responses() needs a six-format fallback parser. Storing Date as
+    text sidesteps that entirely.
+
+    Returns a list of record dicts, oldest first. [] on error.
+    """
+    try:
+        worksheet = get_sheet(COMMITTEE_REVIEWS_TAB)
+        if not worksheet:
+            return []
+        records = worksheet.get_all_records()
+
+        if days is None:
+            return records
+
+        cutoff = (datetime.now() - timedelta(days=days - 1)).strftime("%Y-%m-%d")
+        # Dates are ISO-formatted, so string comparison is chronological
+        return [r for r in records
+                if str(r.get("Date", "")).strip() >= cutoff]
+    except Exception as e:
+        print(f"Error reading committee reviews: {e}")
+        return []
+
+
+def has_submitted_today(email, date_str=None):
+    """
+    True if this member already has a review row for the given date
+    (defaults to today). Used to enforce one review per member per day.
+
+    Fails OPEN: if the sheet is unreachable this returns False, so an outage
+    lets a member through rather than locking the committee out entirely.
+    """
+    if not email:
+        return False
+
+    target_date = date_str or datetime.now().strftime("%Y-%m-%d")
+    target_email = str(email).strip().lower()
+
+    for record in get_committee_reviews():
+        if (str(record.get("Date", "")).strip() == target_date and
+                str(record.get("Member_Email", "")).strip().lower() == target_email):
+            return True
+    return False
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Daily menu and quick meal ratings
+# ══════════════════════════════════════════════════════════════════════════════
+# Backs the student home page: today's breakfast/lunch/dinner, and a one-tap
+# good / bad / skip reaction per meal.
+#
+# This is deliberately NOT the same data as the student per-dish form or the
+# committee's five-dimension review. It answers a cruder question — "was that
+# meal alright, and did you even turn up" — which is the question most students
+# will actually stop to answer.
+#
+# Same conventions as above: never raise into a route, log to stdout, return
+# []/False/None on failure. Date is plain text so Sheets cannot reformat it
+# out from under the lookup.
+
+MENU_TAB = "menu"
+MEAL_RATINGS_TAB = "meal_ratings"
+
+MENU_HEADERS = ["Date", "Breakfast", "Lunch", "Dinner"]
+MEAL_RATING_HEADERS = ["Timestamp", "Date", "Meal", "Rating", "Suggestion"]
+
+MEALS = ["Breakfast", "Lunch", "Dinner"]
+
+# Display-only serving windows. Shown on the home page so students know whether
+# they are early or late; nothing in the app enforces them.
+MEAL_TIMINGS = {
+    "Breakfast": "7:30 – 9:30 am",
+    "Lunch": "12:00 – 2:30 pm",
+    "Dinner": "7:30 – 9:30 pm",
+}
+
+RATINGS = ["good", "bad", "skip"]
+
+# Menu reads happen on every home-page load, so they are cached like the roster.
+# A shorter TTL than the roster: a menu correction should appear quickly.
+MENU_TTL_SECONDS = 30
+_menu_cache = None  # (fetched_at_monotonic, [records]) or None
+
+
+def invalidate_menu_cache():
+    """Drops the cached menu. Called after every menu write."""
+    global _menu_cache
+    _menu_cache = None
+
+
+def get_menu_records(force_refresh=False):
+    """All rows of the menu tab as dicts, cached. [] on error."""
+    global _menu_cache
+
+    if not force_refresh and _menu_cache is not None:
+        fetched_at, records = _menu_cache
+        if (time.monotonic() - fetched_at) < MENU_TTL_SECONDS:
+            return records
+
+    try:
+        worksheet = get_sheet(MENU_TAB)
+        if not worksheet:
+            return []
+        records = worksheet.get_all_records()
+        _menu_cache = (time.monotonic(), records)
+        return records
+    except Exception as e:
+        print(f"Error reading menu: {e}")
+        return []
+
+
+def _split_items(raw):
+    """
+    'Idli, Sambar, Coconut Chutney' -> ['Idli', 'Sambar', 'Coconut Chutney'].
+    Accepts commas or newlines so staff can type it either way.
+    """
+    text = str(raw or "").replace("\n", ",")
+    return [part.strip() for part in text.split(",") if part.strip()]
+
+
+def get_menu_for_date(date_str=None):
+    """
+    Returns {"Breakfast": [...], "Lunch": [...], "Dinner": [...]} for one date.
+    Meals with nothing published come back as empty lists, which the home page
+    renders as "not published yet" rather than pretending the mess is closed.
+    """
+    target = date_str or datetime.now().strftime("%Y-%m-%d")
+
+    for record in get_menu_records():
+        if str(record.get("Date", "")).strip() == target:
+            return {meal: _split_items(record.get(meal, "")) for meal in MEALS}
+
+    return {meal: [] for meal in MEALS}
+
+
+def get_menu_week(start_date=None, days=7):
+    """
+    Menu rows for `days` days from start_date, for the admin editor.
+    Always returns one entry per day, with blanks for days not yet published.
+    """
+    start = (datetime.strptime(start_date, "%Y-%m-%d") if start_date
+             else datetime.now())
+    published = {str(r.get("Date", "")).strip(): r for r in get_menu_records()}
+
+    week = []
+    for offset in range(days):
+        day = start + timedelta(days=offset)
+        date_str = day.strftime("%Y-%m-%d")
+        row = published.get(date_str, {})
+        week.append({
+            "date": date_str,
+            "label": day.strftime("%a %d %b"),
+            "is_today": date_str == datetime.now().strftime("%Y-%m-%d"),
+            "Breakfast": str(row.get("Breakfast", "")),
+            "Lunch": str(row.get("Lunch", "")),
+            "Dinner": str(row.get("Dinner", "")),
+        })
+    return week
+
+
+def save_menu_for_date(date_str, breakfast, lunch, dinner):
+    """
+    Upserts one day's menu: updates the row if that date exists, appends if not.
+    Mirrors update_daily_summary_for_today()'s row-lookup pattern, which is why
+    Date must stay in column A.
+
+    Returns True on success, False on failure.
+    """
+    try:
+        worksheet = get_sheet(MENU_TAB)
+        if not worksheet:
+            return False
+
+        row_data = [date_str, breakfast, lunch, dinner]
+        dates = [str(v).strip() for v in worksheet.col_values(1)]
+
+        if date_str in dates:
+            row_index = dates.index(date_str) + 1   # gspread is 1-indexed
+            worksheet.update(f"A{row_index}:D{row_index}", [row_data])
+        else:
+            worksheet.append_row(row_data, value_input_option="RAW")
+
+        invalidate_menu_cache()
+        return True
+    except Exception as e:
+        print(f"Error saving menu for {date_str}: {e}")
+        return False
+
+
+def append_meal_rating(meal, rating, suggestion=""):
+    """
+    Stores one quick reaction. Anonymous: no identity, no IP, nothing that
+    could tie the row to a student — the same promise the per-dish form makes.
+
+    Suggestion is stored RAW; Jinja escapes it when the dashboard renders it.
+
+    Returns True on success, False on failure.
+    """
+    try:
+        worksheet = get_sheet(MEAL_RATINGS_TAB)
+        if not worksheet:
+            return False
+
+        now = datetime.now()
+        worksheet.append_row([
+            now.strftime("%Y-%m-%d %H:%M:%S"),
+            now.strftime("%Y-%m-%d"),
+            meal,
+            rating,
+            suggestion,
+        ], value_input_option="RAW")
+        return True
+    except Exception as e:
+        print(f"Error appending meal rating: {e}")
+        return False
+
+
+def get_meal_ratings(date_str=None):
+    """
+    Meal ratings, optionally for one date. [] on error.
+    """
+    try:
+        worksheet = get_sheet(MEAL_RATINGS_TAB)
+        if not worksheet:
+            return []
+        records = worksheet.get_all_records()
+        if date_str is None:
+            return records
+        return [r for r in records
+                if str(r.get("Date", "")).strip() == date_str]
+    except Exception as e:
+        print(f"Error reading meal ratings: {e}")
+        return []
+
+
+def summarise_meal_ratings(date_str=None):
+    """
+    Per-meal tallies for one day:
+        {"Lunch": {"good": 12, "bad": 3, "skip": 5, "total": 20, "score": 80}, ...}
+
+    `score` is good as a percentage of those who actually ate (good + bad).
+    Skips are counted but deliberately excluded from it — a student who never
+    turned up is telling you about attendance, not about the food.
+    """
+    target = date_str or datetime.now().strftime("%Y-%m-%d")
+    summary = {meal: {"good": 0, "bad": 0, "skip": 0, "total": 0, "score": 0}
+               for meal in MEALS}
+
+    for record in get_meal_ratings(target):
+        meal = str(record.get("Meal", "")).strip().title()
+        rating = str(record.get("Rating", "")).strip().lower()
+        if meal in summary and rating in RATINGS:
+            summary[meal][rating] += 1
+            summary[meal]["total"] += 1
+
+    for meal in MEALS:
+        ate = summary[meal]["good"] + summary[meal]["bad"]
+        summary[meal]["score"] = round(summary[meal]["good"] / ate * 100) if ate else 0
+
+    return summary

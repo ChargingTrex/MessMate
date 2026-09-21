@@ -14,6 +14,12 @@ ${BROWSER}            chrome
 ${HEADLESS}           ${TRUE}
 ${TIMEOUT}            10s
 
+# Optional overrides for running the suites locally against a browser that is
+# not the system Chrome — e.g. the Playwright chromium already on the machine.
+# Both default to empty, so CI behaviour is unchanged.
+${CHROME_BINARY}      %{CHROME_BINARY=}
+${CHROME_DRIVER}      %{CHROME_DRIVER=}
+
 *** Keywords ***
 Open MessMate Browser
     [Documentation]    Opens Chrome (headless by default) and navigates to the form.
@@ -22,9 +28,23 @@ Open MessMate Browser
     Call Method    ${options}    add_argument    --no-sandbox
     Call Method    ${options}    add_argument    --disable-dev-shm-usage
     Call Method    ${options}    add_argument    --disable-gpu
-    Open Browser    ${BASE_URL}    ${BROWSER}    options=${options}
+    Run Keyword If    '${CHROME_BINARY}' != ''
+    ...    Evaluate    setattr($options, 'binary_location', r'${CHROME_BINARY}')
+    Run Keyword If    '${CHROME_DRIVER}' != ''
+    ...    Open Browser With Explicit Driver    ${options}
+    ...    ELSE
+    ...    Open Browser    ${BASE_URL}    ${BROWSER}    options=${options}
     Set Selenium Timeout    ${TIMEOUT}
     Maximize Browser Window
+
+Open Browser With Explicit Driver
+    [Arguments]    ${options}
+    [Documentation]    Opens Chrome using a chromedriver at an explicit path,
+    ...    for machines where the one on PATH does not match the browser.
+    ${service}=    Evaluate
+    ...    sys.modules['selenium.webdriver.chrome.service'].Service(r'${CHROME_DRIVER}')
+    ...    sys, selenium.webdriver.chrome.service
+    Open Browser    ${BASE_URL}    ${BROWSER}    options=${options}    service=${service}
 
 Close MessMate Browser
     [Documentation]    Closes all open browser instances.

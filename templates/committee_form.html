@@ -1,0 +1,91 @@
+<!--
+  Food Committee Rating Form (committee_form.html)
+  -------------------------------------------------
+  Five required dimensions plus an optional written review.
+  Reuses the student form's emoji widget, driven by static/committee.js.
+
+  Test Automation Attributes:
+    - data-dimension="<name>" on each rating group
+    - id="submit-btn" on the submit button
+    - class="error-banner" on the error alert
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MessMate — Committee Review 🍽️</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>MessMate</h1>
+        <p>Food Committee Review 🍽️</p>
+    </header>
+
+    <main>
+        <div class="member-bar">
+            <span>Signed in as <strong>{{ member.Name }}</strong></span>
+            <form method="POST" action="{{ url_for('committee_logout') }}" style="display:inline;">
+                {{ csrf_field() }}
+                <button type="submit" class="link-btn">Sign out</button>
+            </form>
+        </div>
+
+        {% if error %}
+        <div class="alert error error-banner">{{ error }}</div>
+        {% endif %}
+
+        <form id="committeeForm" method="POST" action="{{ url_for('committee_submit') }}">
+            {{ csrf_field() }}
+
+            <section class="card">
+                <h2>Today's assessment</h2>
+                <p class="subtext-line">
+                    Rate all five areas, then add any detail that would help the
+                    kitchen act on it. One review per day.
+                </p>
+            </section>
+
+            {% set dimensions = [
+                ('taste',   '😋 Taste',   'Flavour and seasoning of what was served'),
+                ('quality', '✨ Quality', 'Freshness, temperature, and cooking'),
+                ('variety', '🍽️ Variety', 'Range and balance across the counters'),
+                ('hygiene', '🧼 Hygiene', 'Cleanliness of food, counters, and utensils'),
+                ('menu',    '📋 Menu',    'Did the meal match the published menu?')
+            ] %}
+
+            {% for key, label, hint in dimensions %}
+            <div class="card item-card">
+                <label class="item-label">{{ label }}</label>
+                <p class="sub-label">{{ hint }}</p>
+                <div class="emoji-group small-group" data-input="{{ key }}_val" data-dimension="{{ key }}">
+                    <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="1">😡</button>
+                    <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="2">😕</button>
+                    <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="3">😐</button>
+                    <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="4">🙂</button>
+                    <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="5">😄</button>
+                </div>
+                <input type="hidden" name="{{ key }}" id="{{ key }}_val">
+            </div>
+            {% endfor %}
+
+            <section class="card">
+                <h2>Written review <span class="subtext">(optional)</span></h2>
+                <textarea id="review" name="review" maxlength="500"
+                          placeholder="What worked, what didn't, and anything the kitchen should change."></textarea>
+                <p class="char-counter" id="char-counter">0 / 500</p>
+            </section>
+
+            <div class="submit-container">
+                <button type="submit" id="submit-btn" class="submit-btn" disabled>
+                    Submit review 🚀
+                </button>
+                <p class="char-counter" id="submit-hint">Rate all five areas to enable submit</p>
+            </div>
+        </form>
+    </main>
+
+    <script src="{{ url_for('static', filename='committee.js') }}"></script>
+</body>
+</html>

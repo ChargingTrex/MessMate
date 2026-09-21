@@ -42,6 +42,45 @@ The app will start at `http://localhost:5000`.
 
 > **Important:** The in-memory rate limiter resets when the app restarts. If submission tests fail with 429, restart the app.
 
+#### Running without Google credentials
+
+The Food Committee suites can run against an in-memory backend instead of a
+live spreadsheet — no credentials, no test data to clean up, and every run
+starts from an identical fixture:
+
+```bash
+python test/fake_server.py 5000
+```
+
+This is the real Flask app — same routes, templates, sessions, CSRF and
+aggregation — with only the Google Sheets layer replaced. It also exposes
+`POST /__test__/reset`, which the suites call in setup so they are
+order-independent. That route exists only in this file, never in `app.py`.
+
+Seeded identities:
+
+| Identity | Password | State |
+|---|---|---|
+| admin | `admin-test-password` | opens the roster UI |
+| `robot-test-member@sai.edu` | `robot-test-password` | ready to rate |
+| `robot-test-newbie@sai.edu` | `robot-test-newbie` | must change password |
+| `robot-test-retired@sai.edu` | `robot-test-retired` | deactivated |
+| `robot-test-rated@sai.edu` | `robot-test-rated` | already rated today |
+
+#### Using a browser that is not the system Chrome
+
+Set either variable to point the suites at a specific binary or driver; both
+default to empty, so normal runs are unchanged:
+
+```bash
+export CHROME_BINARY=/path/to/chrome
+export CHROME_DRIVER=/path/to/chromedriver
+```
+
+> Chart tests need `cdn.jsdelivr.net`. On a network that blocks it they
+> **skip** with a stated reason rather than failing — the canvases simply
+> never get a chart to assert on.
+
 ---
 
 ## Test File Structure
@@ -49,15 +88,30 @@ The app will start at `http://localhost:5000`.
 ```
 tests/
 ├── resources/
-│   ├── common.resource              # Shared keywords & variables
-│   ├── form_keywords.resource       # Form-specific keywords
-│   └── dashboard_keywords.resource  # Dashboard-specific keywords
-├── form_tests.robot                 # 23 UI tests  (TC01–TC23)
-├── dashboard_tests.robot            # 15 UI tests  (TC24–TC38)
-├── api_tests.robot                  # 16 API tests (TC39–TC54)
-├── run_tests.sh                     # Shell test runner script
-└── results/                         # Auto-generated reports (gitignored)
+│   ├── common.resource                 # Shared keywords & variables
+│   ├── form_keywords.resource          # Student form keywords
+│   ├── dashboard_keywords.resource     # Student dashboard keywords
+│   └── committee_keywords.resource     # Food Committee keywords
+├── form_tests.robot                    # 23 UI  tests (TC01–TC23)
+├── dashboard_tests.robot               # 15 UI  tests (TC24–TC38)
+├── api_tests.robot                     # 16 API tests (TC39–TC54)
+├── committee_form_tests.robot          # 26 UI  tests (TC60–TC85)
+├── committee_admin_tests.robot         # 29 UI  tests (TC90–TC118)
+├── committee_dashboard_tests.robot     # 27 UI  tests (TC120–TC146)
+├── committee_api_tests.robot           # 23 API tests (TC150–TC172)
+├── run_tests.sh                        # Shell test runner script
+└── results/                            # Auto-generated reports (gitignored)
+
+test/
+├── fake_sheets.py            # In-memory stand-in for the gspread API
+├── fake_server.py            # Runs the app on that fake, for UI tests
+├── test_smoke.py             # 26 checks across 15 features, ~1 second
+├── test_committee.py         # 59 checklist checks
+├── test_e2e_committee.py     # 64 steps across 9 committee journeys
+└── test_e2e_student.py       # 53 steps across 9 student journeys
 ```
+
+**159 Robot test cases** in total, plus **202 credential-free Python checks**.
 
 ---
 
@@ -77,6 +131,18 @@ robot --outputdir tests/results tests/form_tests.robot
 
 # Dashboard UI tests only
 robot --outputdir tests/results tests/dashboard_tests.robot
+
+# Food Committee member UI
+robot tests/committee_form_tests.robot
+
+# Admin member management UI
+robot tests/committee_admin_tests.robot
+
+# Committee dashboard UI
+robot tests/committee_dashboard_tests.robot
+
+# Committee HTTP tests (no browser)
+robot tests/committee_api_tests.robot
 
 # API tests only (no browser needed — fastest)
 robot --outputdir tests/results tests/api_tests.robot
@@ -324,3 +390,103 @@ robot --loglevel DEBUG tests/api_tests.robot                # Verbose logging
 open tests/results/report.html          # View report (macOS)
 open tests/results/log.html             # View detailed log
 ```
+
+
+---
+
+## Credential-free Python suites
+
+Two suites run the real routes against an in-memory sheets backend, so they
+need no Google credentials, no browser, and no running server. They are the
+fastest way to know whether the committee module is sound.
+
+```bash
+python test/test_smoke.py            # 26 checks, 15 features, ~1 second
+python test/test_committee.py        # 59 checks, one per checklist item
+python test/test_e2e_committee.py    # 64 steps across 9 committee journeys
+python test/test_e2e_student.py      # 53 steps across 9 student journeys
+```
+
+### Smoke tests
+
+`test_smoke.py` answers one question per feature: is it switched on at all?
+It is the check to run before a demo, after a deploy, or to decide whether a
+longer suite is worth starting. It covers 15 features — service, static
+assets, the student form, submission, thank-you page, student dashboard,
+committee login, committee auth, committee submission, admin login, admin
+roster, member management, committee dashboard, the privilege split, and
+CSRF.
+
+It also runs against a **live deployment**, where it executes only the
+read-only checks, so pointing it at production cannot submit feedback,
+create members, or write to a real spreadsheet:
+
+```bash
+python test/test_smoke.py --url https://your-app.onrender.com --token YOUR_TOKEN
+```
+
+Write checks report as `SKIP` with the reason, rather than passing silently.
+
+### Student journeys
+
+`test_e2e_student.py` covers the original anonymous flow, which previously had
+no credential-free coverage at all — its only tests were the Robot suites,
+which need a live spreadsheet. The journeys are: a first submission, partial
+ratings when only some dishes were served, validation and hostile input, the
+per-IP rate limiter, a full service of ten students, the daily-summary upsert,
+a week of history, access control and outages, and separation from the
+committee module.
+
+`test_committee.py` verifies each item in `docs/FoodCommittee_Checklist.md`
+individually. `test_e2e_committee.py` walks whole journeys instead —
+onboarding, a rating day, a committee rotation, a forgotten password, a
+privilege-escalation attempt, mid-session revocation, coexistence with the
+anonymous student flow, a week of history, and a backend outage.
+
+Both replace only `sheets.get_sheet()`. Everything else — the roster cache,
+row construction, the `col_values` row lookup, `update_cell` — is the real
+code path.
+
+### What they have caught
+
+- **Review feed ordering.** The dashboard built its feed from `reversed(rows)`,
+  correct only while the sheet's physical order happens to be chronological.
+  Now sorted on `(Date, Timestamp)`.
+- **A 500 on the login page during a Sheets outage.** `get_committee_roster()`
+  called `get_sheet()` outside its try block, so an exception escaped into the
+  route. All six committee functions now hold the call inside.
+- **A fake that silently accepted writes.** `FakeWorksheet.update()` was a
+  no-op stub, which disabled the only path using it: the `daily_summary`
+  upsert branch appeared to work while writing nothing. The student journeys
+  caught it. A fake that quietly swallows writes is worse than no fake — it
+  makes a suite green without testing anything.
+
+### A trap worth knowing
+
+`app.config["RATELIMIT_ENABLED"] = False` does **nothing** after the `Limiter`
+is constructed — Flask-Limiter reads that key at init. Use the instance
+attribute instead:
+
+```python
+import app as app_module
+app_module.limiter.enabled = False
+```
+
+Set the config key instead and your logins silently consume the real 10/hour
+admin cap; later tests then get a 429 and a redirect, which looks exactly like
+an authentication bug.
+
+---
+
+## Known limitation pinned by the suites
+
+The student dashboard builds its trend chart from `daily_summary` in **sheet
+row order**, without sorting on `Date`. That is correct for data the app
+writes — daily operation appends today's row, and `seed_data.py` backfills
+with `range(29, -1, -1)` — but the chart would misorder if the tab were
+manually sorted or backfilled out of sequence.
+
+Journey S7 in `test_e2e_student.py` pins this deliberately: it asserts the
+current row-order behaviour, so if the dashboard ever gains a date sort, that
+step fails and tells you to update the note. The committee dashboard does sort
+by date, so the two differ on purpose rather than by oversight.

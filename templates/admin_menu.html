@@ -1,0 +1,79 @@
+<!--
+  Menu Editor (admin_menu.html)
+  ------------------------------
+  A week of menus, one row per day, each saved independently.
+
+  The menu tab can equally be edited straight in the spreadsheet — this page
+  exists for whoever would rather not open it. Both write the same rows, so
+  neither is the source of truth over the other.
+
+  Test Automation Attributes:
+    - data-menu-day="<YYYY-MM-DD>" on each day's form
+    - id="menu-editor"
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MessMate — Menu Editor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="admin-body">
+    <div class="admin-container">
+
+        <div class="admin-header">
+            <div>
+                <h1>Menu Editor 🍽️</h1>
+                <p>Separate items with commas. Blank means "not published yet".</p>
+            </div>
+            <div class="admin-nav">
+                <a href="{{ url_for('home') }}" class="toggle-btn">Student home</a>
+                <a href="{{ url_for('admin_members') }}" class="toggle-btn">Members</a>
+                <a href="{{ url_for('committee_dashboard') }}" class="toggle-btn">Committee dashboard</a>
+                <form method="POST" action="{{ url_for('admin_logout') }}" style="display:inline;">
+                    {{ csrf_field() }}
+                    <button type="submit" class="toggle-btn">Sign out</button>
+                </form>
+            </div>
+        </div>
+
+        {% if error %}
+        <div class="alert error error-banner">{{ error }}</div>
+        {% endif %}
+        {% if success %}
+        <div class="alert success">{{ success }}</div>
+        {% endif %}
+
+        <div id="menu-editor">
+            {% for day in week %}
+            <div class="card menu-day {{ 'menu-day-today' if day.is_today }}">
+                <form method="POST" action="{{ url_for('admin_menu_save') }}"
+                      data-menu-day="{{ day.date }}">
+                    {{ csrf_field() }}
+                    <input type="hidden" name="date" value="{{ day.date }}">
+
+                    <div class="menu-day-head">
+                        <h2>{{ day.label }}{% if day.is_today %} <span class="badge badge-active">Today</span>{% endif %}</h2>
+                        <button type="submit" class="toggle-btn">Save</button>
+                    </div>
+
+                    <div class="menu-fields">
+                        {% for meal in meals %}
+                        <div class="menu-field">
+                            <label class="item-label" for="{{ day.date }}-{{ meal }}">{{ meal }}</label>
+                            <input class="suggestion-input" type="text"
+                                   id="{{ day.date }}-{{ meal }}" name="{{ meal }}"
+                                   value="{{ day[meal] }}"
+                                   placeholder="Idli, Sambar, Coconut Chutney">
+                        </div>
+                        {% endfor %}
+                    </div>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</body>
+</html>
