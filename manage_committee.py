@@ -14,10 +14,13 @@ Usage:
   python manage_committee.py hash-admin-password
   python manage_committee.py add --email a@sai.edu --name "A B"
   python manage_committee.py list
+  python manage_committee.py sheet-template
 """
 
 import argparse
+import csv
 import getpass
+import os
 import sys
 
 from dotenv import load_dotenv
@@ -102,6 +105,104 @@ def cmd_list(args):
     return 0
 
 
+
+
+# ── Sheet templates ───────────────────────────────────────────────────────────
+
+TEMPLATE_CSV = "template.csv"
+TEMPLATE_DIR = "sheet_templates"
+
+TEMPLATE_COLUMNS = ["Tab", "Column", "Cell", "Format", "Notes"]
+
+
+def _column_letter(index):
+    """0 -> A, 25 -> Z, 26 -> AA."""
+    letters = ""
+    index += 1
+    while index:
+        index, remainder = divmod(index - 1, 26)
+        letters = chr(ord("A") + remainder) + letters
+    return letters
+
+
+def _guess_format(column):
+    """
+    The format a column needs in Google Sheets.
+
+    Plain Text matters for anything date-shaped: Sheets reformats those cells to
+    the viewer's locale, which is what forced the six-format fallback parser in
+    get_today_responses(). Storing them as text keeps a literal YYYY-MM-DD.
+    """
+    if column in ("Date", "Term_Start", "Term_End"):
+        return "Plain text (YYYY-MM-DD)"
+    if column in ("Timestamp", "Created_At"):
+        return "Plain text (YYYY-MM-DD HH:MM:SS)"
+    if column in ("Active", "Must_Change_Password"):
+        return "Plain text (TRUE / FALSE)"
+    if column.startswith("Avg_") or column == "Response_Count":
+        return "Number"
+    return "Plain text"
+
+
+def build_template_rows():
+    """Rows for template.csv, derived from sheets.SHEET_TEMPLATES."""
+    rows = []
+    for spec in sheets.SHEET_TEMPLATES:
+        for index, column in enumerate(spec["headers"]):
+            note = spec["notes"].get(column, "")
+            if index == 0 and spec.get("written_by"):
+                note = (f"Written by: {spec['written_by']}. " + note).strip()
+            rows.append({
+                "Tab": spec["tab"],
+                "Column": column,
+                "Cell": f"{_column_letter(index)}1",
+                "Format": _guess_format(column),
+                "Notes": note,
+            })
+    return rows
+
+
+def write_templates(directory="."):
+    """
+    Writes template.csv and sheet_templates/<tab>.csv.
+    Returns the list of paths written.
+    """
+    written = []
+
+    master = os.path.join(directory, TEMPLATE_CSV)
+    with open(master, "w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=TEMPLATE_COLUMNS)
+        writer.writeheader()
+        writer.writerows(build_template_rows())
+    written.append(master)
+
+    per_tab = os.path.join(directory, TEMPLATE_DIR)
+    os.makedirs(per_tab, exist_ok=True)
+    for spec in sheets.SHEET_TEMPLATES:
+        path = os.path.join(per_tab, f"{spec['tab']}.csv")
+        with open(path, "w", newline="", encoding="utf-8") as handle:
+            # Header row only. Importing this into Google Sheets creates the tab
+            # with the right columns and no rows to delete afterwards.
+            csv.writer(handle).writerow(spec["headers"])
+        written.append(path)
+
+    return written
+
+
+def cmd_sheet_template(args):
+    """Regenerates the CSV templates from the schema in sheets.py."""
+    written = write_templates()
+    print("Wrote:")
+    for path in written:
+        print(f"  {path}")
+    print(f"\n{len(sheets.SHEET_TEMPLATES)} tabs, "
+          f"{sum(len(s['headers']) for s in sheets.SHEET_TEMPLATES)} columns.")
+    print("\nTo build the spreadsheet: File > Import > upload one "
+          f"{TEMPLATE_DIR}/*.csv per tab, choosing 'Insert new sheet(s)', then")
+    print("rename each tab to match the file name and set the date columns to "
+          "Plain Text.")
+    return 0
+
 def main():
     parser = argparse.ArgumentParser(description="MessMate committee roster tooling.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -115,12 +216,16 @@ def main():
 
     subparsers.add_parser("list", help="Print the roster and validate headers")
 
+    subparsers.add_parser("sheet-template",
+                          help="Regenerate template.csv and sheet_templates/*.csv")
+
     args = parser.parse_args()
 
     handlers = {
         "hash-admin-password": cmd_hash_admin_password,
         "add": cmd_add,
         "list": cmd_list,
+        "sheet-template": cmd_sheet_template,
     }
     return handlers[args.command](args)
 

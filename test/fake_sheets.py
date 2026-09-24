@@ -23,17 +23,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import sheets  # noqa: E402
 
-STUDENT_HEADERS = [
-    "Timestamp", "Overall", "Rice_Curry", "Rice_Rasam", "Chapati",
-    "Chapati_Gravy", "Poriyal", "Sweet", "Salad", "Curd", "Papad",
-    "Pickle", "Review", "Suggestion"
-]
-
-SUMMARY_HEADERS = [
-    "Date", "Avg_Overall", "Response_Count", "Avg_Rice_Curry",
-    "Avg_Rice_Rasam", "Avg_Chapati", "Avg_Chapati_Gravy", "Avg_Poriyal",
-    "Avg_Sweet", "Avg_Salad", "Avg_Curd", "Avg_Papad", "Avg_Pickle"
-]
+# Taken from sheets.py rather than copied. The journey suites assert on column
+# positions (row[COL_OVERALL] and friends), so using the real constants here
+# makes those assertions validate the constants too — and the CSV templates are
+# generated from the same source, so all three cannot drift apart.
+STUDENT_HEADERS = sheets.RESPONSE_HEADERS
+SUMMARY_HEADERS = sheets.SUMMARY_HEADERS
 
 
 class FakeWorksheet:

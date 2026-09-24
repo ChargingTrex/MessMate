@@ -316,6 +316,37 @@ def smoke(t):
     check("the dashboard token cannot open the menu editor", status == 302,
           f"status={status}")
 
+    feature("sheet templates")
+    # The committed CSVs are generated from sheets.SHEET_TEMPLATES. If someone
+    # adds a column and forgets to regenerate, the files in the repo start
+    # describing a schema the code no longer reads — a silent trap for whoever
+    # sets up the next spreadsheet. Regenerate into a temp dir and compare.
+    import filecmp
+    import shutil
+    import tempfile
+    import manage_committee
+
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    scratch = tempfile.mkdtemp(prefix="messmate-templates-")
+    try:
+        manage_committee.write_templates(scratch)
+        stale = []
+        for name in [manage_committee.TEMPLATE_CSV] + [
+                os.path.join(manage_committee.TEMPLATE_DIR, f"{s['tab']}.csv")
+                for s in __import__("sheets").SHEET_TEMPLATES]:
+            committed = os.path.join(repo_root, name)
+            regenerated = os.path.join(scratch, name)
+            if not os.path.exists(committed):
+                stale.append(f"{name} (missing)")
+            elif not filecmp.cmp(committed, regenerated, shallow=False):
+                stale.append(name)
+        check("committed CSV templates match the schema in sheets.py",
+              not stale,
+              f"stale: {', '.join(stale)} — run "
+              f"`python manage_committee.py sheet-template`")
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
+
     feature("csrf")
     status, _ = t.post(t.session(), "/committee/login",
                        {"email": "smoke@sai.edu", "password": "smoke-password"})

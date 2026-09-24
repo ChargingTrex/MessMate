@@ -606,6 +606,24 @@ def has_submitted_today(email, date_str=None):
 # []/False/None on failure. Date is plain text so Sheets cannot reformat it
 # out from under the lookup.
 
+# ── Sheet schema, in one place ─────────────────────────────────────────────────
+# Column order for the two original student tabs. These are documentation-only:
+# append_response() and update_daily_summary_for_today() still build their rows
+# positionally, exactly as before. They exist so the CSV templates and the test
+# fake have one authoritative source instead of three hand-copied lists, and
+# test_smoke.py checks the committed CSVs still match them.
+RESPONSE_HEADERS = [
+    "Timestamp", "Overall", "Rice_Curry", "Rice_Rasam", "Chapati",
+    "Chapati_Gravy", "Poriyal", "Sweet", "Salad", "Curd", "Papad",
+    "Pickle", "Review", "Suggestion"
+]
+
+SUMMARY_HEADERS = [
+    "Date", "Avg_Overall", "Response_Count", "Avg_Rice_Curry",
+    "Avg_Rice_Rasam", "Avg_Chapati", "Avg_Chapati_Gravy", "Avg_Poriyal",
+    "Avg_Sweet", "Avg_Salad", "Avg_Curd", "Avg_Papad", "Avg_Pickle"
+]
+
 MENU_TAB = "menu"
 MEAL_RATINGS_TAB = "meal_ratings"
 
@@ -806,3 +824,85 @@ def summarise_meal_ratings(date_str=None):
         summary[meal]["score"] = round(summary[meal]["good"] / ate * 100) if ate else 0
 
     return summary
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Sheet template registry
+# ══════════════════════════════════════════════════════════════════════════════
+# Every tab the app touches, its exact column order, and the notes that matter
+# when creating it by hand. This drives template.csv and sheet_templates/*.csv
+# via `python manage_committee.py sheet-template`, so the files in the repo
+# cannot drift from the code that reads the sheet.
+#
+# Headers must match a tab's row 1 exactly: get_all_records() maps row 1 to dict
+# keys, so a rename here or there silently breaks every lookup downstream.
+
+SHEET_TEMPLATES = [
+    {
+        "tab": "responses",
+        "headers": RESPONSE_HEADERS,
+        "written_by": "The per-dish student form at /",
+        "notes": {
+            "Timestamp": "YYYY-MM-DD HH:MM:SS. Never change the format — date filtering parses it.",
+            "Overall": "Required, 1-5.",
+            "Rice_Curry": "Optional, 1-5. Blank means not rated — never write 0.",
+            "Review": "Stored html-escaped at write time.",
+            "Suggestion": "Stored raw; Jinja escapes it when rendering.",
+        },
+    },
+    {
+        "tab": "daily_summary",
+        "headers": SUMMARY_HEADERS,
+        "written_by": "update_daily_summary_for_today(), after each submission",
+        "notes": {
+            "Date": "YYYY-MM-DD, plain text. Column A — the upsert finds the row by scanning it.",
+            "Avg_Overall": "Recalculated on every submission for that date.",
+            "Response_Count": "Submissions counted for that date.",
+        },
+    },
+    {
+        "tab": COMMITTEE_MEMBERS_TAB,
+        "headers": MEMBER_HEADERS,
+        "written_by": "/admin/members, or manage_committee.py",
+        "notes": {
+            "Email": "Column A — roster edits find the row by scanning it. Lowercase.",
+            "Password_Hash": "Werkzeug scrypt hash. NEVER put a plaintext password here.",
+            "Active": "TRUE or FALSE. FALSE blocks login immediately.",
+            "Must_Change_Password": "TRUE forces a password change at next sign-in.",
+            "Term_Start": "YYYY-MM-DD, plain text.",
+            "Term_End": "YYYY-MM-DD, plain text. Blank while serving.",
+            "Created_At": "YYYY-MM-DD HH:MM:SS.",
+        },
+    },
+    {
+        "tab": COMMITTEE_REVIEWS_TAB,
+        "headers": REVIEW_HEADERS,
+        "written_by": "The committee review page at /committee",
+        "notes": {
+            "Date": "YYYY-MM-DD, plain text. All filtering reads this, not Timestamp.",
+            "Member_Email": "Committee reviews are attributed, unlike student feedback.",
+            "Taste": "1-5. All five dimensions are required.",
+            "Review": "Stored raw; Jinja escapes it on the dashboard.",
+        },
+    },
+    {
+        "tab": MENU_TAB,
+        "headers": MENU_HEADERS,
+        "written_by": "/admin/menu, or typed straight into this tab",
+        "notes": {
+            "Date": "YYYY-MM-DD, plain text. Column A — the upsert finds the row by scanning it.",
+            "Breakfast": "Comma-separated dishes, e.g. 'Idli, Sambar, Coconut Chutney'. Newlines work too. Blank shows as 'Menu not published yet'.",
+        },
+    },
+    {
+        "tab": MEAL_RATINGS_TAB,
+        "headers": MEAL_RATING_HEADERS,
+        "written_by": "The one-tap reactions on /home",
+        "notes": {
+            "Date": "YYYY-MM-DD, plain text.",
+            "Meal": "Breakfast, Lunch or Dinner.",
+            "Rating": "good, bad or skip. Skips are counted but excluded from a meal's score.",
+            "Suggestion": "Optional, stored raw. Anonymous — no identity is recorded.",
+        },
+    },
+]

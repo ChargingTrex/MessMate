@@ -50,7 +50,33 @@ A web app for students to anonymously rate their daily mess lunch. Admins, deans
 
 ### 3. Google Sheet Schema
 
-Create a Google Sheet with two tabs:
+### Quickest path: import the templates
+
+The repo ships the exact schema, so you don't have to type it:
+
+| File | What it is |
+|---|---|
+| [`template.csv`](template.csv) | Every tab, column, cell, required Sheets format and the notes that matter — one row per column, 54 in all. Open it in any spreadsheet as a reference. |
+| [`sheet_templates/*.csv`](sheet_templates/) | One header-only file per tab. **File → Import → Insert new sheet(s)** creates the tab with the right columns and no rows to clean up. |
+
+After importing, rename each tab to match its file name (`responses`, `daily_summary`,
+`committee_members`, `committee_reviews`, `menu`, `meal_ratings`) and set the
+date columns to **Plain Text** — Google Sheets otherwise reformats date-looking
+cells to the viewer's locale, which is exactly what forces the fallback date
+parser in `sheets.py`.
+
+Both files are generated from `sheets.SHEET_TEMPLATES`, so they cannot drift
+from the code that reads the sheet:
+
+```bash
+python manage_committee.py sheet-template
+```
+
+`test/test_smoke.py` fails if the committed files stop matching the schema.
+
+### Or create the tabs by hand
+
+Create a Google Sheet with these tabs:
 
 **Tab 1: `responses`** (headers in row 1):
 ```
@@ -188,6 +214,8 @@ messmate/
 ├── manage_committee.py    # Break-glass roster CLI (admin hash, add, list)
 ├── generate_qr.py         # QR code generator for the mess poster
 ├── CONTRIBUTING.md        # Architecture, conventions, how to run the tests
+├── template.csv           # Full sheet schema: tab, column, format, notes
+├── sheet_templates/       # One header-only CSV per tab, ready to import
 ├── templates/
 │   ├── home.html              # Student home — menu + quick reactions
 │   ├── admin_menu.html        # Menu editor

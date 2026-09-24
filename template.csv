@@ -1,0 +1,55 @@
+Tab,Column,Cell,Format,Notes
+responses,Timestamp,A1,Plain text (YYYY-MM-DD HH:MM:SS),Written by: The per-dish student form at /. YYYY-MM-DD HH:MM:SS. Never change the format — date filtering parses it.
+responses,Overall,B1,Plain text,"Required, 1-5."
+responses,Rice_Curry,C1,Plain text,"Optional, 1-5. Blank means not rated — never write 0."
+responses,Rice_Rasam,D1,Plain text,
+responses,Chapati,E1,Plain text,
+responses,Chapati_Gravy,F1,Plain text,
+responses,Poriyal,G1,Plain text,
+responses,Sweet,H1,Plain text,
+responses,Salad,I1,Plain text,
+responses,Curd,J1,Plain text,
+responses,Papad,K1,Plain text,
+responses,Pickle,L1,Plain text,
+responses,Review,M1,Plain text,Stored html-escaped at write time.
+responses,Suggestion,N1,Plain text,Stored raw; Jinja escapes it when rendering.
+daily_summary,Date,A1,Plain text (YYYY-MM-DD),"Written by: update_daily_summary_for_today(), after each submission. YYYY-MM-DD, plain text. Column A — the upsert finds the row by scanning it."
+daily_summary,Avg_Overall,B1,Number,Recalculated on every submission for that date.
+daily_summary,Response_Count,C1,Number,Submissions counted for that date.
+daily_summary,Avg_Rice_Curry,D1,Number,
+daily_summary,Avg_Rice_Rasam,E1,Number,
+daily_summary,Avg_Chapati,F1,Number,
+daily_summary,Avg_Chapati_Gravy,G1,Number,
+daily_summary,Avg_Poriyal,H1,Number,
+daily_summary,Avg_Sweet,I1,Number,
+daily_summary,Avg_Salad,J1,Number,
+daily_summary,Avg_Curd,K1,Number,
+daily_summary,Avg_Papad,L1,Number,
+daily_summary,Avg_Pickle,M1,Number,
+committee_members,Email,A1,Plain text,"Written by: /admin/members, or manage_committee.py. Column A — roster edits find the row by scanning it. Lowercase."
+committee_members,Name,B1,Plain text,
+committee_members,Password_Hash,C1,Plain text,Werkzeug scrypt hash. NEVER put a plaintext password here.
+committee_members,Active,D1,Plain text (TRUE / FALSE),TRUE or FALSE. FALSE blocks login immediately.
+committee_members,Must_Change_Password,E1,Plain text (TRUE / FALSE),TRUE forces a password change at next sign-in.
+committee_members,Term_Start,F1,Plain text (YYYY-MM-DD),"YYYY-MM-DD, plain text."
+committee_members,Term_End,G1,Plain text (YYYY-MM-DD),"YYYY-MM-DD, plain text. Blank while serving."
+committee_members,Created_At,H1,Plain text (YYYY-MM-DD HH:MM:SS),YYYY-MM-DD HH:MM:SS.
+committee_reviews,Timestamp,A1,Plain text (YYYY-MM-DD HH:MM:SS),Written by: The committee review page at /committee.
+committee_reviews,Date,B1,Plain text (YYYY-MM-DD),"YYYY-MM-DD, plain text. All filtering reads this, not Timestamp."
+committee_reviews,Member_Email,C1,Plain text,"Committee reviews are attributed, unlike student feedback."
+committee_reviews,Member_Name,D1,Plain text,
+committee_reviews,Taste,E1,Plain text,1-5. All five dimensions are required.
+committee_reviews,Quality,F1,Plain text,
+committee_reviews,Variety,G1,Plain text,
+committee_reviews,Hygiene,H1,Plain text,
+committee_reviews,Menu,I1,Plain text,
+committee_reviews,Review,J1,Plain text,Stored raw; Jinja escapes it on the dashboard.
+menu,Date,A1,Plain text (YYYY-MM-DD),"Written by: /admin/menu, or typed straight into this tab. YYYY-MM-DD, plain text. Column A — the upsert finds the row by scanning it."
+menu,Breakfast,B1,Plain text,"Comma-separated dishes, e.g. 'Idli, Sambar, Coconut Chutney'. Newlines work too. Blank shows as 'Menu not published yet'."
+menu,Lunch,C1,Plain text,
+menu,Dinner,D1,Plain text,
+meal_ratings,Timestamp,A1,Plain text (YYYY-MM-DD HH:MM:SS),Written by: The one-tap reactions on /home.
+meal_ratings,Date,B1,Plain text (YYYY-MM-DD),"YYYY-MM-DD, plain text."
+meal_ratings,Meal,C1,Plain text,"Breakfast, Lunch or Dinner."
+meal_ratings,Rating,D1,Plain text,"good, bad or skip. Skips are counted but excluded from a meal's score."
+meal_ratings,Suggestion,E1,Plain text,"Optional, stored raw. Anonymous — no identity is recorded."

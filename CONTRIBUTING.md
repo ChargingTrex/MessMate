@@ -62,6 +62,24 @@ dict keys, so a rename silently breaks every lookup downstream.
 | `menu` | Date, Breakfast, Lunch, Dinner |
 | `meal_ratings` | Timestamp, Date, Meal, Rating, Suggestion |
 
+**Do not hand-type this.** `template.csv` and `sheet_templates/*.csv` are
+generated from `sheets.SHEET_TEMPLATES`:
+
+```bash
+python manage_committee.py sheet-template
+```
+
+Import one `sheet_templates/<tab>.csv` per tab via **File → Import → Insert new
+sheet(s)**, then rename each tab to match the file name. If you add or rename a
+column, change `SHEET_TEMPLATES` and regenerate — `test/test_smoke.py` fails
+when the committed CSVs stop matching the code, so the repo's schema and the
+code's schema cannot silently diverge.
+
+`sheets.RESPONSE_HEADERS` and `sheets.SUMMARY_HEADERS` are documentation-only:
+`append_response()` and `update_daily_summary_for_today()` still build their rows
+positionally. `test/fake_sheets.py` imports them rather than copying, so the
+journey suites' column-position assertions validate them too.
+
 Set every `Date` column to **Plain Text** formatting. Google Sheets reformats
 date-looking cells, which is exactly why `get_today_responses()` still carries
 a six-format fallback parser. Newer tabs store `Date` as a literal

@@ -21,6 +21,36 @@ the template, fill it in, and move it to the top.
 
 ---
 
+## [2026-09-24 09:00] — Sheet Schema Templates (template.csv)
+
+**Files changed:** `template.csv` (new), `sheet_templates/*.csv` (new), `sheets.py`, `manage_committee.py`, `test/fake_sheets.py`, `test/test_smoke.py`, `README.md`, `CONTRIBUTING.md`
+**Type:** Feature
+**Status:** ✅ Working
+
+### What changed
+Added the full Google Sheet schema as CSV templates, so setting up a spreadsheet no longer means hand-typing 54 column headers from prose.
+
+- `template.csv` — one row per column across all six tabs: tab name, column, target cell, the Sheets format it needs, and the notes that matter.
+- `sheet_templates/<tab>.csv` — six header-only files. File > Import > Insert new sheet(s) creates each tab with the right columns and no rows to delete.
+
+### Why
+The schema was documented in three places — README prose, CONTRIBUTING, and `test/fake_sheets.py` — all hand-copied. Anyone setting up a new sheet had to transcribe headers exactly, and `get_all_records()` maps row 1 to dict keys, so a single typo silently breaks every lookup.
+
+### Details
+- Both files are generated from a new `sheets.SHEET_TEMPLATES` registry by `python manage_committee.py sheet-template`, so the repo's schema cannot drift from the code that reads the sheet.
+- `test/test_smoke.py` regenerates into a temp directory and compares, failing if the committed files go stale. Verified the check actually fails when drift is injected, rather than passing vacuously.
+- Added `sheets.RESPONSE_HEADERS` and `sheets.SUMMARY_HEADERS`, documenting the column order of the two original student tabs. Documentation-only: `append_response()` and `update_daily_summary_for_today()` still build rows positionally, so no write path changed.
+- `test/fake_sheets.py` now imports those constants instead of keeping its own copies. The journey suites assert on column positions, so their assertions now validate the constants too — three hand-copied lists became one source.
+- Date-shaped columns are flagged as needing Plain Text formatting, which is the trap that forced the six-format fallback parser in `get_today_responses()`.
+
+### Tests
+All five credential-free suites pass: smoke 35 checks across 19 features, committee checklist 59, and the committee/student/home journeys at 64/53/51 steps. `app.py`, templates and static files are untouched.
+
+### How to revert
+Delete `template.csv` and `sheet_templates/`. Remove the "Sheet template registry" block and the two header constants from `sheets.py`, the sheet-template command from `manage_committee.py`, and the "sheet templates" feature from `test/test_smoke.py`. Restore the inline header lists in `test/fake_sheets.py`.
+
+---
+
 ## [2026-09-20 19:40] — Student Home: Daily Menu & Quick Meal Ratings
 
 **Files changed:** `app.py`, `sheets.py`, `templates/home.html` (new), `templates/admin_menu.html` (new), `static/home.js` (new), `static/style.css`, `test/fake_sheets.py`, `test/fake_server.py`, `test/test_smoke.py`, `test/test_e2e_home.py` (new), `tests/home_tests.robot` (new), `.github/workflows/messmate_tests.yml`, `README.md`, `CONTRIBUTING.md` (new)
