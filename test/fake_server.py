@@ -8,10 +8,16 @@ live spreadsheet.
 Everything except the network layer is the production code path: the same
 routes, templates, session handling, CSRF, and aggregation.
 
-It also registers one route that does NOT exist in the real app —
-POST /__test__/reset — which restores the seeded fixture. Suites call it in
-setup so they are order-independent and can freely mutate the roster. Keeping
-it here rather than in app.py means no test-only route ever ships.
+It also registers routes that do NOT exist in the real app. Keeping them here
+rather than in app.py means no test-only route ever ships:
+
+    POST /__test__/reset           restore the seeded fixture, limiter off
+    POST /__test__/limiter?enabled=1|0   switch the real rate limits on/off
+    POST /__test__/backend?mode=ok|raise|unavailable   simulate an outage
+    GET  /__test__/sheet/<tab>     a tab's stored rows, as JSON
+
+Suites call reset in setup so they are order-independent and can freely
+mutate the roster; the others serve the end-to-end suite in tests/e2e/.
 
 Usage:
     python test/fake_server.py [port]
@@ -98,13 +104,68 @@ def seed():
 
 
 def reset_endpoint():
-    """Test-only fixture reset. Never registered on the production app."""
+    """
+    Test-only fixture reset. Never registered on the production app.
+
+    Also puts the rate limiter back to off with empty counters, so a suite
+    that switched it on cannot leak 429s into the next one.
+    """
     seed()
+    app_module.limiter.reset()
+    app_module.limiter.enabled = False
     return {"status": "reset"}, 200
+
+
+def limiter_endpoint():
+    """
+    Test-only: ?enabled=1 switches the production rate limits back on with
+    fresh counters, ?enabled=0 switches them off. Lets the end-to-end suite
+    drive the real 1/day and 3/day caps without restarting the server.
+    """
+    from flask import request
+    enabled = request.args.get("enabled", "1") == "1"
+    app_module.limiter.reset()
+    app_module.limiter.enabled = enabled
+    return {"limiter": "on" if enabled else "off"}, 200
+
+
+def backend_endpoint():
+    """
+    Test-only: ?mode=ok|raise|unavailable simulates a Google Sheets outage.
+    'raise' makes get_sheet() throw, 'unavailable' makes it return None.
+    Caches are dropped so the next read actually hits the failing backend.
+    """
+    from flask import request
+    import sheets
+    mode = request.args.get("mode", "ok")
+    if mode not in ("ok", "raise", "unavailable"):
+        return {"error": f"unknown mode {mode!r}"}, 400
+    BOOK.mode = mode
+    sheets.invalidate_roster_cache()
+    sheets.invalidate_menu_cache()
+    return {"backend": mode}, 200
+
+
+def sheet_endpoint(tab):
+    """
+    Test-only: a tab's stored rows as JSON, so journeys can assert on what
+    actually reached the spreadsheet — not only on what the UI chose to show.
+    """
+    worksheet = BOOK.tabs.get(tab)
+    if worksheet is None:
+        return {"error": f"no tab {tab!r}"}, 404
+    return {"headers": worksheet.headers,
+            "rows": [dict(zip(worksheet.headers, row)) for row in worksheet.rows]}, 200
 
 
 app.add_url_rule("/__test__/reset", "test_reset", reset_endpoint,
                  methods=["POST", "GET"])
+app.add_url_rule("/__test__/limiter", "test_limiter", limiter_endpoint,
+                 methods=["POST"])
+app.add_url_rule("/__test__/backend", "test_backend", backend_endpoint,
+                 methods=["POST"])
+app.add_url_rule("/__test__/sheet/<tab>", "test_sheet", sheet_endpoint,
+                 methods=["GET"])
 
 
 if __name__ == "__main__":
