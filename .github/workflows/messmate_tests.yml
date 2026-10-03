@@ -66,6 +66,17 @@ jobs:
                 tests/committee_dashboard_tests.robot \
                 tests/home_tests.robot
 
+      - name: Run Robot Framework end-to-end journeys (in-memory backend)
+        env:
+          DASHBOARD_TOKEN: vc2026
+          ADMIN_PASSWORD: admin-test-password
+        run: |
+          # Whole user journeys across roles, outages and rate limits. Same
+          # server as above: each journey resets the fixture on entry and exit.
+          robot --variable BASE_URL:http://127.0.0.1:5001 \
+                --outputdir tests/results/e2e \
+                tests/e2e
+
       - name: Start MessMate app (needs live Google Sheets secrets)
         env:
           FLASK_SECRET_KEY: ${{ secrets.FLASK_SECRET_KEY }}
