@@ -66,7 +66,10 @@ def generate_password():
 
 def hash_password(password):
     """Hashes a password for storage. The only thing ever written to the sheet."""
-    return generate_password_hash(password)
+    try:
+        return generate_password_hash(password)
+    except (AttributeError, ValueError):
+        return generate_password_hash(password, method="pbkdf2:sha256")
 
 
 # ── Email normalisation ───────────────────────────────────────────────────────

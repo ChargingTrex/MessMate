@@ -15,25 +15,41 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MessMate — Committee Dashboard 🍽️</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script defer src="{{ url_for('static', filename='app-shell.js') }}"></script>
 </head>
 <body class="admin-body">
 
-<div class="admin-container">
+<header class="app-topbar">
+  <div class="app-topbar-inner">
+    <a class="app-brand" href="{{ url_for('home') }}">
+      <span class="live-dot" title="Live"></span>
+      <span class="brand-logo">MESSMATE</span>
+    </a>
+    <span id="appClock" class="app-clock" aria-label="Current time">--:--:--</span>
+    <nav class="app-topbar-nav" aria-label="Admin sections">
+      <a href="{{ url_for('dashboard') }}{{ '?token=' + request.args.get('token') if request.args.get('token') }}"
+         class="nav-link">Students</a>
+      <a href="{{ url_for('committee_dashboard') }}{{ '?token=' + request.args.get('token') if request.args.get('token') }}"
+         class="nav-link" aria-current="page">Committee</a>
+      {% if is_admin %}<a href="{{ url_for('admin_members') }}" class="nav-link">Members</a>{% endif %}
+    </nav>
+  </div>
+</header>
+
+<main class="admin-container">
 
   <div class="admin-header">
     <div>
       <h1>Food Committee Dashboard 🍽️</h1>
       <p>{{ today_date }}</p>
     </div>
-    <div class="admin-nav">
-      <a href="{{ url_for('dashboard') }}{{ '?token=' + request.args.get('token') if request.args.get('token') }}"
-         class="toggle-btn">Student dashboard</a>
-      {% if is_admin %}
-      <a href="{{ url_for('admin_members') }}" class="toggle-btn">Manage members</a>
-      {% endif %}
-    </div>
+
   </div>
 
   <!-- Stat cards -->
@@ -46,32 +62,35 @@
     {% endif %}
 
     <div class="stat-card {{ avg_color_class }}">
-      <h3>Today's Committee Score</h3>
-      <p class="stat-value score-value" id="stat-today-avg">
+      <h2>Today's Committee Score</h2>
+      <p class="stat-value score-value{% if today_avg <= 0 %} is-empty{% endif %}" id="stat-today-avg">
         {% if today_avg > 0 %}{{ "%.1f"|format(today_avg) }}{% else %}--{% endif %}
       </p>
+      <p class="stat-note" id="avgDelta"></p>
     </div>
 
     <div class="stat-card">
-      <h3>Reviews Today</h3>
-      <p class="stat-value" id="stat-today-count">{{ today_count }}</p>
+      <h2>Reviews Today</h2>
+      <p class="stat-value{% if today_count == 0 %} is-empty{% endif %}" id="stat-today-count">{{ today_count }}</p>
+      <p class="stat-note">of {{ active_members }} members</p>
     </div>
 
     <div class="stat-card">
-      <h3>Active Members</h3>
+      <h2>Active Members</h2>
       <p class="stat-value" id="stat-active-members">{{ active_members }}</p>
     </div>
 
     <div class="stat-card">
-      <h3>Participation</h3>
-      <p class="stat-value" id="stat-participation">{{ participation }}%</p>
+      <h2>Participation</h2>
+      <p class="stat-value{% if participation == 0 %} is-empty{% endif %}" id="stat-participation">{{ participation }}%</p>
+      <p class="stat-note">filed a review today</p>
     </div>
   </div>
 
   <!-- Charts -->
   <div class="charts-row">
     <div class="chart-container">
-      <h3>Today by Dimension</h3>
+      <h2>Today by Dimension</h2>
       <div class="canvas-wrapper">
         <canvas id="dimensionChart"></canvas>
       </div>
@@ -79,10 +98,10 @@
 
     <div class="chart-container">
       <div class="chart-head">
-        <h3 id="committeeTrendTitle">7-Day Committee Trend</h3>
-        <div class="toggle-group">
-          <button id="btnCommittee7" class="toggle-btn active">7 Days</button>
-          <button id="btnCommittee30" class="toggle-btn">1 Month</button>
+        <h2 id="committeeTrendTitle">7-Day Committee Trend</h2>
+        <div class="segmented" role="group" aria-label="Trend range">
+          <button type="button" id="btnCommittee7" class="segmented-btn" aria-pressed="true">7 days</button>
+          <button type="button" id="btnCommittee30" class="segmented-btn" aria-pressed="false">1 month</button>
         </div>
       </div>
       <div class="canvas-wrapper">
@@ -93,8 +112,8 @@
 
   <!-- Reviews -->
   <div class="suggestions-container">
-    <h3>📝 Committee Reviews</h3>
-    <div class="suggestions-list">
+    <h2>📝 Committee Reviews</h2>
+    <div class="suggestions-list" tabindex="0" role="region" aria-label="Scrollable list">
       {% if reviews %}
         {% for review in reviews %}
         <div class="suggestion-item">
@@ -108,7 +127,7 @@
     </div>
   </div>
 
-</div>
+</main>
 
 <script>
   window.COMMITTEE_DATA = {
@@ -117,6 +136,7 @@
     dimensions: {{ dimensions | tojson | safe }}
   };
 </script>
+<script src="{{ url_for('static', filename='charts.js') }}"></script>
 <script src="{{ url_for('static', filename='committee_dashboard.js') }}"></script>
 
 </body>

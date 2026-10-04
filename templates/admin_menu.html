@@ -17,9 +17,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MessMate — Menu Editor</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script defer src="{{ url_for('static', filename='app-shell.js') }}"></script>
 </head>
 <body class="admin-body">
+<header class="app-topbar">
+  <div class="app-topbar-inner">
+    <a class="app-brand" href="{{ url_for('home') }}">
+      <span class="live-dot" title="Live"></span>
+      <span class="brand-logo">MESSMATE</span>
+    </a>
+    <span id="appClock" class="app-clock" aria-label="Current time">--:--:--</span>
+    <nav class="app-topbar-nav" aria-label="Admin sections">
+      <a href="{{ url_for('admin_menu') }}" class="nav-link" aria-current="page">Menu</a>
+      <a href="{{ url_for('admin_members') }}" class="nav-link">Members</a>
+      <a href="{{ url_for('committee_dashboard') }}" class="nav-link">Committee</a>
+      <form method="POST" action="{{ url_for('admin_logout') }}">
+        {{ csrf_field() }}
+        <button type="submit" class="btn-secondary">Sign out</button>
+      </form>
+    </nav>
+  </div>
+</header>
     <div class="admin-container">
 
         <div class="admin-header">
@@ -27,15 +50,7 @@
                 <h1>Menu Editor 🍽️</h1>
                 <p>Separate items with commas. Blank means "not published yet".</p>
             </div>
-            <div class="admin-nav">
-                <a href="{{ url_for('home') }}" class="toggle-btn">Student home</a>
-                <a href="{{ url_for('admin_members') }}" class="toggle-btn">Members</a>
-                <a href="{{ url_for('committee_dashboard') }}" class="toggle-btn">Committee dashboard</a>
-                <form method="POST" action="{{ url_for('admin_logout') }}" style="display:inline;">
-                    {{ csrf_field() }}
-                    <button type="submit" class="toggle-btn">Sign out</button>
-                </form>
-            </div>
+
         </div>
 
         {% if error %}
@@ -55,7 +70,7 @@
 
                     <div class="menu-day-head">
                         <h2>{{ day.label }}{% if day.is_today %} <span class="badge badge-active">Today</span>{% endif %}</h2>
-                        <button type="submit" class="toggle-btn">Save</button>
+                        <button type="submit" class="btn-secondary">Save day</button>
                     </div>
 
                     <div class="menu-fields">

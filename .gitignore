@@ -4,4 +4,11 @@ __pycache__/
 *.pyc
 venv/
 .venv/
-messmate_qr.pngflask.log
+messmate_qr.png
+
+# Runtime + test/report artifacts
+flask.log
+output.xml
+report.html
+log.html
+selenium-screenshot-*.png

@@ -46,10 +46,11 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     if (labels.length === 0) {
-      const wrapper = dimCanvas.parentElement;
-      if (wrapper) {
-        wrapper.innerHTML = '<div class="empty-state">No committee reviews today yet.</div>';
-      }
+      MessMateCharts.empty(
+        dimCanvas,
+        "No reviews yet today",
+        "Each dimension appears here once a committee member files today's review."
+      );
     } else {
       new Chart(dimCanvas.getContext("2d"), {
         type: "bar",
@@ -67,7 +68,7 @@ document.addEventListener("DOMContentLoaded", function () {
           indexAxis: "y",
           responsive: true,
           maintainAspectRatio: false,
-          scales: { x: { beginAtZero: true, min: 0, max: 5, ticks: { stepSize: 1 } } },
+          scales: { x: MessMateCharts.scoreAxis(), y: { grid: { display: false } } },
           plugins: {
             legend: { display: false },
             tooltip: {
@@ -109,17 +110,27 @@ document.addEventListener("DOMContentLoaded", function () {
     // Keep a reference to the slice — the tooltip indexes into THIS array,
     // not the full trendData, or the counts misalign on the 7-day view
     const sliced = trendData.slice(-days);
-    const labels = sliced.length ? sliced.map(r => r.Date) : ["No Data"];
+    if (!sliced.length) {
+      // Same treatment as the dimension chart above: absence gets a state,
+      // not a line pinned at zero.
+      MessMateCharts.empty(
+        trendCanvas,
+        "No reviews in this period",
+        "The trend needs at least one day with a filed review."
+      );
+      return;
+    }
+    const labels = sliced.map(r => r.Date);
 
     const datasets = [{
       label: "Overall",
-      data: sliced.length ? sliced.map(r => r.Avg_Overall) : [0],
-      borderColor: "#2E75B6",
-      backgroundColor: "rgba(46, 117, 182, 0.1)",
+      data: sliced.map(r => r.Avg_Overall),
+      borderColor: "#60a5fa",
+      backgroundColor: "rgba(96, 165, 250, 0.14)",
       borderWidth: 3,
       tension: 0.4,
       fill: true,
-      pointBackgroundColor: "#1F4E79",
+      pointBackgroundColor: "#60a5fa",
       pointRadius: 4
     }];
 
@@ -161,9 +172,12 @@ document.addEventListener("DOMContentLoaded", function () {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true, min: 0, max: 5, ticks: { stepSize: 1 } } },
+        scales: {
+          y: MessMateCharts.scoreAxis(),
+          x: MessMateCharts.dateAxis()
+        },
         plugins: {
-          legend: { display: true, position: "bottom" },
+          legend: MessMateCharts.dimmedLegend(),
           tooltip: { callbacks: { label: tooltipLabel } }
         }
       }
@@ -172,16 +186,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
   renderTrend(7);
 
-  const btn7 = document.getElementById("btnCommittee7");
-  const btn30 = document.getElementById("btnCommittee30");
-  if (btn7 && btn30) {
-    btn7.addEventListener("click", () => {
-      btn7.classList.add("active"); btn30.classList.remove("active");
-      renderTrend(7);
-    });
-    btn30.addEventListener("click", () => {
-      btn30.classList.add("active"); btn7.classList.remove("active");
-      renderTrend(30);
-    });
-  }
+  MessMateCharts.segmented(
+    document.getElementById("btnCommittee7"),
+    document.getElementById("btnCommittee30"),
+    7, 30, renderTrend
+  );
+
+  MessMateCharts.deltaNote("avgDelta", trendData, "Avg_Overall", { decimals: 1 });
+
 });

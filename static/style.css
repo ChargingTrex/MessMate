@@ -13,6 +13,93 @@
  *   Success green: #E8F5E9 / text #1E6B3C
  */
 
+/* ══════════════════════════════════════════════════════════════════════════
+ * DESIGN TOKENS
+ * ──────────────────────────────────────────────────────────────────────────
+ * One source of truth for both surfaces. Before these existed the student
+ * home and the admin shell each hard-coded their own copy of the same dark
+ * palette — #94a3b8 appeared fifteen times, the accent blue existed as three
+ * different hexes — so the two drifted every time either was touched.
+ *
+ * Every value below is the value that was already rendering, with one
+ * deliberate exception noted at --text-faint.
+ * ══════════════════════════════════════════════════════════════════════════ */
+:root {
+    /* Surfaces — the dark app shell */
+    --bg-900: #0f1724;
+    --bg-850: #0f2027;
+    --bg-800: #1a2438;
+    --app-gradient: linear-gradient(160deg, var(--bg-900) 0%, var(--bg-800) 50%, var(--bg-850) 100%);
+
+    --surface:        rgba(255, 255, 255, 0.04);
+    --surface-hover:  rgba(255, 255, 255, 0.07);
+    --surface-active: rgba(255, 255, 255, 0.09);
+    --surface-sunken: rgba(15, 23, 36, 0.60);
+    --border:         rgba(255, 255, 255, 0.08);
+    --border-strong:  rgba(255, 255, 255, 0.14);
+    --border-hover:   rgba(255, 255, 255, 0.24);
+    --chrome-bg:      rgba(15, 23, 36, 0.85);
+
+    /* Text — on the dark shell */
+    --text-strong: #f1f5f9;
+    --text:        #e8eef7;
+    --text-2:      #e2e8f0;
+    --text-3:      #cbd5e1;
+    --text-muted:  #94a3b8;
+    /* Was #64748b, which measured 3.6:1 on --surface and failed WCAG AA for
+       the small text it carries (timestamps, empty states, inactive rows).
+       This is the one token whose value changed; it lands at 5.4:1. */
+    --text-faint:  #8b9ab0;
+
+    /* Brand + accent */
+    --brand-from: #60a5fa;
+    --brand-to:   #a78bfa;
+    --accent:     #3b82f6;
+    /* White text on --accent measures 3.68:1 — below the 4.5 floor for the
+       13px/600 segmented label. One step down the same ramp clears it at
+       5.17:1 without changing the design's intent. */
+    --accent-strong: #2563eb;
+    --accent-2:   #6366f1;
+    --accent-ink: #93c5fd;
+    --accent-gradient: linear-gradient(135deg, var(--accent), var(--accent-2));
+
+    /* Semantic */
+    --ok:      #22c55e;
+    --ok-text: #6ee7a0;
+    --ok-bg:   rgba(34, 197, 94, 0.12);
+    --ok-border: rgba(34, 197, 94, 0.30);
+    --warn:      #fbbf24;
+    --warn-bg:   rgba(251, 146, 60, 0.16);
+    --danger:      #f87171;
+    --danger-text: #fca5a5;
+    --danger-bg:   rgba(239, 68, 68, 0.12);
+    --danger-border: rgba(239, 68, 68, 0.30);
+
+    /* Light-theme primaries (the student form and its shared components) */
+    --blue-600: #2E75B6;
+    --blue-800: #1F4E79;
+
+    /* Radius */
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 16px;
+    --r-xl: 20px;
+    --r-pill: 999px;
+
+    /* Elevation — offset plus soft blur, never a zero-offset halo */
+    --shadow-card:   0 10px 34px rgba(0, 0, 0, 0.28);
+    --shadow-raised: 0 24px 70px rgba(0, 0, 0, 0.45);
+    --shadow-accent: 0 6px 20px rgba(59, 130, 246, 0.35);
+
+    /* Motion — short enough to stay out of the way of a task */
+    --dur: 180ms;
+    --dur-slow: 240ms;
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+    /* Focus — one ring everywhere, never removed without a replacement */
+    --focus-ring: 0 0 0 3px rgba(96, 165, 250, 0.55);
+}
+
 /* ── Reset & Base ──────────────────────────────────────────────────────────── */
 * {
     box-sizing: border-box;
@@ -30,7 +117,7 @@ body {
 }
 
 header {
-    background-color: #2E75B6;
+    background-color: var(--blue-600);
     color: white;
     padding: 20px;
     text-align: center;
@@ -98,7 +185,7 @@ h2 {
 
 .dropdown:focus, .suggestion-input:focus, textarea:focus {
     outline: none;
-    border-color: #2E75B6;
+    border-color: var(--blue-600);
     background-color: #FFF;
 }
 
@@ -172,12 +259,12 @@ textarea {
 
 /* Selected state — blue ring highlight */
 .emoji-btn.selected {
-    border-color: #2E75B6;
+    border-color: var(--blue-600);
     background-color: #E6F0FA;
 }
 
 .emoji-btn.selected span {
-    color: #2E75B6;
+    color: var(--blue-600);
     font-weight: 600;
 }
 
@@ -205,7 +292,7 @@ textarea {
 
 .submit-btn {
     width: 100%;
-    background-color: #2E75B6;
+    background-color: var(--blue-600);
     color: white;
     border: none;
     padding: 16px;
@@ -219,7 +306,7 @@ textarea {
 }
 
 .submit-btn:hover {
-    background-color: #1F4E79;
+    background-color: var(--blue-800);
 }
 
 .submit-btn:disabled {
@@ -259,16 +346,16 @@ textarea {
     padding: 6px 16px;
     font-size: 0.85rem;
     font-weight: 500;
-    border: 1px solid #2E75B6;
+    border: 1px solid var(--blue-600);
     background: white;
-    color: #2E75B6;
+    color: var(--blue-600);
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .toggle-btn.active {
-    background-color: #2E75B6;
+    background-color: var(--blue-600);
     color: white;
 }
 
@@ -304,7 +391,7 @@ textarea {
 .link-btn {
     background: none;
     border: none;
-    color: #2E75B6;
+    color: var(--blue-600);
     font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
@@ -313,7 +400,7 @@ textarea {
     min-height: 32px;
 }
 
-.link-btn:hover { color: #1F4E79; }
+.link-btn:hover { color: var(--blue-800); }
 .link-btn.danger { color: #B71C1C; }
 .link-btn.danger:hover { color: #7f1010; }
 
@@ -347,7 +434,7 @@ textarea {
     flex-wrap: wrap;
     gap: 16px;
     margin-bottom: 30px;
-    color: #1F4E79;
+    color: var(--blue-800);
 }
 
 .admin-header h1 { margin: 0 0 6px 0; font-size: 1.6rem; }
@@ -476,15 +563,16 @@ textarea {
 
 /* ── Dashboard pieces shared with the student dashboard's inline styles ────── */
 .stat-cards {
-    display: flex;
+    /* Grid, not flex: a wrapped flex item stretches to fill its row, so the
+       fourth stat card became a full-width banner at ~900px. auto-fit keeps
+       every card the width of its column instead. */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
     gap: 20px;
     margin-bottom: 30px;
-    flex-wrap: wrap;
 }
 
 .stat-card {
-    flex: 1;
-    min-width: 200px;
     background: white;
     border-radius: 12px;
     padding: 24px;
@@ -513,23 +601,24 @@ textarea {
 .score-value { color: inherit; }
 
 .charts-row {
-    display: flex;
+    display: grid;
+    /* min(100%, 380px) so the column can go narrower than its floor on a
+       phone rather than forcing a horizontal scroll. */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
     gap: 20px;
     margin-bottom: 30px;
-    flex-wrap: wrap;
 }
 
 .chart-container {
-    flex: 1;
-    min-width: 400px;
     background: white;
+    min-width: 0;   /* grid children default to min-content; canvases need this */
     border-radius: 12px;
     padding: 24px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     border: 1px solid #e0e0e0;
 }
 
-.chart-container h3 { margin: 0 0 20px 0; color: #1F4E79; }
+.chart-container h3 { margin: 0 0 20px 0; color: var(--blue-800); }
 
 .chart-head {
     display: flex;
@@ -557,7 +646,7 @@ textarea {
     margin-bottom: 40px;
 }
 
-.suggestions-container h3 { margin: 0 0 20px 0; color: #1F4E79; }
+.suggestions-container h3 { margin: 0 0 20px 0; color: var(--blue-800); }
 
 .suggestions-list {
     max-height: 400px;
@@ -572,8 +661,6 @@ textarea {
 
 @media (max-width: 768px) {
     .admin-body { padding: 12px; }
-    .stat-card { min-width: 100%; }
-    .chart-container { min-width: 100%; }
     .admin-header { flex-direction: column; }
 }
 
@@ -581,8 +668,747 @@ textarea {
  * STUDENT HOME — today's menu and quick reactions
  * ══════════════════════════════════════════════════════════════════════════ */
 
+/* ── Body override for home page ──────────────────────────────────────────── */
+body.home-body {
+    background: linear-gradient(160deg, var(--bg-900) 0%, var(--bg-800) 50%, var(--bg-850) 100%);
+    color: #e0e8f0;
+    min-height: 100vh;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* ── Modern Header Bar ────────────────────────────────────────────────────── */
+.home-header-bar {
+    background: var(--chrome-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 0 20px;
+}
+
+.home-header-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    height: 60px;
+}
+
+.home-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.live-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+    animation: livePulse 2s ease-in-out infinite;
+    display: inline-block;
+}
+
+@keyframes livePulse {
+    0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+    70%  { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.brand-logo {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    background: linear-gradient(90deg, var(--brand-from), var(--brand-to));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.home-clock-wrap {
+    flex: 1;
+    text-align: center;
+}
+
+.home-clock {
+    font-size: 1.1rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+}
+
+.home-nav {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.home-nav-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: background 0.18s, color 0.18s;
+    white-space: nowrap;
+}
+
+.home-nav-link:hover { background: rgba(255,255,255,0.07); color: var(--text-2); }
+
+.home-nav-cta {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white !important;
+    font-weight: 600;
+}
+.home-nav-cta:hover { opacity: 0.88; background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important; }
+
+/* ── Ticker Banner ────────────────────────────────────────────────────────── */
+.ticker-section {
+    background: rgba(59, 130, 246, 0.12);
+    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+    position: relative;
+    overflow: hidden;
+    height: 38px;
+    display: flex;
+    align-items: center;
+}
+
+.ticker-fade-left,
+.ticker-fade-right {
+    position: absolute;
+    top: 0;
+    width: 60px;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.ticker-fade-left {
+    left: 0;
+    background: linear-gradient(90deg, rgba(15,23,36,0.95) 0%, transparent 100%);
+}
+
+.ticker-fade-right {
+    right: 0;
+    background: linear-gradient(270deg, rgba(15,23,36,0.95) 0%, transparent 100%);
+}
+
+.ticker-track {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.ticker-content {
+    display: inline-flex;
+    gap: 0;
+    animation: tickerScroll 38s linear infinite;
+    white-space: nowrap;
+}
+
+.ticker-section:hover .ticker-content {
+    animation-play-state: paused;
+}
+
+@keyframes tickerScroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+.ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 28px;
+    font-size: 0.82rem;
+    color: var(--accent-ink);
+    font-weight: 500;
+}
+
+.ticker-item::after {
+    content: "•";
+    color: rgba(147, 197, 253, 0.35);
+    margin-left: 22px;
+}
+
+/* ── Page Subtitle Bar ────────────────────────────────────────────────────── */
+.home-subtitle-bar {
+    max-width: 900px;
+    margin: 20px auto 0;
+    padding: 0 20px;
+}
+
+.home-page-title {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: var(--text-strong);
+    margin-bottom: 2px;
+}
+
+.home-page-date {
+    font-size: 0.88rem;
+    color: var(--text-faint);
+    font-weight: 500;
+}
+
+/* ── Alert banners for home ──────────────────────────────────────────────── */
+.alert-home {
+    max-width: 900px;
+    margin: 14px auto 0;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+.alert-home.success {
+    background: rgba(34,197,94,0.12);
+    border: 1px solid rgba(34,197,94,0.25);
+    color: #86efac;
+}
+.alert-home.error {
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.25);
+    color: var(--danger-text);
+}
+
+/* ── Day Selector ─────────────────────────────────────────────────────────── */
+.day-selector-section {
+    max-width: 900px;
+    margin: 18px auto 0;
+    padding: 0 20px;
+}
+
+.day-selector-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+}
+.day-selector-scroll::-webkit-scrollbar { display: none; }
+
+.day-tab {
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-width: 84px;
+    position: relative;
+}
+
+.day-tab:hover {
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.35);
+}
+
+.day-tab.active {
+    background: linear-gradient(135deg, rgba(59,130,246,0.25), rgba(99,102,241,0.25));
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(59,130,246,0.4), 0 4px 16px rgba(59,130,246,0.15);
+}
+
+.day-tab-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.day-tab.active .day-tab-label { color: var(--accent-ink); }
+
+.day-today-badge {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: linear-gradient(90deg, var(--ok), #16a34a);
+    color: white;
+    border-radius: 20px;
+    padding: 1px 7px;
+}
+
+/* ── Meal Filter Pills ────────────────────────────────────────────────────── */
+.meal-filter-section {
+    max-width: 900px;
+    margin: 14px auto 0;
+    padding: 0 20px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-pill {
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.18s;
+    font-family: inherit;
+}
+
+.filter-pill:hover {
+    background: rgba(59,130,246,0.12);
+    border-color: rgba(59,130,246,0.35);
+    color: var(--accent-ink);
+}
+
+.filter-pill.active {
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    border-color: transparent;
+    color: white;
+    box-shadow: 0 2px 12px rgba(59,130,246,0.3);
+}
+
+/* ── Main Content Area ────────────────────────────────────────────────────── */
+.home-main {
+    max-width: 900px;
+    margin: 20px auto 60px;
+    padding: 0 20px;
+}
+
+/* ── Specials / Spotlight Container ──────────────────────────────────────── */
+.specials-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.specials-container.no-satisfaction,
+.specials-container:not(:has(.specials-right)) {
+    grid-template-columns: 1fr;
+}
+
+.specials-left, .specials-right {
+    background: var(--surface);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.specials-active-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    margin-bottom: 10px;
+}
+
+.serving-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ok);
+    display: inline-block;
+    animation: livePulse 2s ease-in-out infinite;
+}
+
+.serving-dot.inactive { background: var(--text-faint); animation: none; }
+
+.specials-meal-name {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-strong);
+    margin-bottom: 12px;
+}
+
+.specials-dishes {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.specials-dishes li {
+    background: rgba(59,130,246,0.15);
+    border: 1px solid rgba(59,130,246,0.25);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    color: var(--accent-ink);
+    font-weight: 500;
+}
+
+.specials-loading {
+    color: var(--text-faint) !important;
+    background: transparent !important;
+    border-color: transparent !important;
+    font-style: italic;
+}
+
+/* Community Satisfaction Panel */
+.specials-community-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    margin-bottom: 14px;
+}
+
+.specials-admin-tag {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    padding: 2px 7px;
+    border-radius: 6px;
+}
+
+.result-row {
+    margin-bottom: 14px;
+}
+
+.result-meal-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 5px;
+}
+
+.result-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.result-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.result-bar-icon {
+    font-size: 0.75rem;
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.result-bar {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border-radius: 999px;
+    height: 7px;
+    overflow: hidden;
+}
+
+.result-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.result-fill.good  { background: linear-gradient(90deg, var(--ok), #16a34a); }
+.result-fill.bad   { background: linear-gradient(90deg, #ef4444, #dc2626); }
+.result-fill.skip  { background: linear-gradient(90deg, var(--text-faint), #475569); }
+
+.result-bar-pct {
+    font-size: 0.7rem;
+    color: var(--text-faint);
+    font-weight: 600;
+    min-width: 28px;
+    text-align: right;
+}
+
+.result-total {
+    font-size: 0.68rem;
+    color: #475569;
+    display: block;
+    margin-top: 3px;
+}
+
+/* ── Meal Cards ───────────────────────────────────────────────────────────── */
+.home-body .card {
+    background: var(--surface);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.home-body .card:hover {
+    border-color: rgba(255,255,255,0.13);
+}
+
+.home-body .meal-card { padding: 20px; }
+
+.meal-card.active-meal {
+    border-color: rgba(34, 197, 94, 0.4);
+    box-shadow: 0 0 0 1px rgba(34,197,94,0.15), 0 4px 24px rgba(34,197,94,0.08);
+}
+
+.meal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.meal-head-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.meal-title {
+    font-size: 1.15rem;
+    margin-bottom: 2px;
+    font-weight: 700;
+    color: var(--text-strong);
+}
+
+.meal-time {
+    font-size: 0.82rem;
+    color: var(--text-faint);
+}
+
+.meal-active-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: rgba(34,197,94,0.15);
+    border: 1px solid rgba(34,197,94,0.3);
+    color: #86efac;
+    border-radius: 999px;
+    padding: 3px 10px;
+    animation: servingGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes servingGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.3); }
+    50%       { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+}
+
+/* Today's tally, shown only once someone has rated */
+.meal-tally {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.tally-score {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.tally-good  { color: #86efac; }
+.tally-mixed { color: #fcd34d; }
+.tally-poor  { color: var(--danger-text); }
+
+.tally-count {
+    font-size: 0.72rem;
+    color: var(--text-faint);
+}
+
+/* ── Menu items ───────────────────────────────────────────────────────────── */
+.home-body .menu-items {
+    list-style: none;
+    margin: 0 0 16px 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.home-body .menu-items li {
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.18);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: 0.88rem;
+    color: var(--text-3);
+    transition: background 0.15s;
+}
+
+.home-body .menu-items li:hover {
+    background: rgba(59,130,246,0.18);
+    color: var(--text-2);
+}
+
+.home-body .menu-empty {
+    background: transparent !important;
+    border: 1px dashed rgba(255,255,255,0.12) !important;
+    color: #475569 !important;
+    font-style: italic;
+}
+
+/* ── Reaction buttons ─────────────────────────────────────────────────────── */
+.home-body .rate-row {
+    display: flex;
+    gap: 10px;
+}
+
+.home-body .rate-btn {
+    flex: 1;
+    background: var(--surface);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 12px 6px;
+    font-size: 22px;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-height: 64px;
+    -webkit-tap-highlight-color: transparent;
+    font-family: inherit;
+}
+
+.home-body .rate-btn span {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-faint);
+    margin-top: 2px;
+}
+
+.home-body .rate-btn:hover:not(:disabled) { transform: translateY(-2px); }
+.home-body .rate-good:hover:not(:disabled) {
+    border-color: var(--ok);
+    background: rgba(34,197,94,0.12);
+    box-shadow: 0 4px 16px rgba(34,197,94,0.15);
+}
+.home-body .rate-bad:hover:not(:disabled) {
+    border-color: #ef4444;
+    background: rgba(239,68,68,0.1);
+    box-shadow: 0 4px 16px rgba(239,68,68,0.12);
+}
+.home-body .rate-skip:hover:not(:disabled) {
+    border-color: var(--text-faint);
+    background: rgba(100,116,139,0.12);
+}
+.home-body .rate-btn:disabled { opacity: 0.38; cursor: not-allowed; transform: none; }
+.home-body .rate-btn-sending  { border-color: var(--accent); }
+
+/* ── Suggestion disclosure ────────────────────────────────────────────────── */
+.home-body .suggestion-details { margin-top: 14px; }
+
+.home-body .suggestion-details summary {
+    cursor: pointer;
+    font-size: 0.84rem;
+    color: var(--accent);
+    padding: 6px 0;
+    list-style: none;
+}
+
+.home-body .suggestion-details summary::-webkit-details-marker { display: none; }
+.home-body .suggestion-details summary::before { content: "＋ "; font-weight: 600; }
+.home-body .suggestion-details[open] summary::before { content: "－ "; }
+
+.home-body .suggestion-input {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-2);
+    margin-top: 8px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.home-body .suggestion-input::placeholder { color: #475569; }
+.home-body .suggestion-input:focus {
+    outline: none;
+    border-color: rgba(59,130,246,0.5);
+    background: rgba(59,130,246,0.06);
+}
+
+/* ── Detail CTA ───────────────────────────────────────────────────────────── */
+.home-body .detail-cta { text-align: center; padding: 24px 20px; }
+
+.home-body .detail-cta h2 { color: var(--text-strong); font-size: 1.1rem; margin-bottom: 8px; }
+.home-body .detail-cta .subtext-line { color: var(--text-faint); font-size: 0.88rem; }
+
+.home-body .detail-link {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 12px 28px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    text-decoration: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.92rem;
+    transition: opacity 0.18s, transform 0.18s;
+    box-shadow: 0 4px 16px rgba(59,130,246,0.25);
+}
+
+.home-body .detail-link:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+/* ── Scroll-to-top button ─────────────────────────────────────────────────── */
+.scroll-top-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 700;
+    box-shadow: 0 4px 16px rgba(59,130,246,0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 50;
+}
+
+.scroll-top-btn:hover { transform: translateY(-2px); opacity: 0.88; }
+.scroll-top-btn.visible { display: flex; }
+
+/* ── Card hidden for filter ──────────────────────────────────────────────── */
+.meal-card.hidden-by-filter {
+    display: none;
+}
+
+/* ── Home header (legacy, kept for non-home pages) ────────────────────────── */
 .home-header {
-    background: linear-gradient(135deg, #2E75B6 0%, #1F4E79 100%);
+    background: linear-gradient(135deg, var(--blue-600) 0%, var(--blue-800) 100%);
     color: white;
     padding: 24px 20px;
     text-align: center;
@@ -596,6 +1422,16 @@ textarea {
     font-size: 0.85rem !important;
     opacity: 0.75 !important;
     margin-top: 6px;
+}
+
+/* ── Responsive adjustments ───────────────────────────────────────────────── */
+@media (max-width: 680px) {
+    .specials-container { grid-template-columns: 1fr; }
+    .home-nav-link:not(.home-nav-cta) { display: none; }
+    .home-body .rate-btn { font-size: 18px; min-height: 58px; }
+    .meal-head { flex-direction: column; }
+    .meal-head-right { flex-direction: row; align-items: center; }
+    .home-page-title { font-size: 1.25rem; }
 }
 
 /* ── Meal cards ────────────────────────────────────────────────────────────── */
@@ -700,7 +1536,7 @@ textarea {
 .rate-skip:hover:not(:disabled) { border-color: #90A4AE; background-color: #F5F7F8; }
 
 .rate-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
-.rate-btn-sending { border-color: #2E75B6; }
+.rate-btn-sending { border-color: var(--blue-600); }
 
 /* ── Suggestion disclosure ─────────────────────────────────────────────────── */
 .suggestion-details { margin-top: 14px; }
@@ -708,7 +1544,7 @@ textarea {
 .suggestion-details summary {
     cursor: pointer;
     font-size: 0.85rem;
-    color: #2E75B6;
+    color: var(--blue-600);
     padding: 6px 0;
     list-style: none;
 }
@@ -733,7 +1569,9 @@ textarea {
 .menu-day { padding: 18px 20px; }
 
 .menu-day-today {
-    border-left: 4px solid #2E75B6;
+    /* A 4px colour bar was the light-theme marker; the dark shell already
+       overrode it to a 1px accent border, so the two disagreed. One ring. */
+    border: 1px solid var(--blue-600);
 }
 
 .menu-day-head {
@@ -758,4 +1596,635 @@ textarea {
     .rate-btn { font-size: 20px; min-height: 58px; }
     .meal-head { flex-direction: column; }
     .meal-tally { text-align: left; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * UNIFIED APP SHELL — admin & dashboards
+ * ──────────────────────────────────────────────────────────────────────────
+ * Brings the admin console and both dashboards into the same dark, glassy
+ * visual world as the student home page. Everything here is scoped to
+ * body.admin-body (console/dashboards) or body.auth-body (admin sign-in) so
+ * the light student form and committee pages are left exactly as they were.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+body.admin-body {
+    background: linear-gradient(160deg, var(--bg-900) 0%, var(--bg-800) 50%, var(--bg-850) 100%);
+    background-attachment: fixed;
+    color: var(--text-3);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: 0 0 56px;
+    min-height: 100vh;
+}
+
+/* ── Sticky glass top bar (shared chrome, mirrors the home header) ─────────── */
+.app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--chrome-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+}
+
+.app-topbar-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.app-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    text-decoration: none;
+}
+
+.app-topbar-tag {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 4px 11px;
+    border-radius: 999px;
+}
+
+/* ── Page container + header ───────────────────────────────────────────────── */
+body.admin-body .admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px 20px 0;
+}
+
+body.admin-body .admin-header {
+    color: var(--text);
+    margin-bottom: 26px;
+    align-items: center;
+}
+
+body.admin-body .admin-header h1 {
+    font-size: 1.55rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-strong);
+}
+
+body.admin-body .admin-header p { color: var(--text-muted); }
+
+/* ── Surfaces: cards, charts, tables, banners share one glass treatment ────── */
+body.admin-body .card,
+body.admin-body .stat-card,
+body.admin-body .chart-container,
+body.admin-body .suggestions-container,
+body.admin-body .credential-banner,
+body.admin-body .menu-day {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.28);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+}
+
+body.admin-body h2 { color: var(--text); }
+body.admin-body .subtext,
+body.admin-body .subtext-line { color: var(--text-muted); }
+body.admin-body code { color: var(--accent-ink); }
+
+/* ── Stat cards ────────────────────────────────────────────────────────────── */
+body.admin-body .stat-card {
+    text-align: left;
+    padding: 22px 24px;
+}
+
+body.admin-body .stat-card h3 {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+body.admin-body .stat-value {
+    color: var(--text-strong);
+    font-size: 42px;
+    letter-spacing: -0.02em;
+}
+
+body.admin-body .stat-card.score-red {
+    background: rgba(239, 83, 80, 0.13);
+    border-color: rgba(239, 83, 80, 0.34);
+}
+body.admin-body .stat-card.score-red .stat-value { color: var(--danger-text); }
+
+body.admin-body .stat-card.score-amber {
+    background: rgba(255, 179, 0, 0.13);
+    border-color: rgba(255, 179, 0, 0.34);
+}
+body.admin-body .stat-card.score-amber .stat-value { color: #fcd34d; }
+
+body.admin-body .stat-card.score-green {
+    background: rgba(34, 197, 94, 0.13);
+    border-color: rgba(34, 197, 94, 0.34);
+}
+body.admin-body .stat-card.score-green .stat-value { color: var(--ok-text); }
+
+/* ── Chart + suggestions headings ──────────────────────────────────────────── */
+body.admin-body .chart-container h3,
+body.admin-body .suggestions-container h3 { color: var(--text); }
+
+/* ── Toggle / nav buttons ──────────────────────────────────────────────────── */
+body.admin-body .toggle-btn {
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text-3);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight: 500;
+    transition: all 0.18s ease;
+}
+body.admin-body .toggle-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.09);
+    color: #fff;
+    border-color: var(--border-hover);
+}
+body.admin-body .toggle-btn.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+/* ── Roster table ──────────────────────────────────────────────────────────── */
+body.admin-body .members-table th {
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-strong);
+}
+body.admin-body .members-table td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--text-3);
+}
+body.admin-body .members-table tr.row-inactive {
+    color: var(--text-faint);
+    background: rgba(255, 255, 255, 0.02);
+}
+body.admin-body .term-cell { color: var(--text-muted); }
+
+/* ── Badges ────────────────────────────────────────────────────────────────── */
+body.admin-body .badge-active   { background: rgba(34, 197, 94, 0.16);  color: #4ade80; }
+body.admin-body .badge-inactive { background: rgba(148, 163, 184, 0.16); color: var(--text-muted); }
+body.admin-body .badge-pending  { background: rgba(251, 146, 60, 0.16); color: var(--warn); }
+
+/* ── One-time credential reveal ────────────────────────────────────────────── */
+body.admin-body .credential-banner {
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+body.admin-body .credential-banner h3 { color: #4ade80; }
+body.admin-body .credential-table { background: rgba(0, 0, 0, 0.22); }
+body.admin-body .credential-table th {
+    background: var(--surface);
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+}
+body.admin-body .credential-table td { border-bottom: 1px solid var(--border); }
+body.admin-body .credential-value {
+    background: rgba(96, 165, 250, 0.16);
+    color: #bfdbfe;
+}
+
+/* ── Forms ─────────────────────────────────────────────────────────────────── */
+body.admin-body .suggestion-input,
+body.admin-body textarea,
+body.admin-body .dropdown,
+body.auth-body .suggestion-input {
+    background: rgba(15, 23, 36, 0.6);
+    border: 1px solid var(--border-strong);
+    color: var(--text-2);
+}
+body.admin-body .suggestion-input::placeholder,
+body.admin-body textarea::placeholder,
+body.auth-body .suggestion-input::placeholder { color: var(--text-faint); }
+body.admin-body .suggestion-input:focus,
+body.admin-body textarea:focus,
+body.auth-body .suggestion-input:focus {
+    border-color: var(--accent);
+    background: rgba(15, 23, 36, 0.9);
+}
+body.admin-body .item-label,
+body.auth-body .item-label { color: var(--text-3); }
+
+/* ── Primary button ────────────────────────────────────────────────────────── */
+body.admin-body .submit-btn,
+body.auth-body .submit-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+}
+body.admin-body .submit-btn:hover,
+body.auth-body .submit-btn:hover {
+    filter: brightness(1.08);
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+
+/* ── Inline / link buttons ─────────────────────────────────────────────────── */
+body.admin-body .link-btn { color: var(--brand-from); }
+body.admin-body .link-btn:hover { color: var(--accent-ink); }
+body.admin-body .link-btn.danger { color: var(--danger); }
+body.admin-body .link-btn.danger:hover { color: var(--danger-text); }
+
+/* ── Alerts, empty states, suggestion rows ─────────────────────────────────── */
+body.admin-body .alert.error {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--danger-text);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+body.admin-body .alert.success {
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--ok-text);
+    border-color: rgba(34, 197, 94, 0.3);
+}
+body.admin-body .empty-state { color: var(--text-faint); }
+body.admin-body .suggestion-item { border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+body.admin-body .suggestion-text { color: var(--text-2); }
+body.admin-body .suggestion-time { color: var(--text-faint); }
+
+/* ── Menu editor ───────────────────────────────────────────────────────────── */
+body.admin-body .menu-day-today {
+    border-left: 1px solid var(--border);
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 10px 34px rgba(59, 130, 246, 0.18);
+}
+body.admin-body .menu-day-head {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+}
+body.admin-body .menu-field .item-label { color: var(--text-muted); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * ADMIN SIGN-IN — centered glass auth card
+ * ══════════════════════════════════════════════════════════════════════════ */
+body.auth-body {
+    background: linear-gradient(160deg, var(--bg-900) 0%, var(--bg-800) 50%, var(--bg-850) 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--text-3);
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 38px 32px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+}
+
+.auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    justify-content: center;
+    margin-bottom: 22px;
+}
+
+.auth-card h2 {
+    color: var(--text-strong);
+    text-align: center;
+    font-size: 1.3rem;
+    margin-bottom: 6px;
+}
+
+.auth-card .subtext-line {
+    color: var(--text-muted);
+    text-align: center;
+}
+
+body.auth-body .alert.error {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--danger-text);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    max-width: 400px;
+    width: 100%;
+    margin: 0 auto 16px;
+}
+
+/* ── App shell: mobile hardening ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .app-topbar { padding: 0 16px; }
+    .app-topbar-inner { height: 52px; }
+    body.admin-body .admin-container { padding: 22px 16px 0; }
+    /* Restore full-width children so the page title wraps instead of overflowing
+       (the desktop rule centers the header row, which would otherwise shrink the
+       title box to its unwrapped width). */
+    body.admin-body .admin-header {
+        align-items: stretch;
+        gap: 12px;
+    }
+    body.admin-body .admin-header h1 { font-size: 1.3rem; }
+    body.admin-body .admin-nav { flex-wrap: wrap; }
+    .auth-card { padding: 30px 22px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * APP SHELL COMPONENTS
+ * ──────────────────────────────────────────────────────────────────────────
+ * .toggle-btn used to carry four unrelated jobs — page navigation, the
+ * 7/30-day chart switch, "Save", and "Sign out" — all rendered identically,
+ * so nothing on the page told you which controls navigated and which ones
+ * changed something. These are those four jobs, separated.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Top bar: now carries the nav, matching the student home's chrome ─────── */
+.app-topbar-inner { height: 60px; }
+
+.app-topbar-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.app-clock {
+    flex: 1;
+    text-align: center;
+    font-size: 1.05rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+/* ── 1. Navigation — quiet, borderless, never looks like an action ───────── */
+.nav-link {
+    display: inline-block;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 7px 12px;
+    border-radius: var(--r-sm);
+    border: 1px solid transparent;
+    background: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.nav-link:hover { background: var(--surface-hover); color: var(--text-2); }
+.nav-link[aria-current="page"] {
+    color: var(--text-strong);
+    background: var(--surface);
+    border-color: var(--border);
+}
+
+/* ── 2. Segmented control — one control with parts, not two loose buttons ── */
+.segmented {
+    display: inline-flex;
+    padding: 3px;
+    gap: 2px;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+}
+
+.segmented-btn {
+    appearance: none;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.segmented-btn:hover:not([aria-pressed="true"]) { color: var(--text-2); background: var(--surface-hover); }
+.segmented-btn[aria-pressed="true"] {
+    background: var(--accent-strong);
+    color: #fff;
+}
+
+/* ── 3. Secondary action — bordered, for Save / Sign out / Copy ──────────── */
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text-3);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.btn-secondary:hover {
+    background: var(--surface-active);
+    border-color: var(--border-hover);
+    color: var(--text-strong);
+}
+
+/* ── 4. Table row actions — quiet until you reach for them ───────────────── */
+.table-action {
+    appearance: none;
+    border: 1px solid transparent;
+    background: none;
+    color: var(--text-3);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;   /* the underlined link-button read as a stray href */
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.table-action:hover {
+    background: var(--surface-hover);
+    color: var(--text-strong);
+    border-color: var(--border);
+}
+.table-action.danger { color: var(--text-muted); }
+.table-action.danger:hover {
+    background: var(--danger-bg);
+    border-color: var(--danger-border);
+    color: var(--danger-text);
+}
+
+/* ── Chart empty state ───────────────────────────────────────────────────── */
+/* The old empty message sat inside a fixed 300px canvas box, so "no data yet"
+   cost the same vertical space as a full chart. It collapses now. */
+.canvas-wrapper.is-empty { height: auto; min-height: 0; }
+
+.chart-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
+    padding: 34px 20px;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--r-md);
+    background: rgba(255, 255, 255, 0.015);
+}
+.chart-empty-title { color: var(--text-3); font-size: 0.92rem; font-weight: 600; }
+.chart-empty-hint  { color: var(--text-faint); font-size: 0.82rem; max-width: 34ch; }
+
+/* ── Stat cards: a number with no comparison is not yet information ───────── */
+body.admin-body .stat-card { display: flex; flex-direction: column; gap: 2px; }
+body.admin-body .stat-value { line-height: 1.1; margin-top: 2px; }
+
+/* "--" is absence, not a measurement; it should not shout like a result. */
+body.admin-body .stat-value.is-empty { color: var(--text-faint); font-weight: 600; }
+
+.stat-note {
+    font-size: 0.78rem;
+    color: var(--text-faint);
+    margin-top: 6px;
+}
+
+/* ── Roster table: a hover target the width of the row ───────────────────── */
+body.admin-body .members-table tbody tr {
+    transition: background var(--dur) var(--ease);
+}
+body.admin-body .members-table tbody tr:hover { background: var(--surface); }
+body.admin-body .members-table td { vertical-align: middle; }
+.members-table th.num, .members-table td.num { text-align: center; }
+
+/* ── Suggestion / review lists ───────────────────────────────────────────── */
+/* A nested scroll region is a touch trap only when its edges are invisible.
+   Letting the list run free was worse: fifty suggestions made the page 5,200px
+   tall. It stays bounded and visibly scrollable, with a fade marking the cut. */
+.suggestions-container { position: relative; }
+.suggestions-list { -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 768px) {
+    .suggestions-list { max-height: 60vh; padding-right: 6px; }
+}
+
+body.admin-body .suggestions-list { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+body.admin-body .suggestions-list::-webkit-scrollbar { width: 8px; }
+body.admin-body .suggestions-list::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: var(--r-pill);
+}
+
+/* ── Focus: one visible ring on every interactive thing, no exceptions ───── */
+.nav-link:focus-visible,
+.segmented-btn:focus-visible,
+.btn-secondary:focus-visible,
+.table-action:focus-visible,
+.app-brand:focus-visible,
+body.admin-body .submit-btn:focus-visible,
+body.auth-body .submit-btn:focus-visible,
+body.admin-body .suggestion-input:focus-visible,
+body.admin-body textarea:focus-visible,
+body.auth-body .suggestion-input:focus-visible,
+.dropdown:focus-visible,
+select:focus-visible,
+.home-nav-link:focus-visible,
+.day-tab:focus-visible,
+.filter-pill:focus-visible,
+.rate-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* ── Mobile density: three stat cards should not cost a screen of scroll ─── */
+@media (max-width: 640px) {
+    .stat-cards {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+        gap: 12px;
+        margin-bottom: 22px;
+    }
+    body.admin-body .stat-card { padding: 16px 16px 18px; }
+    body.admin-body .stat-value { font-size: 30px; }
+    body.admin-body .stat-card h3 { font-size: 0.7rem; }
+    .app-topbar-inner { height: 54px; }
+    .app-clock { display: none; }   /* the nav needs the room more than the clock does */
+    .charts-row { gap: 14px; }
+}
+
+/* ── Motion: honour the system setting ───────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    .live-dot { animation: none; box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25); }
+}
+
+/* ── Form rhythm: replaces the inline margins that were set per field ─────── */
+.field-gap { margin-top: 16px; }
+
+.form-actions {
+    margin-top: 22px;
+    padding: 0;
+    display: flex;
+}
+.form-actions .submit-btn { width: 100%; }
+
+/* ── Chart row alignment ─────────────────────────────────────────────────── */
+/* Cards size to their own content. Stretching them to the tallest sibling put
+   a collapsed empty state at the top of a half-empty card. */
+.charts-row { align-items: start; }
+
+/* ── List empty states: same component as the chart one ──────────────────── */
+body.admin-body .suggestions-list .empty-state,
+body.admin-body .card > .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+    padding: 30px 20px;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--r-md);
+    background: rgba(255, 255, 255, 0.015);
+    color: var(--text-3);
+    font-style: normal;
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+/* ── Scrollable list keyboard affordance (SC 2.1.1 / 2.4.7) ──────────────── */
+/* A region that scrolls must be reachable by keyboard, and must show where
+   focus is once it gets there. */
+.suggestions-list:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: var(--r-sm);
+}
+
+/* The auth card's h1 keeps the visual weight the h2 had. */
+.auth-card h1 {
+    color: var(--text-strong);
+    text-align: center;
+    font-size: 1.3rem;
+    margin-bottom: 6px;
 }

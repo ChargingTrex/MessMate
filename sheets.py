@@ -624,6 +624,58 @@ MEAL_TIMINGS = {
 
 RATINGS = ["good", "bad", "skip"]
 
+# ── Built-in weekly template — used as fallback when Sheets is offline ───────
+# Keyed by weekday index: 0=Monday … 6=Sunday.
+# Dishes are realistic South Indian / Indian hostel mess templates.
+WEEKLY_MENU_DEFAULTS = {
+    0: {  # Monday
+        "Breakfast": "Idli, Medu Vada, Sambar, Coconut Chutney, Coffee/Tea",
+        "Lunch":     "Steamed Rice, Drumstick Sambar, Beans Poriyal, Curd, Papad, Pickle",
+        "Dinner":    "Phulka Chapati, Paneer Butter Masala, Jeera Rice, Dal Tadka, Green Salad",
+    },
+    1: {  # Tuesday
+        "Breakfast": "Poori, Aloo Masala, Kesari Bath, Coffee/Tea",
+        "Lunch":     "Steamed Rice, Tomato Rasam, Cabbage Poriyal, Mor Kuzhambu, Appalam, Pickle",
+        "Dinner":    "Soft Chapati, Mix Veg Korma, Steamed Rice, Moong Dal, Cut Fruits",
+    },
+    2: {  # Wednesday
+        "Breakfast": "Pongal, Medu Vada, Sambar, Ginger Chutney, Coffee/Tea",
+        "Lunch":     "Veg Pulao, Onion Raita, Steamed Rice, Karakuzhambu, Potato Fry, Curd",
+        "Dinner":    "Chapati, Aloo Gobi Masala, Steamed Rice, Yellow Dal, Fresh Salad",
+    },
+    3: {  # Thursday
+        "Breakfast": "Rava Upma, Coconut Chutney, Sambar, Banana, Coffee/Tea",
+        "Lunch":     "Steamed Rice, Arachuvitta Sambar, Beetroot Poriyal, Mysore Rasam, Curd, Papad",
+        "Dinner":    "Parotta / Chapati, Chana Masala, Veg Fried Rice, Veg Manchurian Gravy",
+    },
+    4: {  # Friday
+        "Breakfast": "Masala Dosa, Potato Masala, Sambar, Tomato Chutney, Coffee/Tea",
+        "Lunch":     "Steamed Rice, Pepper Rasam, Aviyal, Vatha Kuzhambu, Curd, Sweet Payasam",
+        "Dinner":    "Phulka Chapati, Kadai Paneer, Peas Pulao, Dal Makhani, Cucumber Salad",
+    },
+    5: {  # Saturday
+        "Breakfast": "Aloo Paratha, Curd, Pickle, Boiled Egg / Sprouts, Coffee/Tea",
+        "Lunch":     "Lemon Rice, Curd Rice, Potato Kara Curry, Appalam, Pickle",
+        "Dinner":    "Chapati, Dal Palak, Steamed Rice, Tomato Soup / Rasam, Green Salad",
+    },
+    6: {  # Sunday
+        "Breakfast": "Chole Bhature, Onion Pickle, Sweet Kesari, Coffee/Tea",
+        "Lunch":     "Special Veg Biryani, Onion Raita, Brinjal Gravy, Veg Cutlet, Gulab Jamun",
+        "Dinner":    "Phulka Chapati, Paneer Tikka Masala, Steamed Rice, Dal Fry, Ice Cream",
+    },
+}
+
+
+def _default_menu_for_date(date_str):
+    """Returns the built-in weekly template menu for a given date string."""
+    try:
+        d = datetime.strptime(date_str, "%Y-%m-%d")
+        template = WEEKLY_MENU_DEFAULTS.get(d.weekday(), {})
+        return {meal: _split_items(template.get(meal, "")) for meal in MEALS}
+    except Exception:
+        return {meal: [] for meal in MEALS}
+
+
 # Menu reads happen on every home-page load, so they are cached like the roster.
 # A shorter TTL than the roster: a menu correction should appear quickly.
 MENU_TTL_SECONDS = 30
@@ -669,16 +721,20 @@ def _split_items(raw):
 def get_menu_for_date(date_str=None):
     """
     Returns {"Breakfast": [...], "Lunch": [...], "Dinner": [...]} for one date.
-    Meals with nothing published come back as empty lists, which the home page
-    renders as "not published yet" rather than pretending the mess is closed.
+    Falls back to the built-in weekly template when Sheets is offline or the
+    date has no published row, so the home page always shows something useful.
     """
     target = date_str or datetime.now().strftime("%Y-%m-%d")
 
     for record in get_menu_records():
         if str(record.get("Date", "")).strip() == target:
-            return {meal: _split_items(record.get(meal, "")) for meal in MEALS}
+            result = {meal: _split_items(record.get(meal, "")) for meal in MEALS}
+            # If every meal is empty the row exists but is blank — use template
+            if any(result[m] for m in MEALS):
+                return result
 
-    return {meal: [] for meal in MEALS}
+    # No sheet row found (or all blank) — return the weekly template fallback
+    return _default_menu_for_date(target)
 
 
 def get_menu_week(start_date=None, days=7):
@@ -689,19 +745,30 @@ def get_menu_week(start_date=None, days=7):
     start = (datetime.strptime(start_date, "%Y-%m-%d") if start_date
              else datetime.now())
     published = {str(r.get("Date", "")).strip(): r for r in get_menu_records()}
+    today_str = datetime.now().strftime("%Y-%m-%d")
 
     week = []
     for offset in range(days):
         day = start + timedelta(days=offset)
         date_str = day.strftime("%Y-%m-%d")
         row = published.get(date_str, {})
+
+        # Build meal strings: use sheet row if non-blank, else weekly template
+        def _meal_str(meal):
+            val = str(row.get(meal, "")).strip()
+            if val:
+                return val
+            # Fall back to built-in template for this weekday
+            template = WEEKLY_MENU_DEFAULTS.get(day.weekday(), {})
+            return template.get(meal, "")
+
         week.append({
             "date": date_str,
             "label": day.strftime("%a %d %b"),
-            "is_today": date_str == datetime.now().strftime("%Y-%m-%d"),
-            "Breakfast": str(row.get("Breakfast", "")),
-            "Lunch": str(row.get("Lunch", "")),
-            "Dinner": str(row.get("Dinner", "")),
+            "is_today": date_str == today_str,
+            "Breakfast": _meal_str("Breakfast"),
+            "Lunch":     _meal_str("Lunch"),
+            "Dinner":    _meal_str("Dinner"),
         })
     return week
 

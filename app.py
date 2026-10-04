@@ -18,6 +18,7 @@ Routes:
 import os
 import html
 import re
+import json
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from flask_limiter import Limiter
@@ -849,12 +850,19 @@ def committee_dashboard():
 
 @app.route("/home", methods=["GET"])
 def home():
-    """Today's menu with a quick reaction per meal."""
+    """Today's menu with a quick reaction per meal and day-wise navigation."""
     today = datetime.now().strftime("%Y-%m-%d")
+    selected_date = request.args.get("date", today).strip()
 
     try:
-        menu = sheets.get_menu_for_date(today)
+        datetime.strptime(selected_date, "%Y-%m-%d")
+    except ValueError:
+        selected_date = today
+
+    try:
+        menu = sheets.get_menu_for_date(selected_date)
         tallies = sheets.summarise_meal_ratings(today)
+        week = sheets.get_menu_week()
     except Exception as e:
         # Same posture as the dashboards: a Sheets problem must not take the
         # student-facing page down with it
@@ -862,6 +870,24 @@ def home():
         menu = {meal: [] for meal in sheets.MEALS}
         tallies = {meal: {"good": 0, "bad": 0, "skip": 0, "total": 0, "score": 0}
                    for meal in sheets.MEALS}
+        week = []
+
+    # Build lookup for client-side instant day switching
+    week_menu_lookup = {}
+    for day_info in week:
+        d_str = day_info.get("date")
+        if d_str:
+            week_menu_lookup[d_str] = {
+                meal: sheets._split_items(day_info.get(meal, ""))
+                for meal in sheets.MEALS
+            }
+
+    try:
+        display_date = datetime.strptime(selected_date, "%Y-%m-%d").strftime("%A, %d %B %Y")
+    except Exception:
+        display_date = datetime.now().strftime("%A, %d %B %Y")
+
+    is_admin = auth.is_admin_session() or auth.has_valid_token()
 
     return render_template(
         "home.html",
@@ -869,8 +895,14 @@ def home():
         menu=menu,
         timings=sheets.MEAL_TIMINGS,
         tallies=tallies,
-        today_date=datetime.now().strftime("%A, %d %B %Y"),
+        today_date=display_date,
+        is_today=(selected_date == today),
+        today_iso=today,
+        selected_date=selected_date,
+        week=week,
+        week_json=json.dumps(week_menu_lookup),
         rated=request.args.get("rated", ""),
+        is_admin=is_admin,
     )
 
 

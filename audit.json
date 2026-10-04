@@ -1,0 +1,171 @@
+{
+  "project": "MessMate",
+  "audited": "2026-10-05",
+  "commit": "bcc3580",
+  "standard": "WCAG 2.2",
+  "level_targeted": "AA",
+  "criteria_total": 55,
+  "verdict": {
+    "conforms": false,
+    "statement": "Does not conform to WCAG 2.2 Level AA.",
+    "failing_criteria": ["1.1.1", "1.3.1", "1.4.3", "1.4.10", "2.2.2", "3.3.2", "4.1.2"],
+    "failing_count": 7,
+    "level_a_failures": 4,
+    "note": "Findings report, not a conformance claim."
+  },
+  "score": {
+    "total": 70,
+    "grade": "B",
+    "grade_label": "AA with minor gaps",
+    "is_conformance_claim": false,
+    "surfaces": [
+      {"name": "Blocking failures", "weight": 30, "scored": 19,
+       "note": "4 chart canvases + 2 form controls have no accessible name; keyboard, focus and flash safety pass"},
+      {"name": "Colour & contrast", "weight": 20, "scored": 17,
+       "note": "16 of 19 applicable pairs pass AA (84%)"},
+      {"name": "Typography", "weight": 15, "scored": 13,
+       "note": "No size-floor violations; survives 1.4.12 override on all 7 pages; sizes are ad-hoc"},
+      {"name": "Targets & pointer", "weight": 10, "scored": 10,
+       "note": "94 targets measured, none below the 24px floor"},
+      {"name": "Motion", "weight": 10, "scored": 5,
+       "note": "Flash-safe, reduced-motion honoured, but the 38s ticker has no pause control"},
+      {"name": "Infographics & media", "weight": 10, "scored": 3,
+       "note": "All four chart canvases lack a text alternative"},
+      {"name": "AAA headroom", "weight": 5, "scored": 3,
+       "note": "Reduced-motion earns credit; 7:1 contrast and 44px targets do not"}
+    ]
+  },
+  "pages": ["/", "/home", "/dashboard", "/dashboard/committee", "/admin/login", "/committee/login", "/thanks"],
+  "methodology": {
+    "tooling_gap": "The wcag-audit skill synced without scripts/ and references/. No axe-core, Playwright or Node available. WCAG arithmetic reimplemented from normative formulas and self-tested: 27/27 against published reference values.",
+    "browser": "Chrome 154 via Selenium 4.36, headless",
+    "corrections": [
+      "Headless Chrome clamps window width to ~500 CSS px; the first reflow pass measured 500px and reported a false pass. Redone via CDP Emulation.setDeviceMetricsOverride.",
+      "Flagging animation-name != none produced 4 false reduced-motion failures; the guard zeroes duration and iteration count. Re-measured as duration x iterations.",
+      "Focus styles read immediately after .focus() returned pre-transition values (transition: border-color 0.2s). Re-measured after settling."
+    ],
+    "dismissed": [
+      "/home suggestion inputs unreachable by Tab - they are inside a closed <details>; the summary is reachable. Correct pattern.",
+      "button#submit-btn measures 1.91:1 but is disabled on load; SC 1.4.3 exempts inactive components."
+    ],
+    "not_tested": [
+      "Screen-reader output (NVDA/JAWS/VoiceOver) - 4.1.2 assessed from DOM accessible names",
+      "1.2.x not applicable, no audio or video",
+      "Form error association inferred from source, not exercised against a live validation failure"
+    ]
+  },
+  "findings": [
+    {
+      "id": 1,
+      "title": "Chart canvases have no text alternative",
+      "criteria": [{"sc": "1.1.1", "name": "Non-text Content", "level": "A"}],
+      "severity": "critical",
+      "status": "measured",
+      "locations": [
+        {"file": "templates/dashboard.html", "line": 105, "element": "canvas#trendChart"},
+        {"file": "templates/dashboard.html", "line": 113, "element": "canvas#itemChart"},
+        {"file": "templates/committee_dashboard.html", "line": 95, "element": "canvas#dimensionChart"},
+        {"file": "templates/committee_dashboard.html", "line": 108, "element": "canvas#committeeTrendChart"}
+      ],
+      "measured": "aria_label empty, role empty, no caption, no fallback content on all four",
+      "replacement": "role=\"img\" plus a generated aria-label carrying the finding, plus a visually-hidden data table",
+      "effort": "~2h"
+    },
+    {
+      "id": 2,
+      "title": "Two form controls have no programmatic label",
+      "criteria": [
+        {"sc": "1.3.1", "name": "Info and Relationships", "level": "A"},
+        {"sc": "3.3.2", "name": "Labels or Instructions", "level": "A"},
+        {"sc": "4.1.2", "name": "Name, Role, Value", "level": "A"}
+      ],
+      "severity": "critical",
+      "status": "measured",
+      "locations": [
+        {"file": "templates/form.html", "line": 192, "element": "textarea#review"},
+        {"file": "templates/form.html", "line": 199, "element": "input[name=suggestion]"}
+      ],
+      "measured": "labelled: false on both; placeholder only",
+      "replacement": "Explicit <label for>, plus aria-describedby to tie the character counter to the textarea",
+      "effort": "~15min"
+    },
+    {
+      "id": 3,
+      "title": "Three text/background pairs below 4.5:1",
+      "criteria": [{"sc": "1.4.3", "name": "Contrast (Minimum)", "level": "AA"}],
+      "severity": "serious",
+      "status": "measured",
+      "pairs": [
+        {"fg": "#888888", "bg": "#ffffff", "size_px": 12.8, "ratio": 3.54, "need": 4.5,
+         "where": "div#char-counter on /", "fix": "#767676", "fixed_ratio": 4.54, "lightness_delta": -6.9},
+        {"fg": "#777777", "bg": "#f7f9fc", "size_px": 14.4, "ratio": 4.25, "need": 4.5,
+         "where": ".subtext, .subtext-line on /", "fix": "#727272", "fixed_ratio": 4.56, "lightness_delta": -1.8},
+        {"fg": "#777777", "bg": "#ffffff", "size_px": 14.4, "ratio": 4.48, "need": 4.5,
+         "where": ".subtext on /, /committee/login", "fix": "#767676", "fixed_ratio": 4.54, "lightness_delta": -0.2}
+      ],
+      "replacement": "--text-muted: #727272 covers both subtext cases; .char-counter: #767676",
+      "effort": "~10min"
+    },
+    {
+      "id": 4,
+      "title": "Horizontal scrolling at 320 CSS px",
+      "criteria": [{"sc": "1.4.10", "name": "Reflow", "level": "AA"}],
+      "severity": "serious",
+      "status": "measured",
+      "pages_failing": [
+        {"page": "/home", "viewport": 320, "content_width": 351,
+         "offenders": ["div#tickerContent (6678px wide)", "nav.home-nav (right: 351px)"]},
+        {"page": "/dashboard", "viewport": 320, "content_width": 341,
+         "offenders": ["nav.app-topbar-nav (right: 341px)"]},
+        {"page": "/dashboard/committee", "viewport": 320, "content_width": 341,
+         "offenders": ["nav.app-topbar-nav (right: 341px)"]}
+      ],
+      "pages_passing": ["/", "/admin/login", "/committee/login", "/thanks"],
+      "also": "At 256px (~400% zoom) / fails too, at 299px, from the .emoji-btn row",
+      "replacement": "overflow:hidden on .ticker-section; flex-wrap on both top bars under 420px",
+      "effort": "~1h"
+    },
+    {
+      "id": 5,
+      "title": "Scrolling ticker cannot be paused",
+      "criteria": [{"sc": "2.2.2", "name": "Pause, Stop, Hide", "level": "A"}],
+      "severity": "serious",
+      "status": "measured",
+      "measured": "div#tickerContent runs tickerScroll 38s infinite, auto-starting, alongside other content",
+      "note": "The prefers-reduced-motion guard at style.css:2172 works (0 effectively-moving animations measured under the OS setting) but 2.2.2 requires an operable control, not only an OS preference",
+      "animations": [
+        {"page": "/home", "selector": "div#tickerContent", "animation": "tickerScroll", "duration_s": 38, "iterations": "infinite", "exceeds_5s": true},
+        {"page": "/home", "selector": "span#badge-breakfast", "animation": "servingGlow", "duration_s": 2.5, "iterations": "infinite", "exceeds_5s": false},
+        {"page": "multiple", "selector": "span.live-dot", "animation": "livePulse", "duration_s": 2, "iterations": "infinite", "exceeds_5s": false}
+      ],
+      "replacement": "A #tickerToggle button with aria-pressed toggling animationPlayState",
+      "effort": "~45min"
+    }
+  ],
+  "passing": [
+    {"sc": "1.4.12", "level": "AA", "evidence": "Spacing override clips 0 containers across all 7 pages"},
+    {"sc": "2.1.1", "level": "A", "evidence": "Every focusable element reached by real Tab on all 7 pages"},
+    {"sc": "2.1.2", "level": "A", "evidence": "Focus cycles through BODY and wraps; no trap"},
+    {"sc": "2.4.7", "level": "AA", "evidence": "Every focused control shows an indicator; border-colour route measures 3.57:1 state change"},
+    {"sc": "2.5.8", "level": "AA", "evidence": "94 targets measured, none below 24px; the one 17px element is an exempt inline link"},
+    {"sc": "2.3.1", "level": "A", "evidence": "No flashing; fastest animation is a 2s pulse"},
+    {"sc": "3.1.1", "level": "A", "evidence": "lang=\"en\" on all 7 pages"},
+    {"sc": "2.4.2", "level": "A", "evidence": "All 7 pages have unique descriptive titles"},
+    {"sc": "2.4.1", "level": "A", "evidence": "No skip link, but main landmarks + h1/h2 satisfy via H69"},
+    {"sc": "2.3.3", "level": "AAA", "evidence": "0 effectively-moving animations under prefers-reduced-motion"}
+  ],
+  "roadmap": [
+    {"tier": 1, "name": "Unblock", "reaches": "Level A", "effort": "~3h",
+     "fixes": [{"finding": 1, "effort": "~2h"}, {"finding": 2, "effort": "~15min"}, {"finding": 5, "effort": "~45min"}]},
+    {"tier": 2, "name": "Conform", "reaches": "Level AA", "effort": "~1.2h",
+     "fixes": [{"finding": 3, "effort": "~10min"}, {"finding": 4, "effort": "~1h"}]},
+    {"tier": 3, "name": "Harden", "reaches": "AA + AAA where achievable", "effort": "varies",
+     "items": [
+       {"sc": "2.4.13", "what": "Give .suggestion-input/textarea the focus ring on every page; the ring block at style.css:2135 is scoped to body.admin-body/auth-body, and form.html, committee_login.html, committee_form.html and thanks.html carry no body class. #email on /committee/login measures 2.77:1 state change, below 3:1, and a 1px border misses the 2px-perimeter area requirement."},
+       {"sc": "1.4.6", "what": "Raise body text to 7:1. 11 of 20 pairs already pass. Darkening --blue-600 to #1d5a93 takes white-on-blue from 4.84:1 to 7.04:1."},
+       {"sc": "2.5.5", "what": "Grow targets to 44px. 17 of 94 sit below. The phi ladder from 24px is 24 -> 39 -> 63; 39px suits .segmented-btn (currently 31.2px)."},
+       {"sc": "2.4.1", "what": "Add a skip link. Already passes via H69 but cheap and helps on the dashboards."},
+       {"sc": "3.3.1", "what": "Associate form errors with their fields: role=\"alert\" on the banner, aria-invalid and aria-describedby on the field, move focus to the banner. Inferred from source."}
+     ]}
+  ]
+}

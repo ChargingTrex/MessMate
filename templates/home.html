@@ -18,32 +18,150 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MessMate — Today's Menu 🍽️</title>
+    <meta name="description" content="Check today's mess menu, rate your meals and give quick feedback for Breakfast, Lunch and Dinner.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
-    <header class="home-header">
-        <h1>MessMate</h1>
-        <p>Today's Menu 🍽️</p>
-        <p class="home-date">{{ today_date }}</p>
+<body class="home-body">
+
+    <!-- ── Modern Header Bar ─────────────────────────────────────── -->
+    <header class="home-header-bar">
+        <div class="home-header-inner">
+            <div class="home-brand">
+                <span class="live-dot" title="Live"></span>
+                <span class="brand-logo">MESSMATE</span>
+            </div>
+            <div class="home-clock-wrap">
+                <span id="currentTime" class="home-clock">--:--:--</span>
+            </div>
+            <nav class="home-nav">
+                <a href="{{ url_for('index') }}" class="home-nav-link">Rate Dish</a>
+                <a href="/committee" class="home-nav-link home-nav-cta">Committee</a>
+            </nav>
+        </div>
     </header>
 
-    <main>
-        {% if rated and rated not in ('invalid', 'failed') %}
-        <div class="alert success" id="rated-banner">
-            Thanks — your {{ rated }} rating was recorded. 🙌
+    <!-- ── Ticker Banner ─────────────────────────────────────────── -->
+    <div class="ticker-section" id="tickerSection">
+        <div class="ticker-fade-left"></div>
+        <div class="ticker-track" id="tickerTrack">
+            <div class="ticker-content" id="tickerContent">
+                <!-- JS will fill this -->
+            </div>
         </div>
-        {% elif rated == 'failed' %}
-        <div class="alert error error-banner">
-            Couldn't save that just now. Please try again.
-        </div>
-        {% elif rated == 'invalid' %}
-        <div class="alert error error-banner">
-            Please pick good, bad or skip.
-        </div>
-        {% endif %}
+        <div class="ticker-fade-right"></div>
+    </div>
 
+    <!-- ── Page Subtitle ─────────────────────────────────────────── -->
+    <div class="home-subtitle-bar">
+        <h1 class="home-page-title">Today's Menu 🍽️</h1>
+        <p class="home-page-date" id="homeDisplayDate">{{ today_date }}</p>
+    </div>
+
+    {% if rated and rated not in ('invalid', 'failed') %}
+    <div class="alert-home success" id="rated-banner">
+        ✅ Thanks — your <strong>{{ rated }}</strong> rating was recorded. 🙌
+    </div>
+    {% elif rated == 'failed' %}
+    <div class="alert-home error error-banner">
+        ⚠️ Couldn't save that just now. Please try again.
+    </div>
+    {% elif rated == 'invalid' %}
+    <div class="alert-home error error-banner">
+        ⚠️ Please pick good, bad or skip.
+    </div>
+    {% endif %}
+
+    <!-- ── Day-Wise Selector ──────────────────────────────────────── -->
+    <section class="day-selector-section" aria-label="Week day selector">
+        <div class="day-selector-scroll">
+            {% for day in week %}
+            <button
+                class="day-tab{% if day.date == selected_date %} active{% endif %}{% if day.is_today %} is-today{% endif %}"
+                data-date="{{ day.date }}"
+                onclick="switchDay('{{ day.date }}')"
+                aria-label="{{ day.label }}{% if day.is_today %} (Today){% endif %}"
+                id="daytab-{{ day.date }}"
+            >
+                <span class="day-tab-label">{{ day.label }}</span>
+                {% if day.is_today %}<span class="day-today-badge">Today</span>{% endif %}
+            </button>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- ── Meal Filter Pills ──────────────────────────────────────── -->
+    <section class="meal-filter-section" aria-label="Meal filter">
+        <button class="filter-pill active" data-filter="all" onclick="filterMeal('all')" id="filter-all">All</button>
+        <button class="filter-pill" data-filter="Breakfast" onclick="filterMeal('Breakfast')" id="filter-breakfast">🌅 Breakfast</button>
+        <button class="filter-pill" data-filter="Lunch" onclick="filterMeal('Lunch')" id="filter-lunch">🍛 Lunch</button>
+        <button class="filter-pill" data-filter="Dinner" onclick="filterMeal('Dinner')" id="filter-dinner">🌙 Dinner</button>
+    </section>
+
+    <main class="home-main" id="homeMain">
+
+        <!-- ── Spotlight Widget ──────────────────────────────────── -->
+        <div class="specials-container{% if not is_admin %} no-satisfaction{% endif %}" id="specialsWidget">
+            <!-- Left: active meal highlight -->
+            <div class="specials-left">
+                <div class="specials-active-label">
+                    <span class="serving-dot" id="servingDot"></span>
+                    <span id="servingLabel">Loading...</span>
+                </div>
+                <div class="specials-meal-name" id="activeMealName">--</div>
+                <ul class="specials-dishes" id="activeMealDishes">
+                    <li class="specials-loading">Detecting active meal…</li>
+                </ul>
+            </div>
+            <!-- Right: community satisfaction (Admins only) -->
+            {% if is_admin %}
+            <div class="specials-right">
+                <div class="specials-community-title">
+                    Community Satisfaction
+                    <span class="specials-admin-tag">Admin View</span>
+                </div>
+                {% for meal in meals %}
+                {% set tally = tallies[meal] %}
+                <div class="result-row" id="result-row-{{ meal|lower }}">
+                    <span class="result-meal-label">{{ meal }}</span>
+                    <div class="result-bars">
+                        <div class="result-bar-wrap">
+                            <span class="result-bar-icon">👍</span>
+                            <div class="result-bar">
+                                <div class="result-fill good" style="width: {{ tally.score if tally.total > 0 else 0 }}%"></div>
+                            </div>
+                            <span class="result-bar-pct">{{ tally.score if tally.total > 0 else '--' }}{% if tally.total > 0 %}%{% endif %}</span>
+                        </div>
+                        <div class="result-bar-wrap">
+                            <span class="result-bar-icon">👎</span>
+                            <div class="result-bar">
+                                {% set bad_pct = ((tally.bad / tally.total * 100) | int) if tally.total > 0 else 0 %}
+                                <div class="result-fill bad" style="width: {{ bad_pct }}%"></div>
+                            </div>
+                            <span class="result-bar-pct">{% if tally.total > 0 %}{{ bad_pct }}%{% else %}--{% endif %}</span>
+                        </div>
+                        <div class="result-bar-wrap">
+                            <span class="result-bar-icon">⏭️</span>
+                            <div class="result-bar">
+                                {% set skip_pct = ((tally.skip / tally.total * 100) | int) if tally.total > 0 else 0 %}
+                                <div class="result-fill skip" style="width: {{ skip_pct }}%"></div>
+                            </div>
+                            <span class="result-bar-pct">{% if tally.total > 0 %}{{ skip_pct }}%{% else %}--{% endif %}</span>
+                        </div>
+                    </div>
+                    <span class="result-total">{{ tally.total }} rated</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ── Meal Cards ─────────────────────────────────────────── -->
         {% for meal in meals %}
-        <section class="card meal-card" data-meal="{{ meal }}">
+        <section class="card meal-card" data-meal="{{ meal }}" id="mealcard-{{ meal|lower }}">
             <div class="meal-head">
                 <div>
                     <h2 class="meal-title">
@@ -53,15 +171,18 @@
                     <p class="meal-time">{{ timings[meal] }}</p>
                 </div>
                 {% set tally = tallies[meal] %}
-                {% if tally.total > 0 %}
-                <div class="meal-tally" title="{{ tally.good }} good, {{ tally.bad }} bad, {{ tally.skip }} skipped">
-                    <span class="tally-score
-                        {%- if tally.score >= 70 %} tally-good
-                        {%- elif tally.score >= 40 %} tally-mixed
-                        {%- else %} tally-poor{% endif %}">{{ tally.score }}%</span>
-                    <span class="tally-count">{{ tally.total }} rated</span>
+                <div class="meal-head-right">
+                    {% if tally.total > 0 %}
+                    <div class="meal-tally" title="{{ tally.good }} good, {{ tally.bad }} bad, {{ tally.skip }} skipped">
+                        <span class="tally-score
+                            {%- if tally.score >= 70 %} tally-good
+                            {%- elif tally.score >= 40 %} tally-mixed
+                            {%- else %} tally-poor{% endif %}">{{ tally.score }}%</span>
+                        <span class="tally-count">{{ tally.total }} rated</span>
+                    </div>
+                    {% endif %}
+                    <span class="meal-active-badge" id="badge-{{ meal|lower }}" style="display:none">🟢 SERVING NOW</span>
                 </div>
-                {% endif %}
             </div>
 
             <ul class="menu-items" id="menu-{{ meal|lower }}">
@@ -103,12 +224,14 @@
                     <summary>Add a suggestion <span class="subtext">(optional)</span></summary>
                     <input type="text" name="suggestion" maxlength="200"
                            class="suggestion-input"
+                           aria-label="Suggestion for {{ meal }} (optional)"
                            placeholder="What would you like to see instead?">
                 </details>
             </form>
         </section>
         {% endfor %}
 
+        <!-- ── Detail CTA ────────────────────────────────────────── -->
         <section class="card detail-cta">
             <h2>Want to say more?</h2>
             <p class="subtext-line">
@@ -121,6 +244,17 @@
         </section>
     </main>
 
+    <!-- ── Scroll-to-Top Button ───────────────────────────────────── -->
+    <button id="scrollTopBtn" class="scroll-top-btn" aria-label="Scroll to top" onclick="scrollToTop()">↑</button>
+
+    <!-- Embed weekly menu data for instant client-side switching -->
+    <script>
+        window.MESSMATE_WEEK = {{ week_json | safe }};
+        window.MESSMATE_TODAY_ISO = "{{ today_iso }}";
+        window.MESSMATE_SELECTED = "{{ selected_date }}";
+        window.MESSMATE_MEALS = {{ meals | tojson }};
+        window.MESSMATE_WEEK_META = {{ week | tojson }};
+    </script>
     <script src="{{ url_for('static', filename='home.js') }}"></script>
 </body>
 </html>
