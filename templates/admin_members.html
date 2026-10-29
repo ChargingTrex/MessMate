@@ -15,43 +15,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MessMate — Committee Members</title>
-    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script defer src="{{ url_for('static', filename='app-shell.js') }}"></script>
+  {% set page_title = 'MessMate — Committee Members' %}{% include '_head.html' %}
 </head>
 <body class="admin-body">
-<header class="app-topbar">
-  <div class="app-topbar-inner">
-    <a class="app-brand" href="{{ url_for('home') }}">
-      <span class="live-dot" title="Live"></span>
-      <span class="brand-logo">MESSMATE</span>
-    </a>
-    <span id="appClock" class="app-clock" aria-label="Current time">--:--:--</span>
-    <nav class="app-topbar-nav" aria-label="Admin sections">
-      <a href="{{ url_for('admin_menu') }}" class="nav-link">Menu</a>
-      <a href="{{ url_for('admin_members') }}" class="nav-link" aria-current="page">Members</a>
-      <a href="{{ url_for('committee_dashboard') }}" class="nav-link">Committee</a>
-      <form method="POST" action="{{ url_for('admin_logout') }}">
-        {{ csrf_field() }}
-        <button type="submit" class="btn-secondary">Sign out</button>
-      </form>
-    </nav>
-  </div>
-</header>
+{% set active = 'members' %}{% include '_topbar.html' %}
     <div class="admin-container">
 
         <div class="admin-header">
             <div>
+                <p class="eyebrow">Food Committee</p>
                 <h1>Committee Members 👥</h1>
-                <p>{{ active_count }} active member{{ '' if active_count == 1 else 's' }}</p>
+                <p>{{ active_count }} active member{{ '' if active_count == 1 else 's' }}
+                   · {{ reviewed_today_count }} reviewed today
+                   {% if pending_count %}· {{ pending_count }} never signed in{% endif %}</p>
             </div>
-
+            <div class="admin-header-actions">
+                <a href="{{ url_for('committee_dashboard') }}" class="btn-secondary">Committee dashboard</a>
+            </div>
         </div>
 
         {% if error %}
@@ -95,6 +75,7 @@
                     <thead>
                         <tr>
                             <th>Name</th><th>Email</th><th>Status</th>
+                            <th class="num">Today</th>
                             <th>Term</th><th class="num">Reviews<br>this month</th><th>Actions</th>
                         </tr>
                     </thead>
@@ -113,6 +94,10 @@
                                 {% else %}
                                     <span class="badge badge-inactive">Inactive</span>
                                 {% endif %}
+                            </td>
+                            <td class="num">
+                                {% if member.reviewed_today %}<span class="att-mark is-done" title="Reviewed today">✓</span>
+                                {% elif member.active %}<span class="att-mark" title="Not yet today">·</span>{% endif %}
                             </td>
                             <td class="term-cell">
                                 {{ member.term_start or '—' }}

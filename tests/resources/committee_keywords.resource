@@ -112,8 +112,10 @@ Submit Committee Review
 # ── Admin session ─────────────────────────────────────────────────────────────
 
 Login As Admin
-    [Documentation]    Signs in to the admin roster UI.
-    Go To    ${ADMIN_LOGIN_URL}
+    [Documentation]    Signs in and lands on the roster. Sign-in defaults to
+    ...    the admin overview, so the roster is requested through ?next=,
+    ...    which the login form carries as a hidden field.
+    Go To    ${ADMIN_LOGIN_URL}?next=/admin/members
     Wait Until Page Contains Element    id=password    timeout=${TIMEOUT}
     Input Password   id=password    ${ADMIN_PASSWORD}
     Click Element    id=admin-login-btn

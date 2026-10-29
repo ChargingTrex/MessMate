@@ -20,8 +20,13 @@ A web app for students to anonymously rate their daily mess lunch. Admins, deans
 - 🔐 Fully anonymous — no student identity stored
 - 🍽️ **Student home page** (`/home`) — today's breakfast, lunch and dinner menu
   with a one-tap reaction per meal: good, bad or skipped, plus a suggestion
-- 📝 **Menu editor** — publish the week from `/admin/menu`, or type straight into
-  the `menu` tab; both write the same rows
+- 📝 **Weekly menu editor** — publish breakfast, lunch and dinner for a whole
+  week from `/admin/menu` (paged by calendar week, fill from a template or copy
+  last week, save a day or all seven), or type straight into the `menu` tab;
+  both write the same rows
+- 🧭 **Admin overview** at `/admin` — today's numbers from all three feedback
+  layers, this week's menu publication state, who on the committee has
+  reviewed, and an attention list of anything that needs a decision
 - 🍽️ **Food Committee module** — member login, a five-dimension review page
   (taste, quality, variety, hygiene, menu), and a separate committee dashboard
 - 👥 **Admin member management UI** — add, bulk-add, rotate, and reset passwords
@@ -153,10 +158,9 @@ http://localhost:5000/dashboard?token=vc2026
 ### 7. Seed Demo Data
 
 ```bash
-python seed_data.py
+python seed_demo.py --dry-run   # show what would be written
+python seed_demo.py --yes       # 30 days of demo data across every tab
 ```
-
-This populates 70 rows across 7 days for a realistic demo.
 
 ## Deployment (Render.com)
 
@@ -221,8 +225,10 @@ messmate/
 | `/health` | GET | Health check → `{"status": "ok"}` |
 | `/home` | GET | Today's menu with a one-tap reaction per meal |
 | `/home/rate` | POST | Record good / bad / skip (3 per IP per day) |
-| `/admin/menu` | GET | Week-at-a-glance menu editor |
+| `/admin` | GET | Admin overview — today's numbers, menu state, alerts |
+| `/admin/menu?start=YYYY-MM-DD` | GET | Weekly menu editor (Monday–Sunday) |
 | `/admin/menu/save` | POST | Publish one day's menu |
+| `/admin/menu/save-week` | POST | Publish all seven days in one request |
 | `/committee/login` | GET, POST | Committee member login |
 | `/committee/logout` | POST | Clear member session |
 | `/committee/password` | GET, POST | Forced password change at first sign-in |
@@ -242,7 +248,7 @@ messmate/
 | Credential | Can do | Cannot do |
 |---|---|---|
 | `?token=` in the URL | Open both read-only dashboards | Touch the roster |
-| Admin session (`/admin/login`) | Everything, including member management | — |
+| Admin session (`/admin/login`) | Everything: overview, menu, members, both dashboards | — |
 | Member session | Submit one review per day | See any dashboard |
 
 The split is deliberate: a query-string token leaks into browser history,
@@ -276,11 +282,16 @@ use; it links through to the per-dish form for anyone with more to say.
 Two equally valid editors, both writing the same rows to the `menu` tab:
 
 1. **The spreadsheet** — type straight into the `menu` tab.
-2. **The admin UI** at `/admin/menu` — a week at a glance, one row per day,
-   each saved independently. Needs an admin session.
+2. **The admin UI** at `/admin/menu` — a calendar week at a glance (use
+   Prev / Next to page), one card per day. Save a day on its own, or **Save
+   all 7 days** at once. Empty fields show the built-in weekly template as a
+   placeholder; **Fill blanks from template** and **Copy last week** fill only
+   what is empty, and nothing reaches students until you save. Needs an admin
+   session.
 
 Items are comma-separated (`Idli, Sambar, Coconut Chutney`); newlines work too.
-A blank meal shows as "Menu not published yet" rather than an empty card.
+A blank meal shows students "Menu not published yet" rather than an empty card
+— the template is never shown to students as if it were the menu.
 
 Skips are counted but kept out of a meal's score, which is `good` as a share of
 those who actually ate — a student who never turned up is telling you about
@@ -315,7 +326,7 @@ says so explicitly.
 ### Running the checks
 
 ```bash
-python test/test_smoke.py          # 34 checks, 18 features, ~1 second
+python test/test_smoke.py          # 38 checks, 19 features, ~1 second
 python test/test_committee.py      # no credentials required
 python test/test_e2e_committee.py
 python test/test_e2e_student.py

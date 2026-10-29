@@ -253,6 +253,7 @@
         window.MESSMATE_TODAY_ISO = "{{ today_iso }}";
         window.MESSMATE_SELECTED = "{{ selected_date }}";
         window.MESSMATE_MEALS = {{ meals | tojson }};
+        window.MESSMATE_TIMINGS = {{ timings | tojson }};
         window.MESSMATE_WEEK_META = {{ week | tojson }};
     </script>
     <script src="{{ url_for('static', filename='home.js') }}"></script>

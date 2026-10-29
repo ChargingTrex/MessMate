@@ -12,3 +12,6 @@ output.xml
 report.html
 log.html
 selenium-screenshot-*.png
+
+# Local demo credentials (never commit)
+DEMO_LOGINS.md

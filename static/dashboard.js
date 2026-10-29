@@ -185,7 +185,7 @@ document.addEventListener("DOMContentLoaded", function () {
       // Show a centered message instead of an empty chart
       MessMateCharts.empty(
         itemCanvas,
-        "No dishes rated yet today",
+        "No item ratings yet today",
         "Per-dish scores appear here as students submit the detailed form."
       );
     } else {

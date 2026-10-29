@@ -89,6 +89,16 @@ class Admin:
                                 data={"password": ADMIN_PASSWORD,
                                       "csrf_token": token})
 
+    def save_week(self, start, days):
+        """days: {date: (breakfast, lunch, dinner)} — the Save-all-7-days request."""
+        token = self._csrf("/admin/menu")
+        data = {"csrf_token": token, "start": start}
+        for date, (b, l, d) in days.items():
+            data[f"Breakfast__{date}"] = b
+            data[f"Lunch__{date}"] = l
+            data[f"Dinner__{date}"] = d
+        return self.client.post("/admin/menu/save-week", data=data)
+
     def save_menu(self, date, breakfast="", lunch="", dinner=""):
         token = self._csrf("/admin/menu")
         return self.client.post("/admin/menu/save", data={
@@ -293,8 +303,14 @@ def h4_admin_editor():
     step("a different day appends a new row",
          len(BOOK.menu().rows) == 2, f"rows={len(BOOK.menu().rows)}")
 
+    # The page embeds the whole week's published menus for its day switcher,
+    # so the check is on what is rendered for today, not the page source
+    rendered_lunch = re.search(r'<ul class="menu-items" id="menu-lunch">.*?</ul>',
+                               home().get_data(as_text=True), re.S)
     step("tomorrow's menu does not leak onto today's page",
-         "Biryani" not in home().get_data(as_text=True))
+         rendered_lunch is not None and "Biryani" not in rendered_lunch.group(0)
+         and "Curd Rice" in rendered_lunch.group(0),
+         rendered_lunch.group(0) if rendered_lunch else "lunch list not found")
 
     step("a malformed date is refused",
          admin.save_menu("not-a-date", lunch="x").status_code == 400)
@@ -302,6 +318,31 @@ def h4_admin_editor():
     step("the editor requires a CSRF token",
          admin.client.post("/admin/menu/save",
                            data={"date": TODAY, "Lunch": "x"}).status_code == 403)
+
+    # ── Save all 7 days at once ───────────────────────────────────────────
+    BOOK.reset()
+    start = sheets.week_start(TODAY)
+    week_dates = [(datetime.strptime(start, "%Y-%m-%d") + timedelta(days=i)).strftime("%Y-%m-%d")
+                  for i in range(7)]
+    response = admin.save_week(start, {d: (f"B{i}", f"L{i}", f"D{i}")
+                                       for i, d in enumerate(week_dates)})
+    step("saving the whole week writes one row per day",
+         response.status_code == 200 and len(BOOK.menu().rows) == 7,
+         f"status={response.status_code} rows={len(BOOK.menu().rows)}")
+
+    idx = week_dates.index(TODAY)
+    step("today's row from the week save reaches students",
+         f"L{idx}" in home().get_data(as_text=True))
+
+    response = admin.save_week(start, {TODAY: ("Only today", "", "")})
+    step("a week save carrying one day touches only that day",
+         len(BOOK.menu().rows) == 7 and
+         BOOK.menu().rows[idx][1] == "Only today" and
+         sum(1 for r in BOOK.menu().rows if r[2].startswith("L")) == 6,
+         f"rows={[r[1] for r in BOOK.menu().rows]}")
+
+    step("a malformed week start is refused",
+         admin.save_week("next-week", {TODAY: ("x", "", "")}).status_code == 400)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -362,8 +403,16 @@ def h6_layers_stay_separate():
     student_dash = app.test_client().get("/dashboard?token=vc2026").get_data(as_text=True)
     step("the per-dish dashboard shows its own suggestion",
          "Per-dish suggestion" in student_dash)
-    step("quick reactions do not appear on the per-dish dashboard",
-         "Quick reaction suggestion" not in student_dash)
+
+    # The student dashboard shows quick taps too, but in their own labelled
+    # section. The dish-form suggestion list must not absorb them.
+    dish_list = re.search(r"Student Suggestions.*?</div>\s*</div>", student_dash, re.S)
+    step("quick reactions stay out of the per-dish suggestion list",
+         dish_list is not None
+         and "Per-dish suggestion" in dish_list.group(0)
+         and "Quick reaction suggestion" not in dish_list.group(0)
+         and "Quick reaction suggestion" in student_dash,
+         "the two suggestion lists have merged")
 
     committee_dash = app.test_client().get(
         "/dashboard/committee?token=vc2026").get_data(as_text=True)

@@ -362,14 +362,13 @@ def s7_week_of_history():
          ">5.0<" in re.sub(r"\s+", "", html),
          "the stat card is averaging across days")
 
-    # Pins the known limitation: the trend follows daily_summary row order.
-    # If this ever starts passing, the dashboard has gained a sort and the
-    # comment above is stale.
+    # The trend is sorted by date, so someone re-sorting the daily_summary
+    # tab in the browser cannot scramble the chart.
     BOOK.tabs["daily_summary"].rows.reverse()
     reversed_trend = injected("trendData", dashboard().get_data(as_text=True))
-    step("the trend follows sheet row order, so a re-sorted tab misorders it",
-         [p["Date"] for p in reversed_trend] == sorted(expected, reverse=True),
-         "the dashboard now sorts by date — update the note in this journey")
+    step("a re-sorted summary tab still plots oldest to newest",
+         [p["Date"] for p in reversed_trend] == sorted(expected),
+         str([p["Date"] for p in reversed_trend]))
 
 
 # ══════════════════════════════════════════════════════════════════════════════

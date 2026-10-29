@@ -1,0 +1,225 @@
+<!--
+  Admin Overview (admin_overview.html)
+  -------------------------------------
+  The landing page after admin sign-in: every number that matters today on
+  one screen, with the reasons to open a detail page listed at the top.
+
+  Nothing here is exclusive to this page. The three feedback layers keep
+  their own numbers (a tally of taps, a mean of 1-5 dish scores and a
+  committee review are never averaged together) and each block degrades
+  on its own if one sheet tab is unreachable.
+
+  Test Automation Attributes:
+    - id="overview"            the page wrapper
+    - id="attention"           the alerts card
+    - data-stat="<name>"       on each stat card
+    - id="menu-week-status"    the 7-day publication grid
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% set page_title = 'MessMate — Admin Overview' %}{% include '_head.html' %}
+</head>
+<body class="admin-body">
+{% from '_macros.html' import score_class, sparkline, chips %}
+{% set active = 'overview' %}{% include '_topbar.html' %}
+
+<main class="admin-container" id="overview">
+
+  <div class="admin-header">
+    <div>
+      <p class="eyebrow">Admin Overview</p>
+      <h1>Today at the mess</h1>
+      <p>{{ today_date }}</p>
+    </div>
+    <div class="admin-header-actions">
+      <a href="{{ url_for('admin_menu') }}" class="submit-btn btn-inline">Edit this week's menu</a>
+      <a href="{{ url_for('home') }}" class="btn-secondary" target="_blank" rel="noopener">Student view ↗</a>
+    </div>
+  </div>
+
+  <!-- ── Attention ─────────────────────────────────────────────────────── -->
+  <section class="card attention-card" id="attention" aria-labelledby="attention-title">
+    <div class="card-head">
+      <h2 id="attention-title">Needs attention</h2>
+      <span class="count-pill {{ 'is-clear' if not alerts }}">{{ alerts|length or 'All clear' }}</span>
+    </div>
+    {% if alerts %}
+    <ul class="alert-list">
+      {% for a in alerts %}
+      <li class="alert-item level-{{ a.level }}">
+        <span class="alert-dot" aria-hidden="true"></span>
+        <span class="alert-text">{{ a.text }}</span>
+        <a href="{{ a.href }}" class="table-action">{{ a.action }} →</a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="all-clear">Menus are published, nothing is scoring low, and the committee is up to date.</p>
+    {% endif %}
+  </section>
+
+  <!-- ── Stat cards ────────────────────────────────────────────────────── -->
+  <h2 class="section-title">Today</h2>
+  <div class="stat-cards stat-cards-6">
+
+    <div class="stat-card {{ score_class(student.today_avg) }}" data-stat="student-today">
+      <h3>Dish form · today</h3>
+      <p class="stat-value score-value{% if student.today_avg <= 0 %} is-empty{% endif %}">
+        {% if student.today_avg > 0 %}{{ "%.1f"|format(student.today_avg) }}{% else %}--{% endif %}
+      </p>
+      <p class="stat-note">{{ student.today_count }} response{{ '' if student.today_count == 1 else 's' }}</p>
+    </div>
+
+    <div class="stat-card" data-stat="student-week">
+      <h3>Dish form · 7 days</h3>
+      <p class="stat-value{% if student.week_avg <= 0 %} is-empty{% endif %}">
+        {% if student.week_avg > 0 %}{{ "%.1f"|format(student.week_avg) }}{% else %}--{% endif %}
+      </p>
+      <p class="stat-note">{{ student.week_responses }} responses {{ sparkline(student.trend_data, 'Avg_Overall', 'Seven-day dish-form average') }}</p>
+    </div>
+
+    {% set ate = taps.tallies.values() | map(attribute='good') | sum + taps.tallies.values() | map(attribute='bad') | sum %}
+    {% set liked = taps.tallies.values() | map(attribute='good') | sum %}
+    {% set tap_score = (liked / ate * 100) | round | int if ate else 0 %}
+    <div class="stat-card {% if ate %}{{ 'score-green' if tap_score >= 70 else ('score-amber' if tap_score >= 40 else 'score-red') }}{% endif %}" data-stat="taps-today">
+      <h3>Quick taps · today</h3>
+      <p class="stat-value{% if not ate %} is-empty{% endif %}">{% if ate %}{{ tap_score }}%{% else %}--{% endif %}</p>
+      <p class="stat-note">{{ taps.today_total }} tap{{ '' if taps.today_total == 1 else 's' }} · {{ taps.week_score }}% liked this week</p>
+    </div>
+
+    <div class="stat-card {{ score_class(committee.today_avg) }}" data-stat="committee-today">
+      <h3>Committee · today</h3>
+      <p class="stat-value score-value{% if committee.today_avg <= 0 %} is-empty{% endif %}">
+        {% if committee.today_avg > 0 %}{{ "%.1f"|format(committee.today_avg) }}{% else %}--{% endif %}
+      </p>
+      <p class="stat-note">{{ committee.today_count }} of {{ committee.active_members }} reviewed ({{ committee.participation }}%)</p>
+    </div>
+
+    <div class="stat-card" data-stat="committee-week">
+      <h3>Committee · 7 days</h3>
+      <p class="stat-value{% if committee.week_avg <= 0 %} is-empty{% endif %}">
+        {% if committee.week_avg > 0 %}{{ "%.1f"|format(committee.week_avg) }}{% else %}--{% endif %}
+      </p>
+      <p class="stat-note">{{ committee.week_reviews }} reviews {{ sparkline(committee.trend_data, 'Avg_Overall', 'Seven-day committee average') }}</p>
+    </div>
+
+    {% set full = menu_days | selectattr('published', 'equalto', 3) | list | length %}
+    <div class="stat-card {% if menu_days %}{{ 'score-green' if full == 7 else ('score-amber' if full >= 3 else 'score-red') }}{% endif %}" data-stat="menu-week">
+      <h3>Menu · next 7 days</h3>
+      <p class="stat-value{% if not menu_days %} is-empty{% endif %}">{% if menu_days %}{{ full }}/7{% else %}--{% endif %}</p>
+      <p class="stat-note">days fully published</p>
+    </div>
+  </div>
+
+  <!-- ── Menu: today + the week ────────────────────────────────────────── -->
+  <div class="two-col">
+    <section class="card" aria-labelledby="menu-today-title">
+      <div class="card-head">
+        <h2 id="menu-today-title">Today's menu &amp; reactions</h2>
+        <a href="{{ url_for('admin_menu') }}" class="table-action">Edit →</a>
+      </div>
+      {% for meal in meals %}
+      {% set tally = taps.tallies[meal] %}
+      <div class="meal-block">
+        <div class="meal-block-head">
+          <span class="meal-block-name">{% if meal == 'Breakfast' %}🌅{% elif meal == 'Lunch' %}🍛{% else %}🌙{% endif %} {{ meal }}</span>
+          <span class="meal-block-time">{{ timings[meal] }}</span>
+        </div>
+        {{ chips(today_menu[meal].split(',') | map('trim') | reject('equalto', '') | list if today_menu and today_menu[meal] else []) }}
+        <div class="tap-row" title="{{ tally.good }} good, {{ tally.bad }} bad, {{ tally.skip }} skipped">
+          {% if tally.total %}
+          <div class="tap-bar" aria-hidden="true">
+            <span class="tap-fill good" style="width: {{ (tally.good / tally.total * 100) | round | int }}%"></span>
+            <span class="tap-fill bad" style="width: {{ (tally.bad / tally.total * 100) | round | int }}%"></span>
+            <span class="tap-fill skip" style="width: {{ (tally.skip / tally.total * 100) | round | int }}%"></span>
+          </div>
+          <span class="tap-legend">👍 {{ tally.good }} · 👎 {{ tally.bad }} · ⏭ {{ tally.skip }} · <strong>{{ tally.score }}% liked</strong></span>
+          {% else %}
+          <span class="tap-legend tap-legend-empty">No taps yet</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </section>
+
+    <section class="card" aria-labelledby="menu-week-title">
+      <div class="card-head">
+        <h2 id="menu-week-title">Publication · next 7 days</h2>
+        <a href="{{ url_for('admin_menu') }}" class="table-action">Open editor →</a>
+      </div>
+      {% if menu_days %}
+      <table class="week-grid" id="menu-week-status">
+        <thead>
+          <tr><th scope="col">Day</th>{% for meal in meals %}<th scope="col">{{ meal[:1] }}<span class="sr-only">{{ meal[1:] }}</span></th>{% endfor %}<th scope="col" class="num">Done</th></tr>
+        </thead>
+        <tbody>
+          {% for d in menu_days %}
+          <tr class="{{ 'is-today' if d.is_today }}">
+            <th scope="row"><a href="{{ url_for('admin_menu', start=d.date) }}#day-{{ d.date }}">{{ d.label }}</a>{% if d.is_today %} <span class="badge badge-active">Today</span>{% endif %}</th>
+            {% for meal in meals %}
+            <td><span class="pub-dot {{ 'on' if meal not in d.missing else 'off' }}" title="{{ meal }}: {{ 'published' if meal not in d.missing else 'not published' }}"></span><span class="sr-only">{{ meal }} {{ 'published' if meal not in d.missing else 'not published' }}</span></td>
+            {% endfor %}
+            <td class="num">{{ d.published }}/3</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">The menu tab could not be read.</div>
+      {% endif %}
+    </section>
+  </div>
+
+  <!-- ── Committee + feedback ──────────────────────────────────────────── -->
+  <div class="two-col">
+    <section class="card" aria-labelledby="committee-today-title">
+      <div class="card-head">
+        <h2 id="committee-today-title">Committee today</h2>
+        <a href="{{ url_for('committee_dashboard') }}" class="table-action">Dashboard →</a>
+      </div>
+      {% if committee.lowest_dimension or committee.highest_dimension %}
+      <div class="kv-row">
+        {% if committee.highest_dimension %}<span class="kv"><span class="kv-label">Best</span> {{ committee.highest_dimension[0] }} <strong>{{ "%.1f"|format(committee.highest_dimension[1]) }}</strong></span>{% endif %}
+        {% if committee.lowest_dimension %}<span class="kv"><span class="kv-label">Lowest</span> {{ committee.lowest_dimension[0] }} <strong>{{ "%.1f"|format(committee.lowest_dimension[1]) }}</strong></span>{% endif %}
+      </div>
+      {% endif %}
+      {% if committee.attendance %}
+      <ul class="attendance-list">
+        {% for m in committee.attendance %}
+        <li class="{{ 'is-done' if m.reviewed }}">
+          <span class="att-mark" aria-hidden="true">{{ '✓' if m.reviewed else '·' }}</span>
+          <span class="att-name">{{ m.name }}</span>
+          <span class="att-state">{{ 'Reviewed' if m.reviewed else 'Not yet' }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty-state">No active committee members. <a href="{{ url_for('admin_members') }}">Add some →</a></div>
+      {% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="feed-title">
+      <div class="card-head">
+        <h2 id="feed-title">Latest feedback</h2>
+        <a href="{{ url_for('dashboard') }}" class="table-action">All suggestions →</a>
+      </div>
+      {% if feed %}
+      <ul class="feed-list">
+        {% for f in feed %}
+        <li class="feed-item">
+          <span class="feed-tag tone-{{ f.tone }}">{{ f.source }}</span>
+          <p class="feed-text">"{{ f.text }}"</p>
+          <span class="feed-when">{{ f.when }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty-state">No written feedback yet.</div>
+      {% endif %}
+    </section>
+  </div>
+
+</main>
+</body>
+</html>

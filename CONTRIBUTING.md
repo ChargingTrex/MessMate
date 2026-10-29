@@ -31,8 +31,16 @@ neither is the source of truth over the other. Both write the same rows to the
 `menu` tab:
 
 1. **The spreadsheet.** Mess staff can type straight into the `menu` tab.
-2. **The admin UI** at `/admin/menu`. A week at a glance, one row per day,
-   each saved independently. Requires an admin session.
+2. **The admin UI** at `/admin/menu`. A calendar week (Monday–Sunday) at a
+   glance, paged with `?start=YYYY-MM-DD`. Each day is its own form and saves
+   on its own (`/admin/menu/save`); with JavaScript, **Save all 7 days** posts
+   every field as `<Meal>__<date>` to `/admin/menu/save-week`, which
+   `save_menu_week()` writes in two API calls. Requires an admin session.
+
+`sheets.WEEKLY_MENU_DEFAULTS` is a template for the **editor only** — it is
+the placeholder in each empty field and what "Fill blanks from template"
+copies in. It is never shown to students: a fabricated menu that happens to be
+wrong is a worse message than an honest "not published yet".
 
 Items are comma-separated (`Idli, Sambar, Coconut Chutney`). Newlines work
 too — `_split_items()` accepts either, and drops blanks, so a trailing comma
@@ -42,9 +50,18 @@ A day with no row, or a meal left blank, renders as **"Menu not published
 yet"** rather than an empty card. An empty card reads as "the mess is closed",
 which is a different and much worse message.
 
-Writes go through `save_menu_for_date()`, which upserts: it updates the row if
-that date exists and appends if not. That is why **`Date` must stay in column
-A** of the `menu` tab — the row lookup scans that column.
+Writes go through `save_menu_week()` (and `save_menu_for_date()`, a one-day
+wrapper), which upserts: existing dates are updated in place, new ones are
+appended in a single `append_rows` call. That is why **`Date` must stay in
+column A** of the `menu` tab — the row lookup scans that column.
+
+## The admin overview
+
+`/admin` is the landing page after sign-in. It reuses `_student_analytics()`,
+`_meal_tap_summary()` and `_committee_analytics()` from `app.py` — the same
+functions the two dashboards render from — so it can never disagree with
+them. Each block is wrapped separately: one unreadable tab blanks one card,
+not the page. The three layers stay in their own cards and are never summed.
 
 ---
 
@@ -105,11 +122,11 @@ access logs.
 ### No credentials needed
 
 ```bash
-python test/test_smoke.py           # 34 checks, 18 features, ~1 second
+python test/test_smoke.py           # 38 checks, 19 features, ~1 second
 python test/test_committee.py       # 59 checklist checks
 python test/test_e2e_committee.py   # 64 steps, 9 committee journeys
 python test/test_e2e_student.py     # 53 steps, 9 student journeys
-python test/test_e2e_home.py        # 51 steps, 7 home/menu journeys
+python test/test_e2e_home.py        # 55 steps, 7 home/menu journeys
 ```
 
 These replace only `sheets.get_sheet()`. Everything else — the caches, row

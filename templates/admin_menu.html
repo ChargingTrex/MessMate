@@ -1,94 +1,130 @@
 <!--
   Menu Editor (admin_menu.html)
   ------------------------------
-  A week of menus, one row per day, each saved independently.
+  A calendar week (Monday to Sunday) of menus. Each day is its own form and
+  saves on its own, so the page works without JavaScript; with it, the
+  toolbar can fill blanks from the weekly template, copy last week, and save
+  all seven days in one request.
 
-  The menu tab can equally be edited straight in the spreadsheet — this page
-  exists for whoever would rather not open it. Both write the same rows, so
-  neither is the source of truth over the other.
+  What students see is exactly what is stored: a blank field means "Menu not
+  published yet". The weekly template is only ever a suggestion here — it is
+  shown as the placeholder and reaches the sheet only when an admin fills a
+  day from it and saves.
+
+  The menu tab can equally be edited straight in the spreadsheet. Both write
+  the same rows, so neither is the source of truth over the other.
 
   Test Automation Attributes:
     - data-menu-day="<YYYY-MM-DD>" on each day's form
-    - id="menu-editor"
+    - id="<YYYY-MM-DD>-<Meal>" on each field
+    - id="menu-editor", class="menu-day-today" on today's card
+    - id="save-week" (JS only), id="week-form"
 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MessMate — Menu Editor</title>
-    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script defer src="{{ url_for('static', filename='app-shell.js') }}"></script>
+  {% set page_title = 'MessMate — Menu Editor' %}{% include '_head.html' %}
+  <script defer src="{{ url_for('static', filename='admin_menu.js') }}"></script>
 </head>
 <body class="admin-body">
-<header class="app-topbar">
-  <div class="app-topbar-inner">
-    <a class="app-brand" href="{{ url_for('home') }}">
-      <span class="live-dot" title="Live"></span>
-      <span class="brand-logo">MESSMATE</span>
-    </a>
-    <span id="appClock" class="app-clock" aria-label="Current time">--:--:--</span>
-    <nav class="app-topbar-nav" aria-label="Admin sections">
-      <a href="{{ url_for('admin_menu') }}" class="nav-link" aria-current="page">Menu</a>
-      <a href="{{ url_for('admin_members') }}" class="nav-link">Members</a>
-      <a href="{{ url_for('committee_dashboard') }}" class="nav-link">Committee</a>
-      <form method="POST" action="{{ url_for('admin_logout') }}">
-        {{ csrf_field() }}
-        <button type="submit" class="btn-secondary">Sign out</button>
-      </form>
+{% set active = 'menu' %}{% include '_topbar.html' %}
+
+<main class="admin-container">
+
+  <div class="admin-header">
+    <div>
+      <p class="eyebrow">Menu Editor</p>
+      <h1>Week of {{ week_label }}{% if is_current_week %} <span class="badge badge-active">This week</span>{% endif %}</h1>
+      <p>{{ published_meals }} of {{ total_meals }} meals published · {{ full_days }} of 7 days complete.
+         Separate dishes with commas. A blank meal shows students "Menu not published yet".</p>
+    </div>
+    <nav class="week-nav" aria-label="Week">
+      <a href="{{ url_for('admin_menu', start=prev_start) }}" class="btn-secondary" rel="prev">◀ Prev</a>
+      <a href="{{ url_for('admin_menu') }}" class="btn-secondary{% if is_current_week %} is-current{% endif %}">This week</a>
+      <a href="{{ url_for('admin_menu', start=next_start) }}" class="btn-secondary" rel="next">Next ▶</a>
     </nav>
   </div>
-</header>
-    <div class="admin-container">
 
-        <div class="admin-header">
-            <div>
-                <h1>Menu Editor 🍽️</h1>
-                <p>Separate items with commas. Blank means "not published yet".</p>
-            </div>
+  {% if error %}
+  <div class="alert error error-banner" role="alert">{{ error }}</div>
+  {% endif %}
+  {% if success %}
+  <div class="alert success" role="status">{{ success }}</div>
+  {% endif %}
 
-        </div>
-
-        {% if error %}
-        <div class="alert error error-banner">{{ error }}</div>
-        {% endif %}
-        {% if success %}
-        <div class="alert success">{{ success }}</div>
-        {% endif %}
-
-        <div id="menu-editor">
-            {% for day in week %}
-            <div class="card menu-day {{ 'menu-day-today' if day.is_today }}">
-                <form method="POST" action="{{ url_for('admin_menu_save') }}"
-                      data-menu-day="{{ day.date }}">
-                    {{ csrf_field() }}
-                    <input type="hidden" name="date" value="{{ day.date }}">
-
-                    <div class="menu-day-head">
-                        <h2>{{ day.label }}{% if day.is_today %} <span class="badge badge-active">Today</span>{% endif %}</h2>
-                        <button type="submit" class="btn-secondary">Save day</button>
-                    </div>
-
-                    <div class="menu-fields">
-                        {% for meal in meals %}
-                        <div class="menu-field">
-                            <label class="item-label" for="{{ day.date }}-{{ meal }}">{{ meal }}</label>
-                            <input class="suggestion-input" type="text"
-                                   id="{{ day.date }}-{{ meal }}" name="{{ meal }}"
-                                   value="{{ day[meal] }}"
-                                   placeholder="Idli, Sambar, Coconut Chutney">
-                        </div>
-                        {% endfor %}
-                    </div>
-                </form>
-            </div>
-            {% endfor %}
-        </div>
-
+  <!-- Toolbar: only the JS-driven actions live here; each is revealed by admin_menu.js -->
+  <div class="menu-toolbar">
+    <div class="menu-toolbar-left">
+      <button type="button" class="btn-secondary" data-fill-template data-js-only hidden
+              title="Fill every empty field with the weekly template">Fill blanks from template</button>
+      <button type="button" class="btn-secondary" id="copy-prev-week" data-js-only hidden
+              title="Copy last week's published menu into every empty field">Copy last week</button>
     </div>
+    <div class="menu-toolbar-right">
+      <span class="menu-dirty-note" id="dirty-note" aria-live="polite"></span>
+      <button type="button" class="submit-btn btn-inline" id="save-week" data-js-only hidden>Save all 7 days</button>
+    </div>
+  </div>
+
+  <div id="menu-editor" class="menu-grid">
+    {% for day in week %}
+    {% set done = day.published.values() | select | list | length %}
+    <section class="card menu-day{% if day.is_today %} menu-day-today{% endif %}{% if day.is_past %} menu-day-past{% endif %}{% if saved_dates and day.date in saved_dates %} menu-day-saved{% endif %}"
+             id="day-{{ day.date }}" aria-labelledby="day-title-{{ day.date }}">
+      <form method="POST" action="{{ url_for('admin_menu_save') }}" data-menu-day="{{ day.date }}">
+        {{ csrf_field() }}
+        <input type="hidden" name="date" value="{{ day.date }}">
+        <input type="hidden" name="start" value="{{ start }}">
+
+        <div class="menu-day-head">
+          <div>
+            <h2 id="day-title-{{ day.date }}">{{ day.label }}</h2>
+            <p class="menu-day-sub">
+              {% if day.is_today %}<span class="badge badge-active">Today</span>{% endif %}
+              {% if done == 3 %}<span class="badge badge-ok">Published</span>
+              {% elif done == 0 %}<span class="badge badge-pending">Not published</span>
+              {% else %}<span class="badge badge-pending">{{ done }} of 3 published</span>{% endif %}
+            </p>
+          </div>
+          <span class="menu-dirty-badge" aria-hidden="true">Unsaved</span>
+        </div>
+
+        <div class="menu-fields">
+          {% for meal in meals %}
+          <div class="menu-field">
+            <label class="item-label" for="{{ day.date }}-{{ meal }}">
+              <span class="meal-status {{ 'on' if day.published[meal] else 'off' }}" aria-hidden="true"></span>
+              {{ meal }} <span class="subtext">{{ timings[meal] }}</span>
+            </label>
+            <textarea class="menu-input" rows="2"
+                      id="{{ day.date }}-{{ meal }}" name="{{ meal }}"
+                      data-meal="{{ meal }}" data-date="{{ day.date }}"
+                      data-template="{{ day.template[meal] }}"
+                      placeholder="{{ day.template[meal] or 'Idli, Sambar, Coconut Chutney' }}">{{ day[meal] }}</textarea>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="menu-day-actions">
+          <button type="button" class="table-action" data-fill-template data-js-only hidden>Use template</button>
+          <button type="submit" class="btn-secondary">Save</button>
+        </div>
+      </form>
+    </section>
+    {% endfor %}
+  </div>
+
+  <!-- Filled and submitted by admin_menu.js: one field per meal per day -->
+  <form method="POST" action="{{ url_for('admin_menu_save_week') }}" id="week-form" hidden>
+    {{ csrf_field() }}
+    <input type="hidden" name="start" value="{{ start }}">
+  </form>
+
+</main>
+
+<script>
+  window.MENU_MEALS = {{ meals | tojson }};
+  window.MENU_PREV_WEEK = {{ prev_week_json | safe }};
+</script>
 </body>
 </html>

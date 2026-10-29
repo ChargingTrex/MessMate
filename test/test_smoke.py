@@ -266,6 +266,11 @@ def smoke(t):
     check("admin login page renders",
           status == 200 and 'id="password"' in body, f"status={status}")
 
+    feature("admin overview")
+    status, _ = t.get(client, "/admin")
+    check("overview is closed without an admin session", status == 302,
+          f"status={status}")
+
     feature("admin roster")
     status, _ = t.get(client, "/admin/members")
     check("roster is closed without an admin session", status == 302,
@@ -276,6 +281,15 @@ def smoke(t):
         token = CSRF_RE.search(page).group(1)
         t.post(admin, "/admin/login",
                {"password": t.admin_password, "csrf_token": token})
+
+        feature("admin overview")
+        status, body = t.get(admin, "/admin")
+        check("overview opens with an admin session and shows its blocks",
+              status == 200 and 'id="overview"' in body and 'id="attention"' in body
+              and 'id="menu-week-status"' in body and 'data-stat="committee-today"' in body,
+              f"status={status}")
+
+        feature("admin roster")
         status, body = t.get(admin, "/admin/members")
         check("roster opens with an admin session",
               status == 200 and 'id="members-table"' in body, f"status={status}")
@@ -286,6 +300,20 @@ def smoke(t):
         status, body = t.get(admin, "/admin/menu")
         check("editor opens with an admin session",
               status == 200 and 'id="menu-editor"' in body, f"status={status}")
+        status, paged = t.get(admin, "/admin/menu?start=2027-03-10")
+        check("the editor pages by calendar week",
+              status == 200 and paged.count('data-menu-day="2027-03-') == 7
+              and 'data-menu-day="2027-03-08"' in paged, f"status={status}")
+        token = CSRF_RE.search(body).group(1)
+        start = re.search(r'name="start" value="([^"]+)"', body).group(1)
+        status, body = t.post(admin, "/admin/menu/save-week",
+                              {"csrf_token": token, "start": start,
+                               f"Breakfast__{start}": "Smoke Idli",
+                               f"Lunch__{start}": "Smoke Rice",
+                               f"Dinner__{start}": "Smoke Roti"})
+        check("saving the week writes and confirms",
+              status == 200 and 'class="alert success"' in body and "Smoke Idli" in body,
+              f"status={status}")
 
         feature("member management")
         token = CSRF_RE.search(body).group(1)
@@ -295,6 +323,7 @@ def smoke(t):
         check("adding a member reveals a one-time password",
               status == 200 and "credential-banner" in body, f"status={status}")
     else:
+        skipped("overview opens for admin", "write check, live mode is read-only")
         skipped("roster opens for admin", "write check, live mode is read-only")
         skipped("member management", "write check, live mode is read-only")
 

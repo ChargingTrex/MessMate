@@ -624,9 +624,13 @@ MEAL_TIMINGS = {
 
 RATINGS = ["good", "bad", "skip"]
 
-# ── Built-in weekly template — used as fallback when Sheets is offline ───────
-# Keyed by weekday index: 0=Monday … 6=Sunday.
-# Dishes are realistic South Indian / Indian hostel mess templates.
+# ── Weekly template ──────────────────────────────────────────────────────────
+# A starting point for the admin menu editor, keyed by weekday (0=Monday).
+# It is deliberately NOT shown to students: a day with nothing published
+# renders as "Menu not published yet" (see CONTRIBUTING.md). A fabricated menu
+# that happens to be wrong is a worse message than an honest blank, so the
+# template only ever reaches the sheet when an admin fills a day from it and
+# saves. seed_demo.py reuses it for demo data.
 WEEKLY_MENU_DEFAULTS = {
     0: {  # Monday
         "Breakfast": "Idli, Medu Vada, Sambar, Coconut Chutney, Coffee/Tea",
@@ -666,14 +670,27 @@ WEEKLY_MENU_DEFAULTS = {
 }
 
 
-def _default_menu_for_date(date_str):
-    """Returns the built-in weekly template menu for a given date string."""
+def menu_template_for_date(date_str):
+    """{"Breakfast": "Idli, ...", ...} from the weekly template for one date."""
     try:
-        d = datetime.strptime(date_str, "%Y-%m-%d")
-        template = WEEKLY_MENU_DEFAULTS.get(d.weekday(), {})
-        return {meal: _split_items(template.get(meal, "")) for meal in MEALS}
-    except Exception:
-        return {meal: [] for meal in MEALS}
+        weekday = datetime.strptime(date_str, "%Y-%m-%d").weekday()
+    except (ValueError, TypeError):
+        return {meal: "" for meal in MEALS}
+    template = WEEKLY_MENU_DEFAULTS.get(weekday, {})
+    return {meal: template.get(meal, "") for meal in MEALS}
+
+
+def week_start(date_str=None):
+    """
+    The Monday on or before a date, as YYYY-MM-DD. The editor pages by
+    calendar week because that is how a mess plans: Monday to Sunday.
+    """
+    try:
+        day = (datetime.strptime(date_str, "%Y-%m-%d") if date_str
+               else datetime.now())
+    except (ValueError, TypeError):
+        day = datetime.now()
+    return (day - timedelta(days=day.weekday())).strftime("%Y-%m-%d")
 
 
 # Menu reads happen on every home-page load, so they are cached like the roster.
@@ -718,58 +735,60 @@ def _split_items(raw):
     return [part.strip() for part in text.split(",") if part.strip()]
 
 
+def _menu_rows_by_date():
+    """{date: row} for every published row, latest row winning a duplicate."""
+    return {str(r.get("Date", "")).strip(): r for r in get_menu_records()}
+
+
 def get_menu_for_date(date_str=None):
     """
     Returns {"Breakfast": [...], "Lunch": [...], "Dinner": [...]} for one date.
-    Falls back to the built-in weekly template when Sheets is offline or the
-    date has no published row, so the home page always shows something useful.
+    Meals with nothing published come back as empty lists, which the home page
+    renders as "not published yet" rather than pretending the mess is closed —
+    or inventing a menu. The weekly template is an editor convenience only.
     """
     target = date_str or datetime.now().strftime("%Y-%m-%d")
-
-    for record in get_menu_records():
-        if str(record.get("Date", "")).strip() == target:
-            result = {meal: _split_items(record.get(meal, "")) for meal in MEALS}
-            # If every meal is empty the row exists but is blank — use template
-            if any(result[m] for m in MEALS):
-                return result
-
-    # No sheet row found (or all blank) — return the weekly template fallback
-    return _default_menu_for_date(target)
+    row = _menu_rows_by_date().get(target, {})
+    return {meal: _split_items(row.get(meal, "")) for meal in MEALS}
 
 
 def get_menu_week(start_date=None, days=7):
     """
-    Menu rows for `days` days from start_date, for the admin editor.
-    Always returns one entry per day, with blanks for days not yet published.
+    One entry per day from start_date (default: today), for the editor and the
+    home page's day switcher. Each entry carries:
+
+        date, label, weekday, is_today, is_past
+        Breakfast / Lunch / Dinner   what is published — "" when nothing is
+        published                    {meal: bool} — True when a value is stored
+        template                     {meal: str}  — the weekly template, as a
+                                     suggestion for the editor to offer
+        has_row                      the date has a row in the sheet at all
     """
     start = (datetime.strptime(start_date, "%Y-%m-%d") if start_date
              else datetime.now())
-    published = {str(r.get("Date", "")).strip(): r for r in get_menu_records()}
+    rows = _menu_rows_by_date()
     today_str = datetime.now().strftime("%Y-%m-%d")
 
     week = []
     for offset in range(days):
         day = start + timedelta(days=offset)
         date_str = day.strftime("%Y-%m-%d")
-        row = published.get(date_str, {})
+        row = rows.get(date_str)
+        stored = {meal: str((row or {}).get(meal, "") or "").strip()
+                  for meal in MEALS}
 
-        # Build meal strings: use sheet row if non-blank, else weekly template
-        def _meal_str(meal):
-            val = str(row.get(meal, "")).strip()
-            if val:
-                return val
-            # Fall back to built-in template for this weekday
-            template = WEEKLY_MENU_DEFAULTS.get(day.weekday(), {})
-            return template.get(meal, "")
-
-        week.append({
+        entry = {
             "date": date_str,
             "label": day.strftime("%a %d %b"),
+            "weekday": day.strftime("%A"),
             "is_today": date_str == today_str,
-            "Breakfast": _meal_str("Breakfast"),
-            "Lunch":     _meal_str("Lunch"),
-            "Dinner":    _meal_str("Dinner"),
-        })
+            "is_past": date_str < today_str,
+            "has_row": row is not None,
+            "published": {meal: bool(stored[meal]) for meal in MEALS},
+            "template": menu_template_for_date(date_str),
+        }
+        entry.update(stored)
+        week.append(entry)
     return week
 
 
@@ -781,24 +800,49 @@ def save_menu_for_date(date_str, breakfast, lunch, dinner):
 
     Returns True on success, False on failure.
     """
+    return save_menu_week([(date_str, breakfast, lunch, dinner)])
+
+
+def save_menu_week(days):
+    """
+    Upserts several days at once. `days` is a list of
+    (date_str, breakfast, lunch, dinner) tuples.
+
+    One col_values read finds the existing rows; each of those is updated in
+    place, and every new date goes out in a single append_rows call — so a
+    whole unpublished week costs two API calls rather than fourteen.
+
+    Returns True on success, False on failure.
+    """
+    if not days:
+        return True
+
     try:
         worksheet = get_sheet(MENU_TAB)
         if not worksheet:
             return False
 
-        row_data = [date_str, breakfast, lunch, dinner]
         dates = [str(v).strip() for v in worksheet.col_values(1)]
+        new_rows = []
+        for date_str, breakfast, lunch, dinner in days:
+            row_data = [date_str, breakfast, lunch, dinner]
+            if date_str in dates:
+                row_index = dates.index(date_str) + 1   # gspread is 1-indexed
+                worksheet.update(f"A{row_index}:D{row_index}", [row_data])
+            else:
+                new_rows.append(row_data)
+                dates.append(date_str)   # a date repeated in `days` updates, not duplicates
 
-        if date_str in dates:
-            row_index = dates.index(date_str) + 1   # gspread is 1-indexed
-            worksheet.update(f"A{row_index}:D{row_index}", [row_data])
-        else:
-            worksheet.append_row(row_data, value_input_option="RAW")
+        if new_rows:
+            if len(new_rows) == 1:
+                worksheet.append_row(new_rows[0], value_input_option="RAW")
+            else:
+                worksheet.append_rows(new_rows, value_input_option="RAW")
 
         invalidate_menu_cache()
         return True
     except Exception as e:
-        print(f"Error saving menu for {date_str}: {e}")
+        print(f"Error saving menu: {e}")
         return False
 
 

@@ -1,0 +1,37 @@
+{#
+  Shared admin top bar (_topbar.html)
+  ------------------------------------
+  Set `active` before including, e.g.
+      {% set active = 'menu' %}{% include '_topbar.html' %}
+
+  `is_admin` decides what the bar offers. A ?token= visitor is read-only, so
+  they see the two dashboards and nothing that can change state; the token
+  rides along on those links so the session-less bookmark keeps working.
+  With an admin session the token is dropped from links — the session is the
+  credential, and a secret in a URL should travel as little as possible.
+#}
+{% set token_qs = ('?token=' ~ request.args.get('token')) if (request.args.get('token') and not is_admin) else '' %}
+<header class="app-topbar">
+  <div class="app-topbar-inner">
+    <a class="app-brand" href="{{ url_for('home') }}" aria-label="MessMate student home">
+      <span class="live-dot" title="Live"></span>
+      <span class="brand-logo">MESSMATE</span>
+    </a>
+    <span id="appClock" class="app-clock" aria-label="Current time">--:--:--</span>
+    <nav class="app-topbar-nav" aria-label="Admin sections">
+      {% if is_admin %}
+      <a href="{{ url_for('admin_overview') }}" class="nav-link"{% if active == 'overview' %} aria-current="page"{% endif %}>Overview</a>
+      <a href="{{ url_for('admin_menu') }}" class="nav-link"{% if active == 'menu' %} aria-current="page"{% endif %}>Menu</a>
+      <a href="{{ url_for('admin_members') }}" class="nav-link"{% if active == 'members' %} aria-current="page"{% endif %}>Members</a>
+      {% endif %}
+      <a href="{{ url_for('dashboard') }}{{ token_qs }}" class="nav-link"{% if active == 'students' %} aria-current="page"{% endif %}>Students</a>
+      <a href="{{ url_for('committee_dashboard') }}{{ token_qs }}" class="nav-link"{% if active == 'committee' %} aria-current="page"{% endif %}>Committee</a>
+      {% if is_admin %}
+      <form method="POST" action="{{ url_for('admin_logout') }}" class="topbar-signout">
+        {{ csrf_field() }}
+        <button type="submit" class="btn-secondary">Sign out</button>
+      </form>
+      {% endif %}
+    </nav>
+  </div>
+</header>

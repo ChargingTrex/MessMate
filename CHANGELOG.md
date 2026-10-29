@@ -4,6 +4,46 @@ All changes to the MessMate codebase are logged here in reverse chronological
 order (newest at top). Before making any change, scroll to the bottom, copy 
 the template, fill it in, and move it to the top.
 
+## [Unreleased] — Admin overview, weekly menu editor, audit fixes
+
+### Added
+- **Admin overview** at `/admin` — the landing page after sign-in. Today's
+  dish-form score and responses, quick-tap satisfaction per meal, committee
+  score and participation, 7-day roll-ups with sparklines, this week's menu
+  publication grid, who on the committee has reviewed, the latest feedback
+  from all three layers, and an attention list (unpublished meals, low
+  scores, missing reviews, members who never set a password).
+- **Weekly menu editor**: paged by calendar week (Prev / This week / Next),
+  published / not-published state per meal, template shown as placeholder,
+  *Fill blanks from template*, *Copy last week*, unsaved-change tracking and
+  **Save all 7 days** (`POST /admin/menu/save-week`, two Sheets API calls).
+- Student dashboard: 7-day average, best and lowest dish today, today's
+  date card, today's menu with quick-tap tallies per meal, quick-tap
+  suggestions (kept apart from the dish-form list).
+- Committee dashboard: 7-day average, lowest dimension today, and a
+  "reviewed today" roster. Members page: reviewed-today column and summary.
+- Shared `_topbar.html` / `_head.html` partials so every admin page carries
+  the same navigation; the read-only `?token=` view still sees only the two
+  dashboards.
+
+### Fixed
+- Students were shown the built-in weekly template as if it were the menu
+  whenever a day had nothing published, contradicting CONTRIBUTING.md and
+  failing three home journeys. The template is now editor-only.
+- The home page embedded every template dish in its page source via the
+  day-switcher data; it now ships only what is published.
+- Dish names from the sheet were injected with `innerHTML` unescaped on the
+  home page; the ticker announced a hard-coded breakfast and the lunch
+  window started 30 minutes after the printed time.
+- Stat-card and chart headings used `h2` while the stylesheet (and the
+  dashboard Robot keywords) expected `h3`; headings are consistent again.
+- Robot suites: the segmented 7/30-day control now carries the `active`
+  class the suites assert on; the menu editor's save button is labelled
+  "Save" as the suites click it; the student dashboard has the "Today's
+  Date" card and heading text TC26–TC28 look for.
+- Admin sign-in lands on the overview; the Robot `Login As Admin` keyword
+  requests the roster explicitly via `?next=`.
+
 ## Legend
 | Symbol | Meaning |
 |---|---|

@@ -177,9 +177,13 @@ window.MessMateCharts = (function () {
   /** Wires a two-button segmented control to a render function. */
   function segmented(aEl, bEl, aDays, bDays, render) {
     if (!aEl || !bEl) return;
+    // aria-pressed is the accessible state; the `active` class mirrors it
+    // for the stylesheet and the UI suites, which read the class attribute.
     const pick = (chosen, other, days) => {
       chosen.setAttribute("aria-pressed", "true");
       other.setAttribute("aria-pressed", "false");
+      chosen.classList.add("active");
+      other.classList.remove("active");
       render(days);
     };
     aEl.addEventListener("click", () => pick(aEl, bEl, aDays));

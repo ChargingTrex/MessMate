@@ -1,0 +1,656 @@
+<title>MessMate Accessibility Scorecard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: instrument-panel readout — verdict band, score + surface meters, severity-striped findings, staged roadmap. */
+:root {
+    --ink:        #15191f;
+    --ink-2:      #4a5360;
+    --ink-3:      #6b7483;
+    --paper:      #f4f6f8;
+    --card:       #ffffff;
+    --rule:       #d8dee6;
+    --rule-soft:  #e8edf2;
+    --accent:     #1d5a93;   /* the audit's own recommended --blue-600 replacement, at 7.04:1 on white */
+    --accent-soft:#e7eff7;
+    --critical:   #a4262c;
+    --critical-bg:#fbeced;
+    --serious:    #8a4b08;
+    --serious-bg: #fdf1e3;
+    --pass:       #1d6b45;
+    --pass-bg:    #e6f4ec;
+    --display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+    --body: 'Source Sans 3', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --ink: #e8ecf1; --ink-2: #a8b2bf; --ink-3: #8a94a2;
+        --paper: #11151a; --card: #1a1f26; --rule: #2e353f; --rule-soft: #232a33;
+        --accent: #76aee0; --accent-soft: #1c2b39;
+        --critical: #f2969b; --critical-bg: #2e1a1c;
+        --serious: #e3b074; --serious-bg: #2d2214;
+        --pass: #7fd0a2; --pass-bg: #15271d;
+        color-scheme: dark;
+    }
+}
+:root[data-theme="dark"] {
+    --ink: #e8ecf1; --ink-2: #a8b2bf; --ink-3: #8a94a2;
+    --paper: #11151a; --card: #1a1f26; --rule: #2e353f; --rule-soft: #232a33;
+    --accent: #76aee0; --accent-soft: #1c2b39;
+    --critical: #f2969b; --critical-bg: #2e1a1c;
+    --serious: #e3b074; --serious-bg: #2d2214;
+    --pass: #7fd0a2; --pass-bg: #15271d;
+    color-scheme: dark;
+}
+
+body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.55;
+    margin: 0;
+}
+.wrap { max-width: 1060px; margin: 0 auto; padding-inline: 16px; padding-block: 32px 72px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ── masthead ── */
+.masthead { border-bottom: 2px solid var(--ink); padding-bottom: 14px; margin-bottom: 26px; }
+.eyebrow {
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px;
+}
+.masthead h1 { font-size: clamp(1.7rem, 5vw, 2.5rem); font-weight: 700; letter-spacing: -0.02em; }
+.masthead .meta {
+    display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 10px;
+    font-size: 0.82rem; color: var(--ink-2);
+}
+.masthead .meta span { white-space: nowrap; }
+
+/* ── verdict ── */
+.verdict {
+    background: var(--card); border: 1px solid var(--rule);
+    border-left: 5px solid var(--critical);
+    border-radius: 3px; padding: 20px 22px; margin-bottom: 14px;
+}
+.verdict .label {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--critical); font-weight: 600;
+}
+.verdict .statement {
+    font-family: var(--display); font-size: clamp(1.1rem, 3vw, 1.45rem);
+    font-weight: 600; margin: 8px 0 4px; line-height: 1.3;
+}
+.verdict .sub { font-size: 0.9rem; color: var(--ink-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.chip {
+    font-family: var(--mono); font-size: 0.78rem; font-weight: 600;
+    padding: 3px 9px; border-radius: 3px;
+    background: var(--critical-bg); color: var(--critical);
+    border: 1px solid color-mix(in srgb, var(--critical) 28%, transparent);
+}
+.chip .lv { font-size: 0.64rem; opacity: 0.8; margin-left: 4px; }
+.disclaimer {
+    font-size: 0.82rem; color: var(--ink-3); font-style: italic;
+    margin: 0 0 30px; padding-left: 2px;
+}
+
+/* ── score ── */
+.score-grid {
+    display: grid; grid-template-columns: minmax(0, 210px) minmax(0, 1fr);
+    gap: 26px; align-items: start;
+    background: var(--card); border: 1px solid var(--rule); border-radius: 3px;
+    padding: 24px; margin-bottom: 12px;
+}
+.gauge { text-align: center; }
+.gauge svg { display: block; margin: 0 auto; max-width: 100%; }
+.gauge .grade {
+    font-family: var(--display); font-size: 2.1rem; font-weight: 700;
+    margin-top: 6px; letter-spacing: -0.01em;
+}
+.gauge .grade-label { font-size: 0.8rem; color: var(--ink-2); }
+.surfaces h3 {
+    font-size: 0.74rem; font-family: var(--mono); letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 14px;
+}
+.surface { margin-bottom: 13px; }
+.surface-top {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 10px; font-size: 0.88rem; margin-bottom: 4px;
+}
+.surface-top .nm { font-weight: 600; min-width: 0; }
+.surface-top .val { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-2); white-space: nowrap; }
+.meter { height: 7px; background: var(--rule-soft); border-radius: 2px; overflow: hidden; }
+.meter i { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+.meter i.full { background: var(--pass); }
+.meter i.weak { background: var(--serious); }
+.surface .note { font-size: 0.78rem; color: var(--ink-3); margin-top: 3px; }
+
+/* ── sections ── */
+.section-head {
+    display: flex; align-items: baseline; gap: 12px;
+    margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--rule);
+}
+.section-head h2 { font-size: 1.22rem; font-weight: 600; }
+.section-head .count { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-3); }
+
+/* ── findings ── */
+.finding {
+    background: var(--card); border: 1px solid var(--rule);
+    border-left: 4px solid var(--serious); border-radius: 3px;
+    padding: 18px 20px; margin-bottom: 12px;
+}
+.finding.critical { border-left-color: var(--critical); }
+.finding-top { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin-bottom: 8px; }
+.sev {
+    font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.1em;
+    text-transform: uppercase; font-weight: 600;
+    padding: 2px 7px; border-radius: 2px;
+    background: var(--serious-bg); color: var(--serious);
+}
+.finding.critical .sev { background: var(--critical-bg); color: var(--critical); }
+.sc-tag {
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 600;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 2px 7px; border-radius: 2px;
+}
+.status-tag { font-family: var(--mono); font-size: 0.66rem; color: var(--ink-3); margin-left: auto; }
+.finding h3 { font-size: 1.04rem; font-weight: 600; margin-bottom: 8px; }
+.finding p { margin: 0 0 10px; font-size: 0.92rem; color: var(--ink-2); }
+.finding p:last-child { margin-bottom: 0; }
+.kv { display: grid; gap: 7px; margin: 12px 0; }
+.kv-row {
+    display: grid; grid-template-columns: minmax(0, 86px) minmax(0, 1fr);
+    gap: 4px 12px; font-size: 0.84rem;
+}
+.kv-row dt {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-3); padding-top: 2px;
+}
+.kv-row dd { margin: 0; min-width: 0; color: var(--ink); }
+.loc { font-family: var(--mono); font-size: 0.78rem; color: var(--ink-2); display: block; }
+
+.tbl-scroll { overflow-x: auto; margin: 12px 0; }
+table { border-collapse: collapse; width: 100%; font-size: 0.84rem; min-width: 440px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--rule-soft); }
+th {
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 600;
+    border-bottom: 1px solid var(--rule);
+}
+td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+td.bad { color: var(--critical); font-weight: 600; }
+td.good { color: var(--pass); font-weight: 600; }
+.swatch {
+    display: inline-block; width: 11px; height: 11px; border-radius: 2px;
+    border: 1px solid var(--rule); vertical-align: -1px; margin-right: 5px;
+}
+
+/* ── passing ── */
+.pass-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 268px), 1fr)); gap: 10px; }
+.pass-item {
+    background: var(--card); border: 1px solid var(--rule);
+    border-left: 3px solid var(--pass); border-radius: 3px; padding: 12px 14px;
+}
+.pass-item .hd { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+.pass-item .sc {
+    font-family: var(--mono); font-size: 0.8rem; font-weight: 600; color: var(--pass);
+}
+.pass-item .lv {
+    font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+    padding: 1px 5px; border-radius: 2px; background: var(--pass-bg); color: var(--pass);
+}
+.pass-item p { margin: 0; font-size: 0.8rem; color: var(--ink-2); line-height: 1.45; }
+
+/* ── roadmap ── */
+.tier {
+    background: var(--card); border: 1px solid var(--rule); border-radius: 3px;
+    padding: 18px 20px; margin-bottom: 12px;
+}
+.tier-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; margin-bottom: 12px; }
+.tier-n {
+    font-family: var(--mono); font-size: 0.7rem; font-weight: 600;
+    background: var(--ink); color: var(--paper);
+    width: 22px; height: 22px; border-radius: 2px;
+    display: grid; place-items: center; flex: none;
+}
+.tier-top h3 { font-size: 1.04rem; font-weight: 600; }
+.tier-reach {
+    font-family: var(--mono); font-size: 0.72rem; color: var(--accent);
+    background: var(--accent-soft); padding: 2px 8px; border-radius: 2px;
+}
+.tier-effort { font-family: var(--mono); font-size: 0.74rem; color: var(--ink-3); margin-left: auto; }
+.tier ul { margin: 0; padding-left: 18px; }
+.tier li { font-size: 0.88rem; color: var(--ink-2); margin-bottom: 7px; line-height: 1.5; }
+.tier li:last-child { margin-bottom: 0; }
+.tier li b { color: var(--ink); font-weight: 600; }
+
+/* ── method ── */
+.method {
+    background: var(--card); border: 1px solid var(--rule); border-radius: 3px;
+    padding: 18px 20px;
+}
+.method h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 8px; }
+.method p, .method li { font-size: 0.86rem; color: var(--ink-2); line-height: 1.55; }
+.method p { margin: 0 0 12px; }
+.method ol { margin: 0 0 12px; padding-left: 20px; }
+.method li { margin-bottom: 7px; }
+.method code {
+    font-family: var(--mono); font-size: 0.82em;
+    background: var(--rule-soft); padding: 1px 4px; border-radius: 2px;
+}
+.selftest {
+    font-family: var(--mono); font-size: 0.8rem; color: var(--pass);
+    background: var(--pass-bg); border: 1px solid color-mix(in srgb, var(--pass) 25%, transparent);
+    padding: 9px 12px; border-radius: 2px; margin-bottom: 14px;
+}
+footer {
+    margin-top: 36px; padding-top: 14px; border-top: 1px solid var(--rule);
+    font-size: 0.78rem; color: var(--ink-3);
+}
+@media (max-width: 680px) {
+    .score-grid { grid-template-columns: 1fr; gap: 20px; }
+    .kv-row { grid-template-columns: 1fr; }
+    .status-tag { margin-left: 0; }
+}
+</style>
+
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="eyebrow">WCAG 2.2 · Level A + AA · 55 criteria</div>
+    <h1>MessMate Accessibility Scorecard</h1>
+    <div class="meta">
+      <span>Audited <strong>5 Oct 2026</strong></span>
+      <span>Commit <span class="num">bcc3580</span></span>
+      <span><span class="num">7</span> pages</span>
+      <span>Chrome 154 · Selenium 4.36</span>
+    </div>
+  </div>
+
+  <div class="verdict">
+    <div class="label">Conformance verdict — normative</div>
+    <div class="statement">Does not conform to WCAG 2.2 Level AA.</div>
+    <div class="sub">
+      7 of 55 Level A/AA criteria fail. Four are Level&nbsp;A, so the pages do not
+      currently meet Level&nbsp;A either.
+    </div>
+    <div class="chips">
+      <span class="chip">1.1.1<span class="lv">A</span></span>
+      <span class="chip">1.3.1<span class="lv">A</span></span>
+      <span class="chip">1.4.3<span class="lv">AA</span></span>
+      <span class="chip">1.4.10<span class="lv">AA</span></span>
+      <span class="chip">2.2.2<span class="lv">A</span></span>
+      <span class="chip">3.3.2<span class="lv">A</span></span>
+      <span class="chip">4.1.2<span class="lv">A</span></span>
+    </div>
+  </div>
+  <p class="disclaimer">
+    This is a findings report, not a conformance claim. A claim is yours to make
+    and carries legal weight.
+  </p>
+
+  <div class="score-grid">
+    <div class="gauge">
+      <svg viewBox="0 0 160 160" width="160" height="160" role="img"
+           aria-label="Audit score 70 out of 100, grade B.">
+        <circle cx="80" cy="80" r="66" fill="none" stroke="var(--rule-soft)" stroke-width="13"/>
+        <circle cx="80" cy="80" r="66" fill="none" stroke="var(--accent)" stroke-width="13"
+                stroke-linecap="round" stroke-dasharray="290.3 414.7"
+                transform="rotate(-90 80 80)"/>
+        <text x="80" y="76" text-anchor="middle" font-family="JetBrains Mono, monospace"
+              font-size="40" font-weight="600" fill="var(--ink)">70</text>
+        <text x="80" y="98" text-anchor="middle" font-family="JetBrains Mono, monospace"
+              font-size="13" fill="var(--ink-3)">/ 100</text>
+      </svg>
+      <div class="grade">Grade B</div>
+      <div class="grade-label">AA with minor gaps</div>
+    </div>
+
+    <div class="surfaces">
+      <h3>Audit score by surface — informative, not a conformance claim</h3>
+
+      <div class="surface">
+        <div class="surface-top"><span class="nm">Blocking failures</span><span class="val">19 / 30</span></div>
+        <div class="meter"><i style="width:63.3%"></i></div>
+        <div class="note">4 chart canvases + 2 form controls have no accessible name. Keyboard, focus and flash safety all pass.</div>
+      </div>
+      <div class="surface">
+        <div class="surface-top"><span class="nm">Colour &amp; contrast</span><span class="val">17 / 20</span></div>
+        <div class="meter"><i style="width:85%"></i></div>
+        <div class="note">16 of 19 applicable text/background pairs pass AA (84%).</div>
+      </div>
+      <div class="surface">
+        <div class="surface-top"><span class="nm">Typography</span><span class="val">13 / 15</span></div>
+        <div class="meter"><i style="width:86.7%"></i></div>
+        <div class="note">No size-floor violations; survives the 1.4.12 override on all 7 pages; sizes are ad-hoc rather than a scale.</div>
+      </div>
+      <div class="surface">
+        <div class="surface-top"><span class="nm">Targets &amp; pointer</span><span class="val">10 / 10</span></div>
+        <div class="meter"><i class="full" style="width:100%"></i></div>
+        <div class="note">94 targets measured, none below the 24px floor.</div>
+      </div>
+      <div class="surface">
+        <div class="surface-top"><span class="nm">Motion</span><span class="val">5 / 10</span></div>
+        <div class="meter"><i class="weak" style="width:50%"></i></div>
+        <div class="note">Flash-safe and reduced-motion honoured, but the 38s ticker has no pause control.</div>
+      </div>
+      <div class="surface">
+        <div class="surface-top"><span class="nm">Infographics &amp; media</span><span class="val">3 / 10</span></div>
+        <div class="meter"><i class="weak" style="width:30%"></i></div>
+        <div class="note">All four chart canvases lack a text alternative.</div>
+      </div>
+      <div class="surface">
+        <div class="surface-top"><span class="nm">AAA headroom</span><span class="val">3 / 5</span></div>
+        <div class="meter"><i style="width:60%"></i></div>
+        <div class="note">Reduced-motion support earns credit; 7:1 contrast and 44px targets do not.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <h2>Failures</h2><span class="count">5 findings · 7 criteria</span>
+  </div>
+
+  <div class="finding critical">
+    <div class="finding-top">
+      <span class="sev">Critical</span>
+      <span class="sc-tag">1.1.1 Non-text Content · A</span>
+      <span class="status-tag">measured</span>
+    </div>
+    <h3>Chart canvases have no text alternative</h3>
+    <p>
+      All four <code style="font-family:var(--mono)">&lt;canvas&gt;</code> elements carry no
+      <span class="num">role</span>, no <span class="num">aria-label</span> and no fallback
+      content, so every number in the dashboards is unavailable to a screen-reader user.
+      The dashboards are the entire value of the admin surface.
+    </p>
+    <dl class="kv">
+      <div class="kv-row"><dt>Where</dt><dd>
+        <span class="loc">templates/dashboard.html:105 — canvas#trendChart</span>
+        <span class="loc">templates/dashboard.html:113 — canvas#itemChart</span>
+        <span class="loc">templates/committee_dashboard.html:95 — canvas#dimensionChart</span>
+        <span class="loc">templates/committee_dashboard.html:108 — canvas#committeeTrendChart</span>
+      </dd></div>
+      <div class="kv-row"><dt>Measured</dt><dd>Empty <span class="num">aria_label</span> and <span class="num">role</span>, no caption, no fallback — on all four.</dd></div>
+      <div class="kv-row"><dt>Fix</dt><dd><span class="num">role="img"</span> plus a generated <span class="num">aria-label</span> that carries the chart's <em>finding</em>, and a visually-hidden data table. "Chart" fails 1.1.1; "Average rating rose from 2.7 to 4.0 over 30 days" passes.</dd></div>
+      <div class="kv-row"><dt>Effort</dt><dd>~2h</dd></div>
+    </dl>
+  </div>
+
+  <div class="finding critical">
+    <div class="finding-top">
+      <span class="sev">Critical</span>
+      <span class="sc-tag">1.3.1 · 3.3.2 · 4.1.2 — all A</span>
+      <span class="status-tag">measured</span>
+    </div>
+    <h3>Two form controls have no programmatic label</h3>
+    <p>
+      On <span class="num">/</span>, the review textarea and the suggestion input have a
+      placeholder and nothing else. A placeholder is not an accessible name, and it
+      disappears as soon as the user types — so it fails as an instruction too.
+    </p>
+    <dl class="kv">
+      <div class="kv-row"><dt>Where</dt><dd>
+        <span class="loc">templates/form.html:192 — textarea#review</span>
+        <span class="loc">templates/form.html:199 — input[name=suggestion]</span>
+      </dd></div>
+      <div class="kv-row"><dt>Measured</dt><dd><span class="num">labelled: false</span> on both. Every other control across all 7 pages is correctly labelled.</dd></div>
+      <div class="kv-row"><dt>Fix</dt><dd>An explicit <span class="num">&lt;label for&gt;</span>, matching the pattern <span class="num">/home</span> already uses (<span class="num">aria-label="Suggestion for Breakfast (optional)"</span>). Add <span class="num">aria-describedby="char-counter"</span> so the 0&nbsp;/&nbsp;150 budget is announced.</dd></div>
+      <div class="kv-row"><dt>Effort</dt><dd>~15min</dd></div>
+    </dl>
+  </div>
+
+  <div class="finding">
+    <div class="finding-top">
+      <span class="sev">Serious</span>
+      <span class="sc-tag">1.4.3 Contrast (Minimum) · AA</span>
+      <span class="status-tag">measured</span>
+    </div>
+    <h3>Three text/background pairs below 4.5:1</h3>
+    <p>
+      19 applicable combinations measured from computed styles; 16 pass. Replacements come
+      from a golden-section search over lightness holding hue and saturation — each is the
+      <em>smallest</em> change that clears the threshold, so the design keeps its intent.
+    </p>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr>
+          <th>Pair</th><th>Size</th><th class="n">Measured</th><th class="n">Need</th>
+          <th>Where</th><th>Replacement</th><th class="n">Becomes</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="swatch" style="background:#888888"></span><span class="num">#888888</span> on <span class="num">#ffffff</span></td>
+            <td class="n">12.8px</td><td class="n bad">3.54:1</td><td class="n">4.5</td>
+            <td>div#char-counter on /</td>
+            <td><span class="swatch" style="background:#767676"></span><span class="num">#767676</span></td>
+            <td class="n good">4.54:1</td>
+          </tr>
+          <tr>
+            <td><span class="swatch" style="background:#777777"></span><span class="num">#777777</span> on <span class="num">#f7f9fc</span></td>
+            <td class="n">14.4px</td><td class="n bad">4.25:1</td><td class="n">4.5</td>
+            <td>.subtext, .subtext-line on /</td>
+            <td><span class="swatch" style="background:#727272"></span><span class="num">#727272</span></td>
+            <td class="n good">4.56:1</td>
+          </tr>
+          <tr>
+            <td><span class="swatch" style="background:#777777"></span><span class="num">#777777</span> on <span class="num">#ffffff</span></td>
+            <td class="n">14.4px</td><td class="n bad">4.48:1</td><td class="n">4.5</td>
+            <td>.subtext on /, /committee/login</td>
+            <td><span class="swatch" style="background:#767676"></span><span class="num">#767676</span></td>
+            <td class="n good">4.54:1</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      The last two are one token failing on two grounds. <span class="num">--text-muted: #727272</span>
+      fixes both — it clears white too, at <span class="num">4.78:1</span>. Effort: ~10min.
+    </p>
+  </div>
+
+  <div class="finding">
+    <div class="finding-top">
+      <span class="sev">Serious</span>
+      <span class="sc-tag">1.4.10 Reflow · AA</span>
+      <span class="status-tag">measured at a true 320px via CDP</span>
+    </div>
+    <h3>Horizontal scrolling at 320 CSS px</h3>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Page</th><th class="n">Viewport</th><th class="n">Content</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td class="num">/home</td><td class="n">320</td><td class="n bad">351</td>
+              <td><span class="num">div#tickerContent</span> is <strong>6678px</strong> wide; <span class="num">nav.home-nav</span> reaches right:351</td></tr>
+          <tr><td class="num">/dashboard</td><td class="n">320</td><td class="n bad">341</td>
+              <td><span class="num">nav.app-topbar-nav</span> reaches right:341</td></tr>
+          <tr><td class="num">/dashboard/committee</td><td class="n">320</td><td class="n bad">341</td>
+              <td><span class="num">nav.app-topbar-nav</span> reaches right:341</td></tr>
+          <tr><td class="num">/ · /admin/login · /committee/login · /thanks</td>
+              <td class="n">320</td><td class="n good">320</td><td>pass</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      At 256px (≈400% zoom on a 1024px screen, also required by 1.4.10)
+      <span class="num">/</span> fails too, at 299px, from the <span class="num">.emoji-btn</span> row.
+      Fix: <span class="num">overflow:hidden</span> on <span class="num">.ticker-section</span>,
+      and <span class="num">flex-wrap</span> on both top bars under 420px. Effort: ~1h.
+    </p>
+  </div>
+
+  <div class="finding">
+    <div class="finding-top">
+      <span class="sev">Serious</span>
+      <span class="sc-tag">2.2.2 Pause, Stop, Hide · A</span>
+      <span class="status-tag">measured</span>
+    </div>
+    <h3>Scrolling ticker cannot be paused</h3>
+    <p>
+      <span class="num">div#tickerContent</span> runs for <strong>38s, infinite</strong>, starts
+      automatically and sits alongside other content. 2.2.2 requires a mechanism to pause,
+      stop or hide motion lasting longer than 5s.
+    </p>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Selector</th><th>Animation</th><th class="n">Duration</th><th>Iterations</th><th class="n">&gt;5s</th></tr></thead>
+        <tbody>
+          <tr><td class="num">div#tickerContent</td><td class="num">tickerScroll</td><td class="n">38s</td><td>infinite</td><td class="n bad">yes</td></tr>
+          <tr><td class="num">span#badge-breakfast</td><td class="num">servingGlow</td><td class="n">2.5s</td><td>infinite</td><td class="n good">no</td></tr>
+          <tr><td class="num">span.live-dot</td><td class="num">livePulse</td><td class="n">2s</td><td>infinite</td><td class="n good">no</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      The <span class="num">prefers-reduced-motion</span> guard at
+      <span class="num">style.css:2172</span> is good and genuinely works — 0 effectively-moving
+      animations measured under the OS setting. But it does not satisfy 2.2.2, which requires a
+      control the user can operate, not only an OS preference. Only the ticker exceeds 5s, so
+      only the ticker needs the button. Effort: ~45min.
+    </p>
+  </div>
+
+  <div class="section-head">
+    <h2>Passing, with evidence</h2><span class="count">10 criteria verified</span>
+  </div>
+  <div class="pass-grid">
+    <div class="pass-item"><div class="hd"><span class="sc">1.4.12</span><span class="lv">AA</span></div>
+      <p>The spacing override clips <strong>0 containers across all 7 pages</strong>.</p></div>
+    <div class="pass-item"><div class="hd"><span class="sc">2.1.1</span><span class="lv">A</span></div>
+      <p>Every focusable element reached by real Tab. The two exceptions are correct: a disabled button, and inputs in a closed <span class="num">&lt;details&gt;</span>.</p></div>
+    <div class="pass-item"><div class="hd"><span class="sc">2.1.2</span><span class="lv">A</span></div>
+      <p>Focus cycles through BODY and wraps on every page. No trap.</p></div>
+    <div class="pass-item"><div class="hd"><span class="sc">2.4.7</span><span class="lv">AA</span></div>
+      <p>Every focused control shows an indicator. The border-colour route measures a 3.57:1 state change.</p></div>
+    <div class="pass-item"><div class="hd"><span class="sc">2.5.8</span><span class="lv">AA</span></div>
+      <p>94 targets measured, none below 24px. The one 17px element is an exempt inline link.</p></div>
+    <div class="pass-item"><div class="hd"><span class="sc">2.3.1</span><span class="lv">A</span></div>
+      <p>No flashing content; the fastest animation is a 2s pulse.</p></div>
+    <div class="pass-item"><div class="hd"><span class="sc">3.1.1</span><span class="lv">A</span></div>
+      <p><span class="num">lang="en"</span> on all 7 pages.</p></div>
+    <div class="pass-item"><div class="hd"><span class="sc">2.4.2</span><span class="lv">A</span></div>
+      <p>All 7 pages carry unique, descriptive titles.</p></div>
+    <div class="pass-item"><div class="hd"><span class="sc">2.4.1</span><span class="lv">A</span></div>
+      <p>No skip link, but <span class="num">&lt;main&gt;</span> landmarks plus h1/h2 structure satisfy it via technique H69.</p></div>
+    <div class="pass-item"><div class="hd"><span class="sc">2.3.3</span><span class="lv">AAA</span></div>
+      <p>Reduced motion honoured: <strong>0</strong> effectively-moving animations under the OS setting.</p></div>
+  </div>
+
+  <div class="section-head">
+    <h2>Route to the highest achievable rating</h2><span class="count">3 staged tiers</span>
+  </div>
+
+  <div class="tier">
+    <div class="tier-top">
+      <span class="tier-n">1</span><h3>Unblock</h3>
+      <span class="tier-reach">reaches Level A</span><span class="tier-effort">~3h</span>
+    </div>
+    <ul>
+      <li><b>Name the four chart canvases</b> and add hidden data tables — 1.1.1 · ~2h</li>
+      <li><b>Label the review textarea and suggestion input</b> — 1.3.1, 3.3.2, 4.1.2 · ~15min</li>
+      <li><b>Add the ticker pause control</b> — 2.2.2 · ~45min</li>
+    </ul>
+  </div>
+
+  <div class="tier">
+    <div class="tier-top">
+      <span class="tier-n">2</span><h3>Conform</h3>
+      <span class="tier-reach">reaches Level AA</span><span class="tier-effort">~1.2h</span>
+    </div>
+    <ul>
+      <li><b><span class="num">--text-muted: #727272</span></b> and <b><span class="num">.char-counter: #767676</span></b> — 1.4.3 · ~10min</li>
+      <li><b>Clip the ticker; wrap both top bars under 420px</b> — 1.4.10 · ~1h</li>
+    </ul>
+    <p style="font-size:0.86rem;color:var(--ink-2);margin:12px 0 0">
+      <strong>Total to Level AA: roughly half a day.</strong> Four of the five fixes are small
+      and localised; only the chart alternatives need real thought, because a useful
+      alternative has to carry the finding rather than describe the picture.
+    </p>
+  </div>
+
+  <div class="tier">
+    <div class="tier-top">
+      <span class="tier-n">3</span><h3>Harden</h3>
+      <span class="tier-reach">AA + AAA where achievable</span><span class="tier-effort">varies</span>
+    </div>
+    <ul>
+      <li><b>2.4.13 Focus Appearance</b> — the focus-ring block at <span class="num">style.css:2135</span>
+        is scoped to <span class="num">body.admin-body</span>/<span class="num">auth-body</span>, and
+        <span class="num">form.html</span>, <span class="num">committee_login.html</span>,
+        <span class="num">committee_form.html</span> and <span class="num">thanks.html</span> carry
+        no body class. <span class="num">#email</span> on <span class="num">/committee/login</span>
+        measures <strong>2.77:1</strong> state change, below the 3:1 wanted, and a 1px border also
+        misses the 2px-perimeter area requirement. Dropping the two qualifiers fixes all four pages at once.</li>
+      <li><b>1.4.6 Contrast (Enhanced)</b> — 11 of 20 pairs already pass 7:1. Darkening
+        <span class="num">--blue-600</span> to <span class="num">#1d5a93</span> takes white-on-blue
+        from 4.84:1 to <strong>7.04:1</strong>.</li>
+      <li><b>2.5.5 Target Size</b> — 17 of 94 targets sit below 44px. The φ ladder from the 24px
+        floor is <span class="num">24 → 39 → 63</span>; 39px suits <span class="num">.segmented-btn</span>
+        (currently 31.2px) and keeps the toolbar's rhythm.</li>
+      <li><b>2.4.1 Bypass Blocks</b> — already passes via H69, but a skip link is cheap and helps
+        keyboard users on the dashboards.</li>
+      <li><b>3.3.1 / 3.3.3 Error recovery</b> — error banners are plain divs. Add
+        <span class="num">role="alert"</span>, plus <span class="num">aria-invalid</span> and
+        <span class="num">aria-describedby</span> on the offending field, and move focus to the
+        banner. <em>Inferred from source; not exercised against a live validation failure.</em></li>
+    </ul>
+  </div>
+
+  <div class="section-head"><h2>How this was measured</h2></div>
+  <div class="method">
+    <div class="selftest">a11y_math.py selftest → 27/27 checks passed</div>
+    <h3>Tooling gap, stated up front</h3>
+    <p>
+      The <span class="num">wcag-audit</span> skill synced without its <code>scripts/</code> and
+      <code>references/</code> directories, so <code>a11y_math.py</code>, <code>audit_page.py</code>
+      and <code>build_dashboard.py</code> were unavailable. There is also no axe-core, Playwright or
+      Node on this machine. The WCAG arithmetic was reimplemented from the normative formulas and
+      self-tested against published reference values before use — including the canonical boundary
+      greys (<span class="num">#767676</span> on white = 4.54:1,
+      <span class="num">#595959</span> on white = 7.00:1, black on white = 21.00:1). Every number
+      here is reproducible from those formulas.
+    </p>
+    <h3>Three measurement errors found and corrected</h3>
+    <p>Recorded because each would have produced a false finding:</p>
+    <ol>
+      <li>Headless Chrome refuses to size its window below ~500 CSS px, so the first reflow pass
+        silently measured 500px and reported a <strong>false pass</strong>. Redone with
+        <code>Emulation.setDeviceMetricsOverride</code>.</li>
+      <li>Flagging <code>animation-name != none</code> under reduced motion produced
+        <strong>4 false failures</strong> on <span class="num">/home</span>. The guard zeroes
+        duration and iteration count, so the name survives while the motion does not. Re-measured
+        as duration × iterations.</li>
+      <li>A focus probe reading computed styles immediately after <code>.focus()</code> returned
+        pre-transition values (<code>transition: border-color 0.2s</code>), making every border look
+        unchanged. Re-measured after the transition settles.</li>
+    </ol>
+    <h3>Two apparent failures investigated and dismissed</h3>
+    <ol>
+      <li><span class="num">/home</span>'s three suggestion inputs are unreachable by Tab because
+        they sit inside a closed <code>&lt;details&gt;</code> disclosure. The
+        <code>&lt;summary&gt;</code> is reachable and the input becomes focusable when opened — a
+        correct pattern, not a defect.</li>
+      <li><span class="num">button#submit-btn</span> measures 1.91:1, but it is
+        <code>disabled</code> on load and SC 1.4.3 exempts inactive components. Retained as
+        advisory only.</li>
+    </ol>
+    <h3>Not tested</h3>
+    <p>
+      Screen-reader output (NVDA / JAWS / VoiceOver), so 4.1.2 is assessed from accessible names in
+      the DOM rather than from what a screen reader announces. 1.2.x is not applicable — no audio or
+      video. Form error association is inferred from source, not exercised against a live validation
+      failure. Cognitive-load and real-user testing are out of scope.
+    </p>
+  </div>
+
+  <footer>
+    Audit score is a progress signal between sprints and is not a conformance claim.
+    Conformance is binary and per page: the verdict at the top is the normative result.
+    Full findings, paste-ready fixes and reproduction commands are in
+    <span class="num">accessibility-audit.md</span>; structured data in
+    <span class="num">audit.json</span>.
+  </footer>
+
+</div>

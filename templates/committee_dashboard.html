@@ -7,62 +7,41 @@
 
   Test Automation Attributes:
     - class="stat-cards" on the stat card row
+    - id="stat-today-avg", id="stat-today-count", id="stat-active-members",
+      id="stat-participation"
     - id="dimensionChart", id="committeeTrendChart"
+    - id="attendance" on the who-has-reviewed list
 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MessMate — Committee Dashboard 🍽️</title>
-  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% set page_title = 'MessMate — Committee Dashboard 🍽️' %}{% include '_head.html' %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script defer src="{{ url_for('static', filename='app-shell.js') }}"></script>
 </head>
 <body class="admin-body">
-
-<header class="app-topbar">
-  <div class="app-topbar-inner">
-    <a class="app-brand" href="{{ url_for('home') }}">
-      <span class="live-dot" title="Live"></span>
-      <span class="brand-logo">MESSMATE</span>
-    </a>
-    <span id="appClock" class="app-clock" aria-label="Current time">--:--:--</span>
-    <nav class="app-topbar-nav" aria-label="Admin sections">
-      <a href="{{ url_for('dashboard') }}{{ '?token=' + request.args.get('token') if request.args.get('token') }}"
-         class="nav-link">Students</a>
-      <a href="{{ url_for('committee_dashboard') }}{{ '?token=' + request.args.get('token') if request.args.get('token') }}"
-         class="nav-link" aria-current="page">Committee</a>
-      {% if is_admin %}<a href="{{ url_for('admin_members') }}" class="nav-link">Members</a>{% endif %}
-    </nav>
-  </div>
-</header>
+{% from '_macros.html' import score_class, sparkline %}
+{% set active = 'committee' %}{% include '_topbar.html' %}
 
 <main class="admin-container">
 
   <div class="admin-header">
     <div>
-      <h1>Food Committee Dashboard 🍽️</h1>
+      <p class="eyebrow">Food Committee</p>
+      <h1>Committee Dashboard 🍽️</h1>
       <p>{{ today_date }}</p>
     </div>
-
+    {% if is_admin %}
+    <div class="admin-header-actions">
+      <a href="{{ url_for('admin_members') }}" class="btn-secondary">Manage members</a>
+    </div>
+    {% endif %}
   </div>
 
   <!-- Stat cards -->
-  <div class="stat-cards">
-    {% set avg_color_class = "" %}
-    {% if today_avg > 0 %}
-      {% if today_avg < 2.5 %}{% set avg_color_class = "score-red" %}
-      {% elif today_avg <= 3.5 %}{% set avg_color_class = "score-amber" %}
-      {% else %}{% set avg_color_class = "score-green" %}{% endif %}
-    {% endif %}
-
-    <div class="stat-card {{ avg_color_class }}">
-      <h2>Today's Committee Score</h2>
+  <h2 class="section-title">Today</h2>
+  <div class="stat-cards stat-cards-6">
+    <div class="stat-card {{ score_class(today_avg) }}">
+      <h3>Today's Committee Score</h3>
       <p class="stat-value score-value{% if today_avg <= 0 %} is-empty{% endif %}" id="stat-today-avg">
         {% if today_avg > 0 %}{{ "%.1f"|format(today_avg) }}{% else %}--{% endif %}
       </p>
@@ -70,20 +49,36 @@
     </div>
 
     <div class="stat-card">
-      <h2>Reviews Today</h2>
+      <h3>Reviews Today</h3>
       <p class="stat-value{% if today_count == 0 %} is-empty{% endif %}" id="stat-today-count">{{ today_count }}</p>
       <p class="stat-note">of {{ active_members }} members</p>
     </div>
 
     <div class="stat-card">
-      <h2>Active Members</h2>
+      <h3>Active Members</h3>
       <p class="stat-value" id="stat-active-members">{{ active_members }}</p>
     </div>
 
     <div class="stat-card">
-      <h2>Participation</h2>
+      <h3>Participation</h3>
       <p class="stat-value{% if participation == 0 %} is-empty{% endif %}" id="stat-participation">{{ participation }}%</p>
       <p class="stat-note">filed a review today</p>
+    </div>
+
+    <div class="stat-card">
+      <h3>7-Day Average</h3>
+      <p class="stat-value{% if week_avg <= 0 %} is-empty{% endif %}">
+        {% if week_avg > 0 %}{{ "%.1f"|format(week_avg) }}{% else %}--{% endif %}
+      </p>
+      <p class="stat-note">{{ week_reviews }} reviews {{ sparkline(trend_data, 'Avg_Overall', 'Seven-day committee average') }}</p>
+    </div>
+
+    <div class="stat-card {{ score_class(lowest_dimension[1]) if lowest_dimension }}">
+      <h3>Lowest Today</h3>
+      <p class="stat-value stat-value-text{% if not lowest_dimension %} is-empty{% endif %}">
+        {% if lowest_dimension %}{{ lowest_dimension[0] }}{% else %}--{% endif %}
+      </p>
+      <p class="stat-note">{% if lowest_dimension %}{{ "%.1f"|format(lowest_dimension[1]) }} / 5{% if highest_dimension and highest_dimension[0] != lowest_dimension[0] %} · best: {{ highest_dimension[0] }} {{ "%.1f"|format(highest_dimension[1]) }}{% endif %}{% else %}no reviews yet{% endif %}</p>
     </div>
   </div>
 
@@ -92,7 +87,7 @@
     <div class="chart-container">
       <h2>Today by Dimension</h2>
       <div class="canvas-wrapper">
-        <canvas id="dimensionChart"></canvas>
+        <canvas id="dimensionChart" role="img" aria-label="Bar chart of today's average committee score per dimension"></canvas>
       </div>
     </div>
 
@@ -100,30 +95,50 @@
       <div class="chart-head">
         <h2 id="committeeTrendTitle">7-Day Committee Trend</h2>
         <div class="segmented" role="group" aria-label="Trend range">
-          <button type="button" id="btnCommittee7" class="segmented-btn" aria-pressed="true">7 days</button>
+          <button type="button" id="btnCommittee7" class="segmented-btn active" aria-pressed="true">7 days</button>
           <button type="button" id="btnCommittee30" class="segmented-btn" aria-pressed="false">1 month</button>
         </div>
       </div>
       <div class="canvas-wrapper">
-        <canvas id="committeeTrendChart"></canvas>
+        <canvas id="committeeTrendChart" role="img" aria-label="Line chart of the daily committee average, with one line per dimension"></canvas>
       </div>
     </div>
   </div>
 
-  <!-- Reviews -->
-  <div class="suggestions-container">
-    <h2>📝 Committee Reviews</h2>
-    <div class="suggestions-list" tabindex="0" role="region" aria-label="Scrollable list">
-      {% if reviews %}
-        {% for review in reviews %}
-        <div class="suggestion-item">
-          <p class="suggestion-text">"{{ review.text }}"</p>
-          <p class="suggestion-time">{{ review.name }} — {{ review.date }}</p>
-        </div>
+  <div class="two-col two-col-narrow-first">
+    <!-- Who has reviewed -->
+    <div class="card">
+      <h2>Reviewed today</h2>
+      {% if attendance %}
+      <ul class="attendance-list" id="attendance">
+        {% for m in attendance %}
+        <li class="{{ 'is-done' if m.reviewed }}" data-attendance="{{ m.email }}">
+          <span class="att-mark" aria-hidden="true">{{ '✓' if m.reviewed else '·' }}</span>
+          <span class="att-name">{{ m.name }}</span>
+          <span class="att-state">{{ 'Reviewed' if m.reviewed else 'Not yet' }}</span>
+        </li>
         {% endfor %}
+      </ul>
       {% else %}
-        <div class="empty-state">No written reviews yet.</div>
+      <div class="empty-state">No active committee members.</div>
       {% endif %}
+    </div>
+
+    <!-- Reviews -->
+    <div class="suggestions-container">
+      <h2>📝 Committee Reviews</h2>
+      <div class="suggestions-list" tabindex="0" role="region" aria-label="Committee reviews, scrollable">
+        {% if reviews %}
+          {% for review in reviews %}
+          <div class="suggestion-item">
+            <p class="suggestion-text">"{{ review.text }}"</p>
+            <p class="suggestion-time">{{ review.name }} — {{ review.date }}</p>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">No written reviews yet.</div>
+        {% endif %}
+      </div>
     </div>
   </div>
 
@@ -138,6 +153,5 @@
 </script>
 <script src="{{ url_for('static', filename='charts.js') }}"></script>
 <script src="{{ url_for('static', filename='committee_dashboard.js') }}"></script>
-
 </body>
 </html>

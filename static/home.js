@@ -8,6 +8,15 @@
 
 document.addEventListener("DOMContentLoaded", function () {
 
+  // Dish names come from the spreadsheet, which anyone with edit access can
+  // type HTML into. Everything that reaches innerHTML goes through this.
+  function esc(text) {
+    return String(text ?? "").replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+  }
+  const li = (text, cls) => `<li${cls ? ` class="${cls}"` : ""}>${esc(text)}</li>`;
+
   // ── 1. Live Digital Clock ─────────────────────────────────────────────────
   const clockEl = document.getElementById("currentTime");
   function updateClock() {
@@ -23,10 +32,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
   // ── 2. Active Meal Detection ──────────────────────────────────────────────
-  // Breakfast: 07:30–09:30, Lunch: 12:30–14:30, Dinner: 19:30–21:30
+  // Matches sheets.MEAL_TIMINGS, which the cards print:
+  // Breakfast 07:30–09:30, Lunch 12:00–14:30, Dinner 19:30–21:30
   const MEAL_WINDOWS = {
     Breakfast: [7 * 60 + 30, 9 * 60 + 30],
-    Lunch:     [12 * 60 + 30, 14 * 60 + 30],
+    Lunch:     [12 * 60, 14 * 60 + 30],
     Dinner:    [19 * 60 + 30, 21 * 60 + 30],
   };
 
@@ -84,7 +94,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const dishes = todayData[activeMeal] || [];
       if (dishesList) {
         if (dishes.length > 0) {
-          dishesList.innerHTML = dishes.map(d => `<li>${d}</li>`).join("");
+          dishesList.innerHTML = dishes.map(d => li(d)).join("");
         } else {
           dishesList.innerHTML = `<li class="specials-loading">Menu not published yet</li>`;
         }
@@ -105,7 +115,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const dishes = isToday ? (todayData[nextMeal] || []) : [];
         if (dishesList) {
           dishesList.innerHTML = dishes.length
-            ? dishes.map(d => `<li>${d}</li>`).join("")
+            ? dishes.map(d => li(d)).join("")
             : `<li class="specials-loading">Menu not published</li>`;
         }
       } else {
@@ -139,7 +149,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!listEl) return;
       const items = dayData[meal] || [];
       if (items.length > 0) {
-        listEl.innerHTML = items.map(i => `<li>${i}</li>`).join("");
+        listEl.innerHTML = items.map(i => li(i)).join("");
       } else {
         listEl.innerHTML = `<li class="menu-empty">Menu not published yet</li>`;
       }
@@ -214,25 +224,34 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
   // ── 6. Ticker Banner ─────────────────────────────────────────────────────
-  const TICKER_ITEMS = [
-    "🍽️ Mess opens at 7:30 AM for Breakfast",
+  // Built from today's published menu and the real serving times, so it never
+  // announces a dish the kitchen is not serving. Unpublished meals are skipped.
+  const timings = window.MESSMATE_TIMINGS || {};
+  const todayMenu = (window.MESSMATE_WEEK || {})[window.MESSMATE_TODAY_ISO] || {};
+  const icons = { Breakfast: "🌅", Lunch: "🍛", Dinner: "🌙" };
+
+  const TICKER_ITEMS = [];
+  (window.MESSMATE_MEALS || ["Breakfast", "Lunch", "Dinner"]).forEach(meal => {
+    const dishes = todayMenu[meal] || [];
+    const when = timings[meal] ? ` (${timings[meal]})` : "";
+    if (dishes.length) {
+      TICKER_ITEMS.push(`${icons[meal] || "🍽️"} ${meal}${when}: ${dishes.join(", ")}`);
+    }
+  });
+  TICKER_ITEMS.push(
     "📋 Rate your meal to help improve quality",
-    "🌅 Breakfast: Idli, Sambar, Coconut Chutney",
     "✅ Anonymous ratings — no login required",
-    "🍛 Lunch: 12:00 PM – 2:30 PM",
     "💬 Leave a suggestion on any meal card",
-    "🌙 Dinner: 7:30 PM – 9:30 PM",
     "🏆 Your feedback shapes tomorrow's menu",
-    "🔔 New menus published every morning",
-    "👍 Good food? Give it a thumbs up!",
-  ];
+    "👍 Good food? Give it a thumbs up!"
+  );
 
   const tickerContent = document.getElementById("tickerContent");
   if (tickerContent) {
-    // Double the items to create seamless loop
+    // Double the items to create a seamless loop
     const allItems = [...TICKER_ITEMS, ...TICKER_ITEMS];
     tickerContent.innerHTML = allItems
-      .map(t => `<span class="ticker-item">${t}</span>`)
+      .map(t => `<span class="ticker-item">${esc(t)}</span>`)
       .join("");
   }
 
