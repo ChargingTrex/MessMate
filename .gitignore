@@ -15,3 +15,6 @@ selenium-screenshot-*.png
 
 # Local demo credentials (never commit)
 DEMO_LOGINS.md
+
+# Local code-index output (CodeGraph keeps its own .gitignore; graphify writes here)
+graphify-out/
