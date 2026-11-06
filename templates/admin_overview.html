@@ -20,7 +20,7 @@
 <head>
   {% set page_title = 'MessMate — Admin Overview' %}{% include '_head.html' %}
 </head>
-<body class="admin-body">
+<body class="page-wide">
 {% from '_macros.html' import score_class, sparkline, chips %}
 {% set active = 'overview' %}{% include '_topbar.html' %}
 
@@ -82,7 +82,7 @@
     {% set ate = taps.tallies.values() | map(attribute='good') | sum + taps.tallies.values() | map(attribute='bad') | sum %}
     {% set liked = taps.tallies.values() | map(attribute='good') | sum %}
     {% set tap_score = (liked / ate * 100) | round | int if ate else 0 %}
-    <div class="stat-card {% if ate %}{{ 'score-green' if tap_score >= 70 else ('score-amber' if tap_score >= 40 else 'score-red') }}{% endif %}" data-stat="taps-today">
+    <div class="stat-card {{ ui.tap_class(tap_score, ate) }}" data-stat="taps-today">
       <h3>Quick taps · today</h3>
       <p class="stat-value{% if not ate %} is-empty{% endif %}">{% if ate %}{{ tap_score }}%{% else %}--{% endif %}</p>
       <p class="stat-note">{{ taps.today_total }} tap{{ '' if taps.today_total == 1 else 's' }} · {{ taps.week_score }}% liked this week</p>

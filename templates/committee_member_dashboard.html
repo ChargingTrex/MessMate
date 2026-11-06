@@ -1,0 +1,205 @@
+<!--
+  Committee Member Dashboard (committee_member_dashboard.html)
+  -------------------------------------------------------------
+  What a signed-in committee member sees: the committee's own numbers (the
+  same analytics the admin dashboard shows), their personal record, and the
+  student picture for today as context in its own card.
+
+  The three feedback layers stay apart here as everywhere: a committee mean,
+  a dish-form mean and a tap share are shown side by side, never combined.
+
+  Test Automation Attributes:
+    - id="member-dashboard" on the page wrapper
+    - id="my-record" on the member's own card
+    - id="dimensionChart", id="committeeTrendChart" (shared with the admin view)
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% set page_title = 'MessMate — Committee Dashboard 🍽️' %}{% include '_head.html' %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="page-wide">
+{% from '_macros.html' import score_class, sparkline, chips %}
+{% set active = 'committee-dashboard' %}{% include '_topbar.html' %}
+
+<main class="admin-container" id="member-dashboard">
+
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Food Committee</p>
+      <h1>Committee dashboard 🍽️</h1>
+      <p>{{ today_date }} · Signed in as <strong>{{ member.Name }}</strong></p>
+    </div>
+    <div class="page-header-actions">
+      {% if reviewed_today %}
+      <span class="badge badge-ok">Reviewed today</span>
+      {% else %}
+      <a href="{{ url_for('committee') }}" class="submit-btn btn-inline">File today's review</a>
+      {% endif %}
+      <form method="POST" action="{{ url_for('committee_logout') }}">
+        {{ csrf_field() }}
+        <button type="submit" class="btn-secondary">Sign out</button>
+      </form>
+    </div>
+  </div>
+
+  <h2 class="section-title">Committee · today</h2>
+  <div class="stat-cards stat-cards-6">
+    <div class="stat-card {{ score_class(today_avg) }}">
+      <h3>Today's Committee Score</h3>
+      <p class="stat-value score-value{% if today_avg <= 0 %} is-empty{% endif %}" id="stat-today-avg">
+        {% if today_avg > 0 %}{{ "%.1f"|format(today_avg) }}{% else %}--{% endif %}
+      </p>
+      <p class="stat-note" id="avgDelta"></p>
+    </div>
+    <div class="stat-card">
+      <h3>Reviews Today</h3>
+      <p class="stat-value{% if today_count == 0 %} is-empty{% endif %}" id="stat-today-count">{{ today_count }}</p>
+      <p class="stat-note">of {{ active_members }} members ({{ participation }}%)</p>
+    </div>
+    <div class="stat-card">
+      <h3>7-Day Average</h3>
+      <p class="stat-value{% if week_avg <= 0 %} is-empty{% endif %}">
+        {% if week_avg > 0 %}{{ "%.1f"|format(week_avg) }}{% else %}--{% endif %}
+      </p>
+      <p class="stat-note">{{ week_reviews }} reviews {{ sparkline(trend_data, 'Avg_Overall', 'Seven-day committee average') }}</p>
+    </div>
+    <div class="stat-card {{ score_class(lowest_dimension[1]) if lowest_dimension }}">
+      <h3>Lowest Today</h3>
+      <p class="stat-value stat-value-text{% if not lowest_dimension %} is-empty{% endif %}">
+        {% if lowest_dimension %}{{ lowest_dimension[0] }}{% else %}--{% endif %}
+      </p>
+      <p class="stat-note">{% if lowest_dimension %}{{ "%.1f"|format(lowest_dimension[1]) }} / 5{% else %}no reviews yet{% endif %}</p>
+    </div>
+    <div class="stat-card">
+      <h3>My Reviews This Month</h3>
+      <p class="stat-value{% if mine_this_month == 0 %} is-empty{% endif %}">{{ mine_this_month }}</p>
+      <p class="stat-note">{{ 'filed today ✓' if reviewed_today else 'not yet today' }}</p>
+    </div>
+    <div class="stat-card {{ score_class(my_last.avg) if my_last }}">
+      <h3>My Last Review</h3>
+      <p class="stat-value score-value{% if not my_last %} is-empty{% endif %}">
+        {% if my_last %}{{ "%.1f"|format(my_last.avg) }}{% else %}--{% endif %}
+      </p>
+      <p class="stat-note">{% if my_last %}{{ my_last.date }}{% else %}none yet{% endif %}</p>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-container">
+      <h2>Today by Dimension</h2>
+      <div class="canvas-wrapper">
+        <canvas id="dimensionChart" role="img" aria-label="Bar chart of today's average committee score per dimension"></canvas>
+      </div>
+    </div>
+    <div class="chart-container">
+      <div class="chart-head">
+        <h2 id="committeeTrendTitle">7-Day Committee Trend</h2>
+        <div class="segmented" role="group" aria-label="Trend range">
+          <button type="button" id="btnCommittee7" class="segmented-btn active" aria-pressed="true">7 days</button>
+          <button type="button" id="btnCommittee30" class="segmented-btn" aria-pressed="false">1 month</button>
+        </div>
+      </div>
+      <div class="canvas-wrapper">
+        <canvas id="committeeTrendChart" role="img" aria-label="Line chart of the daily committee average, with one line per dimension"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <section class="card" id="my-record" aria-labelledby="my-record-title">
+      <div class="card-head">
+        <h2 id="my-record-title">My record</h2>
+        {% if not reviewed_today %}<a href="{{ url_for('committee') }}" class="table-action">Review today →</a>{% endif %}
+      </div>
+      {% if my_last %}
+      <div class="kv-row">
+        <span class="kv"><span class="kv-label">Last review</span> {{ my_last.date }}</span>
+        {% for d in dimensions %}<span class="kv"><span class="kv-label">{{ d }}</span> <strong>{{ my_last.scores[d] or '–' }}</strong></span>{% endfor %}
+      </div>
+      {% if my_last.text %}<p class="feed-text">"{{ my_last.text }}"</p>{% endif %}
+      {% else %}
+      <div class="empty-state">You have not filed a review yet. Today is a good day to start.</div>
+      {% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="attendance-title">
+      <h2 id="attendance-title">Reviewed today</h2>
+      {% if attendance %}
+      <ul class="attendance-list" id="attendance">
+        {% for m in attendance %}
+        <li class="{{ 'is-done' if m.reviewed }}{{ ' is-me' if m.email == member.Email|lower }}">
+          <span class="att-mark" aria-hidden="true">{{ '✓' if m.reviewed else '·' }}</span>
+          <span class="att-name">{{ m.name }}{% if m.email == member.Email|lower %} <span class="subtext">(you)</span>{% endif %}</span>
+          <span class="att-state">{{ 'Reviewed' if m.reviewed else 'Not yet' }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty-state">No active members.</div>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="two-col">
+    <section class="card" aria-labelledby="students-title">
+      <div class="card-head">
+        <h2 id="students-title">What students said today</h2>
+        <span class="subtext">context only — never mixed into committee scores</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv"><span class="kv-label">Dish form</span> <strong>{% if student.today_avg > 0 %}{{ "%.1f"|format(student.today_avg) }} / 5{% else %}--{% endif %}</strong> ({{ student.today_count }} responses)</span>
+        {% if student.worst_item %}<span class="kv"><span class="kv-label">Lowest dish</span> {{ student.worst_item[0] }} <strong>{{ "%.1f"|format(student.worst_item[1]) }}</strong></span>{% endif %}
+      </div>
+      {% for meal in dimensions and taps.tallies.keys() %}
+      {% set tally = taps.tallies[meal] %}
+      <div class="meal-block">
+        <div class="meal-block-head">
+          <span class="meal-block-name">{{ meal }}</span>
+          <span class="meal-block-time">{% if tally.total %}<strong class="tally-{{ ui.tap_band(tally.score) }}">{{ tally.score }}% liked</strong> · {{ tally.total }} taps{% else %}No taps yet{% endif %}</span>
+        </div>
+        {% if tally.total %}
+        <div class="tap-row">
+          <div class="tap-bar" aria-hidden="true">
+            <span class="tap-fill good" style="width: {{ (tally.good / tally.total * 100) | round | int }}%"></span>
+            <span class="tap-fill bad" style="width: {{ (tally.bad / tally.total * 100) | round | int }}%"></span>
+            <span class="tap-fill skip" style="width: {{ (tally.skip / tally.total * 100) | round | int }}%"></span>
+          </div>
+          <span class="tap-legend">👍 {{ tally.good }} · 👎 {{ tally.bad }} · ⏭ {{ tally.skip }}</span>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </section>
+
+    <div class="suggestions-container">
+      <h2>📝 Committee Reviews</h2>
+      <div class="suggestions-list" tabindex="0" role="region" aria-label="Committee reviews, scrollable">
+        {% if reviews %}
+          {% for review in reviews %}
+          <div class="suggestion-item">
+            <p class="suggestion-text">"{{ review.text }}"</p>
+            <p class="suggestion-time">{{ review.name }} — {{ review.date }}</p>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">No written reviews yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  window.COMMITTEE_DATA = {
+    trendData: {{ trend_data | tojson | safe }},
+    dimensionData: {{ dimension_data | tojson | safe }},
+    dimensions: {{ dimensions | tojson | safe }}
+  };
+</script>
+<script src="{{ url_for('static', filename='charts.js') }}"></script>
+<script src="{{ url_for('static', filename='committee_dashboard.js') }}"></script>
+</body>
+</html>

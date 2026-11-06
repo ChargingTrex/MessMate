@@ -74,6 +74,8 @@ class LocalTransport:
         os.environ["FLASK_SECRET_KEY"] = "smoke-test-secret-key"
         os.environ["SPREADSHEET_ID"] = "fake-spreadsheet-id"
         os.environ["DASHBOARD_TOKEN"] = "vc2026"
+        os.environ["PILOT_MODE"] = "true"
+        os.environ["PILOT_ADMIN_PASSWORD"] = "smoke-admin-password"
 
         import auth
         self.admin_password = "smoke-admin-password"
@@ -230,6 +232,8 @@ def smoke(t):
     check("states that reviews are attributed", "not anonymous" in body)
 
     feature("committee auth")
+    status, _ = t.get(client, "/committee/dashboard")
+    check("the member dashboard is closed to visitors", status == 302, f"status={status}")
     status, _ = t.get(client, "/committee")
     check("rating page is closed to anonymous visitors", status == 302,
           f"status={status}")
@@ -249,6 +253,12 @@ def smoke(t):
                                      "hygiene", "menu")),
               f"status={status}")
 
+        feature("member dashboard")
+        status, body = t.get(member, "/committee/dashboard")
+        check("opens for a signed-in member with their record and the charts",
+              status == 200 and 'id="member-dashboard"' in body and 'id="my-record"' in body
+              and 'id="committeeTrendChart"' in body, f"status={status}")
+
         feature("committee submit")
         token = CSRF_RE.search(body).group(1)
         status, _ = t.post(member, "/committee/submit",
@@ -258,7 +268,40 @@ def smoke(t):
         check("a complete review is accepted", status == 302, f"status={status}")
     else:
         skipped("member sign-in", "write check, live mode is read-only")
+        skipped("member dashboard", "write check, live mode is read-only")
         skipped("review submission", "write check, live mode is read-only")
+
+    # ── Front door ────────────────────────────────────────────────────────
+    feature("sign in")
+    status, body = t.get(client, "/signin")
+    check("the front door renders", status == 200 and 'id="signin-form"' in body, f"status={status}")
+    if t.writes_allowed:
+        check("pilot accounts are listed in pilot mode",
+              'id="pilot-accounts"' in body and 'data-pilot="admin@messmate.demo"' in body)
+        door = t.session()
+        _, page = t.get(door, "/signin")
+        token = CSRF_RE.search(page).group(1)
+        status, _ = t.post(door, "/signin", {"email": "admin@messmate.demo",
+                                            "password": "wrong", "csrf_token": token})
+        check("a wrong password is refused", status == 401, f"status={status}")
+        status, _ = t.post(door, "/signin", {"email": "admin@messmate.demo",
+                                            "password": t.admin_password, "csrf_token": token,
+                                            "next": "/admin/menu"})
+        status2, body2 = t.get(door, "/admin/menu")
+        check("the admin email signs in as admin and honours ?next=",
+              status == 302 and status2 == 200 and 'id="menu-editor"' in body2,
+              f"post={status} next={status2}")
+        dean = t.session()
+        _, page = t.get(dean, "/signin")
+        token = CSRF_RE.search(page).group(1)
+        t.post(dean, "/signin", {"email": "dean@messmate.demo", "password": t.token, "csrf_token": token})
+        status, body = t.get(dean, "/dashboard")
+        status3, _ = t.get(dean, "/admin/members")
+        check("the dean signs in read-only: dashboards open, the roster does not",
+              status == 200 and 'class="stat-cards' in body and status3 == 302,
+              f"dashboard={status} roster={status3}")
+    else:
+        skipped("pilot sign-in", "write check, live mode is read-only")
 
     # ── Admin ─────────────────────────────────────────────────────────────
     feature("admin login")

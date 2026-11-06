@@ -59,6 +59,11 @@ class FakeWorksheet:
         for row in rows:
             self.rows.append(list(row))
 
+    def delete_rows(self, start_index, end_index=None):
+        # gspread is 1-indexed and row 1 is the header
+        end_index = end_index or start_index
+        del self.rows[start_index - 2:end_index - 1]
+
     def col_values(self, index):
         # gspread is 1-indexed and includes the header cell
         values = [self.headers[index - 1]]

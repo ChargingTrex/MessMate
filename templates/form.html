@@ -1,10 +1,9 @@
 <!--
   MessMate Student Feedback Form (form.html)
   ------------------------------------------
-  This Jinja2 template renders the mobile-first frontend form where students
-  can submit their daily lunch ratings, dish specific ratings, text reviews,
-  and dish suggestions. It includes inline Javascript to handle the mutual 
-  exclusivity of the emoji buttons and the conditional logic for the Rice select dropdown.
+  The per-dish 1-5 form: overall rating, optional per-item ratings, a review
+  and a dish suggestion. Inline JavaScript handles the mutually exclusive
+  emoji buttons and the conditional Rice rows.
 
   Test Automation Attributes:
     - id="submit-btn" on submit button
@@ -12,38 +11,38 @@
     - data-item="<item_name>" on item emoji buttons
     - class="error-banner" on error alert
 -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MessMate — Rate Today's Lunch 🍱</title>
-    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% set page_title = 'MessMate — Rate Today\'s Lunch 🍱' %}{% include '_head.html' %}
 </head>
-<body>
-    <header>
-        <h1>MessMate</h1>
-        <p>Rate Today's Lunch 🍱</p>
-    </header>
+<body class="page-narrow">
+{% set active = 'form' %}{% include '_topbar.html' %}
 
-    <main>
+    <main class="page">
+        <div class="page-header">
+            <div>
+                <p class="eyebrow">Student feedback</p>
+                <h1>Rate today's lunch 🍱</h1>
+                <p>Anonymous, one submission a day. Only rate what was served.</p>
+            </div>
+        </div>
+
         {% if error %}
-        <div class="alert error error-banner">{{ error }}</div>
+        <div class="alert error error-banner" role="alert">{{ error }}</div>
         {% endif %}
-        
+
         <form id="feedbackForm" action="/submit" method="POST">
-            
+
             <!-- SECTION 1: Overall Rating -->
             <section class="card section-overall">
                 <h2>How was today's lunch overall?</h2>
                 <div class="emoji-group" data-input="overall_val">
-                    <button type="button" class="emoji-btn" data-value="1">😡<br><span>Terrible</span></button>
-                    <button type="button" class="emoji-btn" data-value="2">😕<br><span>Bad</span></button>
-                    <button type="button" class="emoji-btn" data-value="3">😐<br><span>Okay</span></button>
-                    <button type="button" class="emoji-btn" data-value="4">🙂<br><span>Good</span></button>
-                    <button type="button" class="emoji-btn" data-value="5">😄<br><span>Excellent</span></button>
+                    <button type="button" class="emoji-btn" data-value="1">😡<span>Terrible</span></button>
+                    <button type="button" class="emoji-btn" data-value="2">😕<span>Bad</span></button>
+                    <button type="button" class="emoji-btn" data-value="3">😐<span>Okay</span></button>
+                    <button type="button" class="emoji-btn" data-value="4">🙂<span>Good</span></button>
+                    <button type="button" class="emoji-btn" data-value="5">😄<span>Excellent</span></button>
                 </div>
                 <input type="hidden" name="overall" id="overall_val">
             </section>
@@ -89,114 +88,36 @@
                 </div>
 
                 <!-- Standard Item Cards -->
+                {% for key, label in [
+                    ('chapati', '🫓 Chapati'), ('chapati_gravy', '🫓 Chapati + Gravy / Sabzi'),
+                    ('poriyal', '🥬 Poriyal'), ('sweet', '🍮 Sweet / Fruits'), ('salad', '🥗 Salad'),
+                    ('curd', '🥛 Curd'), ('papad', '🫓 Papad'), ('pickle', '🫙 Pickle / Thogayal')
+                ] %}
                 <div class="card item-card">
-                    <label class="item-label">🫓 Chapati</label>
-                    <div class="emoji-group small-group" data-input="chapati_val">
-                        <button type="button" class="emoji-btn" data-item="chapati" data-value="1">😡</button>
-                        <button type="button" class="emoji-btn" data-item="chapati" data-value="2">😕</button>
-                        <button type="button" class="emoji-btn" data-item="chapati" data-value="3">😐</button>
-                        <button type="button" class="emoji-btn" data-item="chapati" data-value="4">🙂</button>
-                        <button type="button" class="emoji-btn" data-item="chapati" data-value="5">😄</button>
+                    <label class="item-label" id="label-{{ key }}">{{ label }}</label>
+                    <div class="emoji-group small-group" data-input="{{ key }}_val" role="group" aria-labelledby="label-{{ key }}">
+                        <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="1" aria-label="Terrible">😡</button>
+                        <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="2" aria-label="Bad">😕</button>
+                        <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="3" aria-label="Okay">😐</button>
+                        <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="4" aria-label="Good">🙂</button>
+                        <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="5" aria-label="Excellent">😄</button>
                     </div>
-                    <input type="hidden" name="chapati" id="chapati_val">
+                    <input type="hidden" name="{{ key }}" id="{{ key }}_val">
                 </div>
-
-                <div class="card item-card">
-                    <label class="item-label">🫓 Chapati + Gravy / Sabzi</label>
-                    <div class="emoji-group small-group" data-input="chapati_gravy_val">
-                        <button type="button" class="emoji-btn" data-item="chapati_gravy" data-value="1">😡</button>
-                        <button type="button" class="emoji-btn" data-item="chapati_gravy" data-value="2">😕</button>
-                        <button type="button" class="emoji-btn" data-item="chapati_gravy" data-value="3">😐</button>
-                        <button type="button" class="emoji-btn" data-item="chapati_gravy" data-value="4">🙂</button>
-                        <button type="button" class="emoji-btn" data-item="chapati_gravy" data-value="5">😄</button>
-                    </div>
-                    <input type="hidden" name="chapati_gravy" id="chapati_gravy_val">
-                </div>
-
-                <div class="card item-card">
-                    <label class="item-label">🥬 Poriyal</label>
-                    <div class="emoji-group small-group" data-input="poriyal_val">
-                        <button type="button" class="emoji-btn" data-item="poriyal" data-value="1">😡</button>
-                        <button type="button" class="emoji-btn" data-item="poriyal" data-value="2">😕</button>
-                        <button type="button" class="emoji-btn" data-item="poriyal" data-value="3">😐</button>
-                        <button type="button" class="emoji-btn" data-item="poriyal" data-value="4">🙂</button>
-                        <button type="button" class="emoji-btn" data-item="poriyal" data-value="5">😄</button>
-                    </div>
-                    <input type="hidden" name="poriyal" id="poriyal_val">
-                </div>
-
-                <div class="card item-card">
-                    <label class="item-label">🍮 Sweet / Fruits</label>
-                    <div class="emoji-group small-group" data-input="sweet_val">
-                        <button type="button" class="emoji-btn" data-item="sweet" data-value="1">😡</button>
-                        <button type="button" class="emoji-btn" data-item="sweet" data-value="2">😕</button>
-                        <button type="button" class="emoji-btn" data-item="sweet" data-value="3">😐</button>
-                        <button type="button" class="emoji-btn" data-item="sweet" data-value="4">🙂</button>
-                        <button type="button" class="emoji-btn" data-item="sweet" data-value="5">😄</button>
-                    </div>
-                    <input type="hidden" name="sweet" id="sweet_val">
-                </div>
-
-                <div class="card item-card">
-                    <label class="item-label">🥗 Salad</label>
-                    <div class="emoji-group small-group" data-input="salad_val">
-                        <button type="button" class="emoji-btn" data-item="salad" data-value="1">😡</button>
-                        <button type="button" class="emoji-btn" data-item="salad" data-value="2">😕</button>
-                        <button type="button" class="emoji-btn" data-item="salad" data-value="3">😐</button>
-                        <button type="button" class="emoji-btn" data-item="salad" data-value="4">🙂</button>
-                        <button type="button" class="emoji-btn" data-item="salad" data-value="5">😄</button>
-                    </div>
-                    <input type="hidden" name="salad" id="salad_val">
-                </div>
-
-                <div class="card item-card">
-                    <label class="item-label">🥛 Curd</label>
-                    <div class="emoji-group small-group" data-input="curd_val">
-                        <button type="button" class="emoji-btn" data-item="curd" data-value="1">😡</button>
-                        <button type="button" class="emoji-btn" data-item="curd" data-value="2">😕</button>
-                        <button type="button" class="emoji-btn" data-item="curd" data-value="3">😐</button>
-                        <button type="button" class="emoji-btn" data-item="curd" data-value="4">🙂</button>
-                        <button type="button" class="emoji-btn" data-item="curd" data-value="5">😄</button>
-                    </div>
-                    <input type="hidden" name="curd" id="curd_val">
-                </div>
-
-                <div class="card item-card">
-                    <label class="item-label">🫓 Papad</label>
-                    <div class="emoji-group small-group" data-input="papad_val">
-                        <button type="button" class="emoji-btn" data-item="papad" data-value="1">😡</button>
-                        <button type="button" class="emoji-btn" data-item="papad" data-value="2">😕</button>
-                        <button type="button" class="emoji-btn" data-item="papad" data-value="3">😐</button>
-                        <button type="button" class="emoji-btn" data-item="papad" data-value="4">🙂</button>
-                        <button type="button" class="emoji-btn" data-item="papad" data-value="5">😄</button>
-                    </div>
-                    <input type="hidden" name="papad" id="papad_val">
-                </div>
-
-                <div class="card item-card">
-                    <label class="item-label">🫙 Pickle / Thogayal</label>
-                    <div class="emoji-group small-group" data-input="pickle_val">
-                        <button type="button" class="emoji-btn" data-item="pickle" data-value="1">😡</button>
-                        <button type="button" class="emoji-btn" data-item="pickle" data-value="2">😕</button>
-                        <button type="button" class="emoji-btn" data-item="pickle" data-value="3">😐</button>
-                        <button type="button" class="emoji-btn" data-item="pickle" data-value="4">🙂</button>
-                        <button type="button" class="emoji-btn" data-item="pickle" data-value="5">😄</button>
-                    </div>
-                    <input type="hidden" name="pickle" id="pickle_val">
-                </div>
+                {% endfor %}
             </section>
 
             <!-- SECTION 3: Text Review -->
             <section class="card section-review">
                 <h2>Any comments? <span class="subtext">(optional)</span></h2>
-                <textarea name="review" id="review" maxlength="150" placeholder="Any comments about today's lunch?"></textarea>
+                <textarea name="review" id="review" maxlength="150" placeholder="Any comments about today's lunch?" aria-label="Comments about today's lunch"></textarea>
                 <div class="char-counter" id="char-counter">0 / 150</div>
             </section>
 
             <!-- SECTION 4: Suggest a Dish -->
             <section class="card section-suggestion">
                 <h2>Suggest a Dish <span class="subtext">(optional)</span></h2>
-                <input type="text" name="suggestion" placeholder="Suggest a dish for the mess menu..." class="suggestion-input">
+                <input type="text" name="suggestion" placeholder="Suggest a dish for the mess menu..." class="suggestion-input" aria-label="Suggest a dish">
             </section>
 
             <!-- Submit Button -->
@@ -217,11 +138,11 @@
 
             riceSelect.addEventListener('change', (e) => {
                 const val = e.target.value;
-                
+
                 // Hide both initially
                 curryContainer.classList.add('hidden');
                 rasamContainer.classList.add('hidden');
-                
+
                 // Clear selections
                 curryInput.value = '';
                 rasamInput.value = '';
@@ -268,7 +189,7 @@
             // Character counter for review
             const reviewInput = document.getElementById('review');
             const charCounter = document.getElementById('char-counter');
-            
+
             reviewInput.addEventListener('input', () => {
                 const currentLength = reviewInput.value.length;
                 charCounter.textContent = `${currentLength} / 150`;

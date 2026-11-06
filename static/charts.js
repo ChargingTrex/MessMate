@@ -17,12 +17,29 @@ window.MessMateCharts = (function () {
   const css = getComputedStyle(document.documentElement);
   const token = (name, fallback) => (css.getPropertyValue(name).trim() || fallback);
 
+  // Every colour comes from /ui/tokens.css (ui_config.DESIGN_TOKENS); the
+  // thresholds from window.MESSMATE_UI (ui_config.SCORE_BANDS). Nothing here
+  // is a literal that could drift from the stylesheet.
+  const UI = window.MESSMATE_UI || {};
+  const BANDS = UI.scoreBands || { red_below: 2.5, amber_upto: 3.5 };
   const THEME = {
     text:    token("--text-muted", "#94a3b8"),
-    grid:    "rgba(148, 163, 184, 0.12)",
-    accent:  token("--brand-from", "#60a5fa"),
+    grid:    token("--chart-grid", "rgba(148, 163, 184, 0.12)"),
+    accent:  token("--chart-line", "#60a5fa"),
+    fill:    token("--chart-fill", "rgba(96, 165, 250, 0.14)"),
     strong:  token("--text-strong", "#f1f5f9"),
+    red:     token("--score-red", "#EF5350"),
+    amber:   token("--score-amber", "#FFB300"),
+    green:   token("--score-green", "#66BB6A"),
+    dimensions: [1, 2, 3, 4, 5].map(i => token(`--chart-dim-${i}`, "#888")),
   };
+
+  /** Red / amber / green for a 1-5 score, from the shared bands. */
+  function scoreColor(score) {
+    if (score < BANDS.red_below) return THEME.red;
+    if (score <= BANDS.amber_upto) return THEME.amber;
+    return THEME.green;
+  }
 
   if (window.Chart) {
     Chart.defaults.color = THEME.text;
@@ -190,5 +207,5 @@ window.MessMateCharts = (function () {
     bEl.addEventListener("click", () => pick(bEl, aEl, bDays));
   }
 
-  return { THEME, shortDate, dateAxis, scoreAxis, empty, dimmedLegend, segmented, deltaNote };
+  return { THEME, scoreColor, shortDate, dateAxis, scoreAxis, empty, dimmedLegend, segmented, deltaNote };
 })();

@@ -853,25 +853,26 @@ def append_meal_rating(meal, rating, suggestion=""):
 
     Suggestion is stored RAW; Jinja escapes it when the dashboard renders it.
 
-    Returns True on success, False on failure.
+    Returns the row's Timestamp string on success (truthy; the device cookie
+    keeps it so the tap can be undone), "" on failure.
     """
     try:
         worksheet = get_sheet(MEAL_RATINGS_TAB)
         if not worksheet:
             return False
 
-        now = datetime.now()
+        stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         worksheet.append_row([
-            now.strftime("%Y-%m-%d %H:%M:%S"),
-            now.strftime("%Y-%m-%d"),
+            stamp,
+            stamp[:10],
             meal,
             rating,
             suggestion,
         ], value_input_option="RAW")
-        return True
+        return stamp
     except Exception as e:
         print(f"Error appending meal rating: {e}")
-        return False
+        return ""
 
 
 def get_meal_ratings(date_str=None):
@@ -917,3 +918,52 @@ def summarise_meal_ratings(date_str=None):
         summary[meal]["score"] = round(summary[meal]["good"] / ate * 100) if ate else 0
 
     return summary
+
+
+# ── Serving windows as rules, and taking a tap back ───────────────────────────
+# MEAL_TIMINGS above is the display string. These are the same windows as
+# numbers, so the home page can refuse a rating for a meal that has not been
+# served yet: a student cannot have an opinion about dinner at 8 am, and a row
+# that says they do is noise the committee would average. A meal stays open
+# after its window ends — someone who ate late still ate.
+MEAL_OPENS = {
+    "Breakfast": (7, 30),
+    "Lunch": (12, 0),
+    "Dinner": (19, 30),
+}
+MEAL_OPENS_LABEL = {
+    "Breakfast": "7:30 am",
+    "Lunch": "12:00 pm",
+    "Dinner": "7:30 pm",
+}
+
+
+def meal_is_open(meal, now=None):
+    """True once today's serving window for `meal` has started."""
+    hour, minute = MEAL_OPENS.get(meal, (0, 0))
+    now = now or datetime.now()
+    return (now.hour, now.minute) >= (hour, minute)
+
+
+def delete_meal_rating(timestamp, date_str, meal):
+    """
+    Removes one quick reaction, identified by the Timestamp, Date and Meal the
+    device remembered when it tapped. Used by Undo. Deletes the first matching
+    row only; the fields together are as good as unique.
+
+    Returns True when a row was removed, False otherwise.
+    """
+    try:
+        worksheet = get_sheet(MEAL_RATINGS_TAB)
+        if not worksheet:
+            return False
+        for index, record in enumerate(worksheet.get_all_records()):
+            if (str(record.get("Timestamp", "")).strip() == timestamp
+                    and str(record.get("Date", "")).strip() == date_str
+                    and str(record.get("Meal", "")).strip().title() == meal):
+                worksheet.delete_rows(index + 2)   # row 1 is the header
+                return True
+        return False
+    except Exception as e:
+        print(f"Error deleting meal rating: {e}")
+        return False

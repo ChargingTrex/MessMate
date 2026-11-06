@@ -4,6 +4,11 @@
  * Progressive enhancement: real-time clock, day switcher, active meal
  * detection, meal filter pills, ticker, scroll-to-top, and double-tap guard.
  * The reaction buttons remain real submit buttons so the page works without JS.
+ *
+ * The server decides what a card's reaction slot shows (rated / closed /
+ * other day); this file only mirrors that decision when the clock moves or
+ * the day switcher runs, so a student never taps a button the server would
+ * refuse.
  */
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -16,6 +21,46 @@ document.addEventListener("DOMContentLoaded", function () {
     }[c]));
   }
   const li = (text, cls) => `<li${cls ? ` class="${cls}"` : ""}>${esc(text)}</li>`;
+
+  // Same markup as the template's empty state: the lead line is test API,
+  // the hint says what the student can do about it.
+  function emptyItem(meal, isToday) {
+    const hint = isToday
+      ? `You can still rate ${esc(String(meal).toLowerCase())} after you eat.`
+      : "Check back on the day.";
+    return `<li class="menu-empty"><span class="menu-empty-lead">Menu not published yet</span>` +
+           `<span class="menu-empty-hint">${hint}</span></li>`;
+  }
+
+  // ── 0. Serving windows → can this meal be rated right now? ────────────────
+  // Mirrors sheets.MEAL_OPENS and app.config["ENFORCE_MEAL_WINDOWS"]. The
+  // server is the authority; this keeps the buttons honest between reloads.
+  function mealIsOpen(meal, start) {
+    if (window.MESSMATE_ENFORCE_WINDOWS === false) return true;
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes() >= start;
+  }
+
+  function refreshRateSlots() {
+    const isToday = window.MESSMATE_SELECTED === window.MESSMATE_TODAY_ISO;
+    document.querySelectorAll(".rate-slot").forEach(slot => {
+      const meal = slot.dataset.meal;
+      slot.classList.toggle("is-other-day", !isToday);
+
+      const form = slot.querySelector(".rate-form");
+      if (!form) return;                       // already rated: nothing to toggle
+      const dateField = form.querySelector('input[name="date"]');
+      if (dateField) dateField.value = window.MESSMATE_SELECTED || window.MESSMATE_TODAY_ISO;
+
+      const window_ = MEAL_WINDOWS[meal];
+      const closed = isToday && window_ && !mealIsOpen(meal, window_[0]);
+      form.querySelectorAll(".rate-btn").forEach(btn => {
+        if (!btn.classList.contains("rate-btn-sending")) btn.disabled = closed;
+      });
+      const note = form.querySelector(".rate-note-closed");
+      if (note) note.hidden = !closed;
+    });
+  }
 
   // ── 1. Live Digital Clock ─────────────────────────────────────────────────
   const clockEl = document.getElementById("currentTime");
@@ -73,9 +118,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Spotlight widget
     updateSpotlight(active);
+
+    // Buttons follow the serving windows
+    refreshRateSlots();
   }
 
   function updateSpotlight(activeMeal) {
+    const widget = document.getElementById("specialsWidget");
+    const meals = window.MESSMATE_MEALS || ["Breakfast", "Lunch", "Dinner"];
+    const published = (window.MESSMATE_WEEK || {})[window.MESSMATE_TODAY_ISO] || {};
+    const nothingToday = meals.every(m => !(published[m] || []).length);
+    if (widget && !window.MESSMATE_IS_ADMIN) {
+      // With no menu, the spotlight would only repeat the cards' empty state
+      // in a bigger font. The cards already say it once each.
+      widget.hidden = nothingToday;
+    }
+
     const servingDot   = document.getElementById("servingDot");
     const servingLabel = document.getElementById("servingLabel");
     const mealName     = document.getElementById("activeMealName");
@@ -87,7 +145,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (activeMeal && isToday) {
       if (servingDot) { servingDot.className = "serving-dot"; }
-      if (servingLabel) servingLabel.textContent = "SERVING NOW";
+      if (servingLabel) servingLabel.textContent = "Serving now";
       if (mealName)    mealName.textContent = activeMeal;
 
       // Show dishes for active meal from today's menu
@@ -96,7 +154,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (dishes.length > 0) {
           dishesList.innerHTML = dishes.map(d => li(d)).join("");
         } else {
-          dishesList.innerHTML = `<li class="specials-loading">Menu not published yet</li>`;
+          dishesList.innerHTML = `<li class="specials-loading">Menu not published yet. You can still rate it after you eat.</li>`;
         }
       }
     } else {
@@ -110,7 +168,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (servingDot) { servingDot.className = "serving-dot inactive"; }
       if (nextMeal) {
-        if (servingLabel) servingLabel.textContent = "NEXT MEAL";
+        if (servingLabel) servingLabel.textContent = "Next meal";
         if (mealName)    mealName.textContent = nextMeal;
         const dishes = isToday ? (todayData[nextMeal] || []) : [];
         if (dishesList) {
@@ -119,9 +177,9 @@ document.addEventListener("DOMContentLoaded", function () {
             : `<li class="specials-loading">Menu not published</li>`;
         }
       } else {
-        if (servingLabel) servingLabel.textContent = "MEALS DONE FOR TODAY";
-        if (mealName)    mealName.textContent = "Dinner";
-        if (dishesList)  dishesList.innerHTML = `<li class="specials-loading">Come back tomorrow!</li>`;
+        if (servingLabel) servingLabel.textContent = "Meals done for today";
+        if (mealName)    mealName.textContent = "See you at breakfast";
+        if (dishesList)  dishesList.innerHTML = `<li class="specials-loading">Tomorrow's menu is under the next day's tab.</li>`;
       }
     }
   }
@@ -138,10 +196,20 @@ document.addEventListener("DOMContentLoaded", function () {
     const meals    = window.MESSMATE_MEALS || ["Breakfast", "Lunch", "Dinner"];
     const dayData  = weekData[dateStr] || {};
 
-    // Update active tab
+    // Update active tab (class for the stylesheet, aria-pressed for the reader)
     document.querySelectorAll(".day-tab").forEach(tab => {
-      tab.classList.toggle("active", tab.dataset.date === dateStr);
+      const on = tab.dataset.date === dateStr;
+      tab.classList.toggle("active", on);
+      tab.setAttribute("aria-pressed", on ? "true" : "false");
     });
+
+    // The title says which day is showing; "Today's Menu" only for today
+    const titleEl = document.getElementById("homeTitle");
+    if (titleEl) {
+      let weekday = dateStr;
+      try { weekday = new Date(dateStr + "T00:00:00").toLocaleDateString("en-IN", { weekday: "long" }); } catch (_) {}
+      titleEl.textContent = dateStr === window.MESSMATE_TODAY_ISO ? "Today's Menu 🍽️" : `${weekday}'s Menu 🍽️`;
+    }
 
     // Update menu items inside each meal card
     meals.forEach(meal => {
@@ -151,7 +219,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (items.length > 0) {
         listEl.innerHTML = items.map(i => li(i)).join("");
       } else {
-        listEl.innerHTML = `<li class="menu-empty">Menu not published yet</li>`;
+        listEl.innerHTML = emptyItem(meal, dateStr === window.MESSMATE_TODAY_ISO);
       }
     });
 
@@ -187,7 +255,11 @@ document.addEventListener("DOMContentLoaded", function () {
   // ── 4. Meal Filter Pills ──────────────────────────────────────────────────
   window.filterMeal = function (filter) {
     const pills = document.querySelectorAll(".filter-pill");
-    pills.forEach(p => p.classList.toggle("active", p.dataset.filter === filter));
+    pills.forEach(p => {
+      const on = p.dataset.filter === filter;
+      p.classList.toggle("active", on);
+      p.setAttribute("aria-pressed", on ? "true" : "false");
+    });
 
     const cards = document.querySelectorAll(".meal-card");
     cards.forEach(card => {
@@ -246,6 +318,18 @@ document.addEventListener("DOMContentLoaded", function () {
     "👍 Good food? Give it a thumbs up!"
   );
 
+  // Pause control: moving text must be stoppable by touch and keyboard, not
+  // only by hovering (WCAG 2.2.2). Pausing hides nothing.
+  const tickerSection = document.getElementById("tickerSection");
+  const tickerPause = document.getElementById("tickerPause");
+  if (tickerSection && tickerPause) {
+    tickerPause.addEventListener("click", () => {
+      const paused = tickerSection.classList.toggle("is-paused");
+      tickerPause.setAttribute("aria-pressed", paused ? "true" : "false");
+      tickerPause.textContent = paused ? "Play" : "Pause";
+    });
+  }
+
   const tickerContent = document.getElementById("tickerContent");
   if (tickerContent) {
     // Double the items to create a seamless loop
@@ -267,6 +351,9 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
       submitting = true;
+      // The chosen answer keeps its colour; the other two step back.
+      const chosen = event.submitter;
+      if (chosen && chosen.classList.contains("rate-btn")) chosen.classList.add("rate-btn-chosen");
       // CRITICAL: disable on a later tick, never synchronously here.
       // Each button is the form's submitter and carries name="rating";
       // disabling the submitter inside its own submit handler drops its
@@ -294,9 +381,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
   // ── 9. Clear ?rated= banner from URL ────────────────────────────────────
+  // A reload must not re-announce an old result. The banner itself stays.
   if (window.history.replaceState && window.location.search.includes("rated=")) {
-    const clean = window.location.pathname;
-    window.setTimeout(() => window.history.replaceState({}, "", clean), 2500);
+    const url = new URL(window.location.href);
+    ["rated", "as", "meal"].forEach(k => url.searchParams.delete(k));
+    window.setTimeout(() => window.history.replaceState({}, "", url.toString()), 2500);
   }
 
 

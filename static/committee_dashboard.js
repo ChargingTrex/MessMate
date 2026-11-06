@@ -19,11 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const dimensionData = data.dimensionData || {};
   const trendData = data.trendData || [];
 
-  function scoreColor(score) {
-    if (score < 2.5) return "#EF5350";   // Red
-    if (score <= 3.5) return "#FFB300";  // Amber
-    return "#66BB6A";                    // Green
-  }
+  const scoreColor = MessMateCharts.scoreColor;
 
   // ---------------------------------------------------------
   // 1. Today by dimension
@@ -93,11 +89,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const trendCanvas = document.getElementById("committeeTrendChart");
   let trendChart = null;
 
-  // Distinct hues per dimension; overall stays the MessMate blue
-  const dimensionColors = {
-    Taste: "#8E24AA", Quality: "#00897B", Variety: "#F4511E",
-    Hygiene: "#3949AB", Menu: "#7CB342"
-  };
+  // Distinct hues per dimension from the token palette; overall stays blue
+  const dimensionColors = {};
+  dimensions.forEach((dim, i) => { dimensionColors[dim] = MessMateCharts.THEME.dimensions[i]; });
 
   function renderTrend(days) {
     if (!trendCanvas) return;
@@ -125,12 +119,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const datasets = [{
       label: "Overall",
       data: sliced.map(r => r.Avg_Overall),
-      borderColor: "#60a5fa",
-      backgroundColor: "rgba(96, 165, 250, 0.14)",
+      borderColor: MessMateCharts.THEME.accent,
+      backgroundColor: MessMateCharts.THEME.fill,
       borderWidth: 3,
       tension: 0.4,
       fill: true,
-      pointBackgroundColor: "#60a5fa",
+      pointBackgroundColor: MessMateCharts.THEME.accent,
       pointRadius: 4
     }];
 

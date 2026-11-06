@@ -1,0 +1,119 @@
+<!--
+  Sign in (signin.html)
+  ----------------------
+  One door for every role. The email decides where you land: the admin,
+  the read-only dean, or a committee member. With PILOT_MODE on, the demo's
+  pilot accounts are listed beside the form: picking one fills it in, and the
+  sign-in that follows is the real one.
+
+  Test Automation Attributes:
+    - id="signin-form", id="email", id="password", id="signin-btn"
+    - id="pilot-accounts", data-pilot="<email>" on each card
+    - class="error-banner" on the error alert
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% set page_title = 'MessMate — Sign in' %}{% include '_head.html' %}
+</head>
+<body class="signin-body">
+
+<div class="signin-layout">
+
+  <!-- ── Brand panel ─────────────────────────────────────────────────── -->
+  <aside class="signin-brand">
+    <p class="eyebrow">College mess</p>
+    <p class="signin-wordmark"><span class="brand-logo">{{ ui.app.wordmark }}</span></p>
+    <p class="signin-blurb">{{ ui.app.tagline }} — today's menu, one-tap reactions, per-dish
+       ratings, and a Food Committee that reviews every day. Three layers of feedback,
+       never averaged together.</p>
+    <ul class="signin-features">
+      <li><span class="signin-feature-icon" aria-hidden="true">🍽️</span><span><strong>Menu and quick taps</strong><br><span class="subtext">Students see what's on and say good, bad or skipped. No login.</span></span></li>
+      <li><span class="signin-feature-icon" aria-hidden="true">📋</span><span><strong>Committee reviews</strong><br><span class="subtext">Taste, quality, variety, hygiene, menu — attributed, once a day.</span></span></li>
+      <li><span class="signin-feature-icon" aria-hidden="true">📊</span><span><strong>One overview</strong><br><span class="subtext">What needs attention today, this week's publication state, who has reviewed.</span></span></li>
+    </ul>
+    <p class="signin-foot"><a href="{{ url_for('home') }}">← Today's menu</a></p>
+  </aside>
+
+  <!-- ── Form + pilot accounts ───────────────────────────────────────── -->
+  <main class="signin-main">
+    <section class="card signin-card" aria-labelledby="signin-title">
+      <h1 id="signin-title">Sign in</h1>
+      <p class="subtext-line">Use the account you were given. The email decides where you land.</p>
+
+      {% if error %}
+      <div class="alert error error-banner" role="alert">{{ error }}</div>
+      {% endif %}
+
+      <form method="POST" action="{{ url_for('signin') }}" id="signin-form">
+        {{ csrf_field() }}
+        <input type="hidden" name="next" value="{{ next }}">
+
+        <label class="item-label" for="email">Email</label>
+        <input class="suggestion-input" type="email" id="email" name="email"
+               autocomplete="username" placeholder="you@messmate.demo" required autofocus>
+
+        <label class="item-label field-gap" for="password">Password</label>
+        <input class="suggestion-input" type="password" id="password" name="password"
+               autocomplete="current-password" required>
+
+        <div class="form-actions">
+          <button type="submit" id="signin-btn" class="submit-btn">Sign in</button>
+        </div>
+      </form>
+
+      <p class="signin-help">
+        <span aria-hidden="true">🔒</span>
+        Committee reviews are attributed to the member who files them. Student
+        feedback never needs an account and stays anonymous.
+      </p>
+    </section>
+
+    {% if pilot_mode %}
+    <section class="card signin-card" id="pilot-accounts" aria-labelledby="pilot-title">
+      <h2 id="pilot-title">Pilot accounts</h2>
+      <p class="subtext-line">{{ pilot_accounts|length }} accounts, one per role. Pick one to fill the
+         form — it still signs in properly, so you see the same checks a real login makes.</p>
+      <ul class="pilot-list">
+        {% for a in pilot_accounts %}
+        <li>
+          {% if a.href %}
+          <a class="pilot-card" href="{{ a.href }}" data-pilot="{{ a.email }}">
+          {% else %}
+          <button type="button" class="pilot-card" data-pilot="{{ a.email }}" data-password="{{ a.password }}">
+          {% endif %}
+            <span class="pilot-avatar tone-{{ a.tone }}" aria-hidden="true">{{ a.initials }}</span>
+            <span class="pilot-body">
+              <span class="pilot-role">{{ a.role }}{% if a.badge %} <span class="badge badge-pending">{{ a.badge }}</span>{% endif %}</span>
+              {% if a.email %}<span class="pilot-email">{{ a.email }}</span>{% endif %}
+              <span class="pilot-caption">{{ a.caption }} · {{ a.name }}</span>
+            </span>
+            <span class="pilot-chevron" aria-hidden="true">›</span>
+          {% if a.href %}</a>{% else %}</button>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      <p class="pilot-note">Every committee pilot account uses the same password. The Admin card
+         only works when <code>PILOT_ADMIN_PASSWORD</code> matches the real admin password —
+         the demo never bypasses a check.</p>
+    </section>
+    {% endif %}
+  </main>
+</div>
+
+<script>
+  // A pilot card fills the form and hands focus to the Sign in button. It
+  // never submits by itself: the visitor sees what a sign-in needs.
+  document.querySelectorAll("button.pilot-card").forEach(card => {
+    card.addEventListener("click", () => {
+      document.getElementById("email").value = card.dataset.pilot;
+      document.getElementById("password").value = card.dataset.password;
+      document.querySelectorAll(".pilot-card").forEach(c => c.classList.toggle("is-picked", c === card));
+      const btn = document.getElementById("signin-btn");
+      btn.focus();
+      btn.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+  });
+</script>
+</body>
+</html>

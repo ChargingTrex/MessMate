@@ -223,7 +223,7 @@ def s3_validation():
 # ══════════════════════════════════════════════════════════════════════════════
 
 def s4_rate_limit():
-    journey("S4 — The rate limiter allows one submission per IP per day")
+    journey("S4 — The rate limiter allows one review per device every 4 hours")
     BOOK.reset()
     LIMITER.enabled = True
     try:
@@ -232,7 +232,7 @@ def s4_rate_limit():
         second = client.post("/submit", data={"overall": "1"})
 
         step("the first submission is accepted", first.status_code == 302)
-        step("the second from the same IP is refused with 429",
+        step("the second from the same device is refused with 429",
              second.status_code == 429, f"status={second.status_code}")
 
         step("the refusal is a friendly page, not a raw error",
@@ -439,8 +439,14 @@ def s9_separation():
     step("the student form needs no login",
          app.test_client().get("/").status_code == 200)
 
+    # The shared navigation offers a Committee link on every page, so the
+    # check is on behaviour: the form is served directly, never redirected,
+    # and it posts to the anonymous route.
+    form_page = app.test_client().get("/")
     step("a student is never redirected to a committee page",
-         "committee" not in app.test_client().get("/").get_data(as_text=True).lower())
+         form_page.status_code == 200 and "Location" not in form_page.headers
+         and 'action="/submit"' in form_page.get_data(as_text=True)
+         and 'action="/committee' not in form_page.get_data(as_text=True))
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -19,13 +19,18 @@ import os
 import html
 import re
 import json
+import csv
+import io
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, Response
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import sheets
 import auth
 import csrf
+import ui_config
+import device
+import pilot
 from dotenv import load_dotenv
 
 # Load .env for local development
@@ -54,7 +59,19 @@ app.config.update(
 # Registers csrf_field() as a Jinja global for use in every protected form
 csrf.init_app(app)
 
-# Initialize Flask-Limiter for IP-based rate limiting (1 submit/IP/day)
+# The one UI configuration: design tokens (/ui/tokens.css) and score bands
+ui_config.init_app(app)
+
+# Anonymous per-device cookies: the rate-limiter key and "what I rated today"
+device.init_app(app)
+
+# A quick tap is refused for a meal whose serving window has not started.
+# Tests switch this off so they are not hostage to the wall clock.
+app.config.setdefault("ENFORCE_MEAL_WINDOWS", True)
+
+# Flask-Limiter. Student routes key on the anonymous device cookie
+# (device.device_id) rather than the IP: a hostel sits behind one NAT address,
+# so a per-IP cap is a per-building cap. Login routes keep the IP key.
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -81,9 +98,14 @@ def ratelimit_handler(e):
             "admin_login.html",
             error="Too many login attempts. Please try again later."
         ), 429
+    if request.path.startswith("/home"):
+        # Stay on the home page: a capped quick tap is answered where it was
+        # made, with its own message, not with the per-dish form.
+        return _render_home(rated="limit"), 429
     return render_template(
         "form.html",
-        error="You've already submitted feedback for today. Come back tomorrow! 😊"
+        error="You've already submitted a review in the last 4 hours. "
+              "Come back after your next meal! 😊"
     ), 429
 
 
@@ -107,7 +129,7 @@ def parse_rating(val):
 
 
 @app.route("/submit", methods=["POST"])
-@limiter.limit("1 per day")  # 1 submission per IP per day
+@limiter.limit("1 per 4 hours", key_func=device.device_id)  # one review per device per 4 hours
 def submit():
     """
     Receives form data, validates, sanitizes, writes row to Sheets.
@@ -359,6 +381,7 @@ def dashboard():
     context = {
         "today_date": datetime.now().strftime("%A, %d %B %Y"),
         "is_admin": auth.is_admin_session(),
+        "is_viewer": auth.is_viewer_session(),
         "meals": sheets.MEALS,
         "menu_today": {meal: [] for meal in sheets.MEALS},
     }
@@ -560,6 +583,139 @@ def committee_submit():
 def committee_thanks():
     """Post-submission confirmation."""
     return render_template("committee_thanks.html", member=auth.current_member())
+
+
+@app.route("/committee/dashboard", methods=["GET"])
+@auth.login_required
+@auth.password_change_required
+def committee_member_dashboard():
+    """
+    The committee's own dashboard, for signed-in members.
+
+    The same committee analytics the admin sees, plus the member's own
+    record (reviews this month, last review) and — as context, in its own
+    card and never averaged in — what students said today. A member who
+    can see the trend they are contributing to files better reviews than one
+    rating into a void.
+    """
+    member = auth.current_member()
+    email = str(member.get("Email", "")).strip().lower()
+    today = datetime.now().strftime("%Y-%m-%d")
+    this_month = today[:7]
+
+    context = {
+        "member": member,
+        "dimensions": sheets.DIMENSIONS,
+        "today_date": datetime.now().strftime("%A, %d %B %Y"),
+        "is_admin": False,
+        "mine_this_month": 0,
+        "my_last": None,
+        "reviewed_today": False,
+        "student": _empty_student_analytics(),
+        "taps": _empty_meal_taps(),
+    }
+    try:
+        context.update(_committee_analytics())
+        mine = [r for r in sheets.get_committee_reviews()
+                if str(r.get("Member_Email", "")).strip().lower() == email]
+        mine.sort(key=lambda r: (str(r.get("Date", "")), str(r.get("Timestamp", ""))))
+        context["mine_this_month"] = sum(
+            1 for r in mine if str(r.get("Date", "")).startswith(this_month))
+        context["reviewed_today"] = any(str(r.get("Date", "")).strip() == today for r in mine)
+        if mine:
+            last = mine[-1]
+            scores = [_num(last.get(d)) for d in sheets.DIMENSIONS if str(last.get(d, "")).strip()]
+            context["my_last"] = {
+                "date": str(last.get("Date", "")),
+                "avg": _average(scores),
+                "scores": {d: last.get(d, "") for d in sheets.DIMENSIONS},
+                "text": str(last.get("Review", "")).strip(),
+            }
+    except Exception as e:
+        print(f"Error loading member dashboard: {e}")
+        context.update(_empty_committee_analytics())
+
+    # Student context, kept to its own card
+    try:
+        context["student"] = _student_analytics()
+        context["taps"] = _meal_tap_summary(today)
+    except Exception as e:
+        print(f"Member dashboard: student context unavailable: {e}")
+
+    return render_template("committee_member_dashboard.html", **context)
+
+
+# ── Sign in: one door for every role ──────────────────────────────────────────
+
+def _safe_next(path, default):
+    """Only ever redirect to a local path — an absolute URL would be an open redirect."""
+    path = str(path or "")
+    if path.startswith("/") and not path.startswith("//"):
+        return path
+    return default
+
+
+def _render_signin(**extra):
+    return render_template(
+        "signin.html",
+        next=_safe_next(request.values.get("next", ""), ""),
+        pilot_accounts=pilot.accounts(),
+        pilot_mode=pilot.enabled(),
+        **extra
+    )
+
+
+@app.route("/signin", methods=["GET", "POST"])
+@limiter.limit("20 per hour", methods=["POST"])
+@csrf.protect
+def signin():
+    """
+    Unified sign-in: the email decides the role.
+
+      admin@messmate.demo   -> the admin password (ADMIN_PASSWORD_HASH)
+      dean@messmate.demo    -> the read-only viewer (VIEWER_PASSWORD / token)
+      anyone else           -> a committee member, checked against the roster
+
+    The per-role pages (/admin/login, /committee/login) still work; this is
+    the front door, and the only page that lists the demo's pilot accounts.
+    One failure message for every wrong combination, so the page never says
+    which emails exist.
+    """
+    if request.method == "GET":
+        return _render_signin()
+
+    email = str(request.form.get("email", "")).strip().lower()
+    password = request.form.get("password", "")
+    next_path = request.values.get("next", "")
+    role = pilot.SPECIAL_EMAILS.get(email)
+
+    if role == "admin":
+        if not auth.verify_admin(password):
+            return _render_signin(error="Incorrect email or password."), 401
+        auth.login_admin()
+        return redirect(_safe_next(next_path, url_for("admin_overview")))
+
+    if role == "viewer":
+        if not auth.verify_viewer(password):
+            return _render_signin(error="Incorrect email or password."), 401
+        auth.login_viewer()
+        return redirect(_safe_next(next_path, url_for("dashboard")))
+
+    member = auth.verify_member(email, password)
+    if not member:
+        return _render_signin(error="Incorrect email or password."), 401
+    auth.login_member(member)
+    if member.get("must_change_password"):
+        return redirect(url_for("committee_password"))
+    return redirect(_safe_next(next_path, url_for("committee_member_dashboard")))
+
+
+@app.route("/signout", methods=["POST"])
+@csrf.protect
+def signout():
+    """Clears whichever role is signed in and returns to the front door."""
+    auth.logout_all()
+    return redirect(url_for("signin"))
 
 
 # ── Admin: authentication ─────────────────────────────────────────────────────
@@ -938,6 +1094,7 @@ def committee_dashboard():
         "dimensions": sheets.DIMENSIONS,
         "today_date": datetime.now().strftime("%A, %d %B %Y"),
         "is_admin": auth.is_admin_session(),
+        "is_viewer": auth.is_viewer_session(),
     }
     try:
         context.update(_committee_analytics())
@@ -1034,13 +1191,13 @@ def admin_overview():
                     f"(first: {upcoming_gaps[0]['label']}).",
             "href": url_for("admin_menu"), "action": "Open editor",
         })
-    if 0 < student["today_avg"] < 2.5:
+    if ui_config.score_band(student["today_avg"]) == "red":
         alerts.append({
             "level": "danger",
             "text": f"Students rate today's lunch {student['today_avg']:.1f}/5.",
             "href": url_for("dashboard"), "action": "See dishes",
         })
-    if student["worst_item"] and student["worst_item"][1] < 2.5:
+    if student["worst_item"] and ui_config.score_band(student["worst_item"][1]) == "red":
         alerts.append({
             "level": "warn",
             "text": f"{student['worst_item'][0]} is today's lowest dish at "
@@ -1048,14 +1205,14 @@ def admin_overview():
             "href": url_for("dashboard"), "action": "See dishes",
         })
     for meal, tally in taps["tallies"].items():
-        if tally["good"] + tally["bad"] >= 5 and tally["score"] < 40:
+        if tally["good"] + tally["bad"] >= 5 and ui_config.tap_band(tally["score"]) == "poor":
             alerts.append({
                 "level": "danger",
                 "text": f"Only {tally['score']}% liked {meal.lower()} today "
                         f"({tally['total']} taps).",
                 "href": url_for("dashboard"), "action": "See taps",
             })
-    if committee["lowest_dimension"] and committee["lowest_dimension"][1] < 2.5:
+    if committee["lowest_dimension"] and ui_config.score_band(committee["lowest_dimension"][1]) == "red":
         name, score = committee["lowest_dimension"]
         alerts.append({
             "level": "danger",
@@ -1125,11 +1282,27 @@ def admin_overview():
 # scores are different measurements of different populations.
 
 
-@app.route("/home", methods=["GET"])
-def home():
-    """Today's menu with a quick reaction per meal and day-wise navigation."""
+def _meal_open_state(now=None):
+    """Per meal: whether today's serving window has started, and when it does."""
+    now = now or datetime.now()
+    enforce = app.config.get("ENFORCE_MEAL_WINDOWS", True)
+    return {
+        meal: {
+            "open": (not enforce) or sheets.meal_is_open(meal, now),
+            "opens": sheets.MEAL_OPENS_LABEL.get(meal, ""),
+        }
+        for meal in sheets.MEALS
+    }
+
+
+def _render_home(selected_date=None, rated="", rated_as="", rated_meal=""):
+    """
+    Builds the student home. Shared by GET /home and the 429 handler, so a
+    student who hits the daily cap sees this page with its own banner rather
+    than the per-dish form with the wrong message.
+    """
     today = datetime.now().strftime("%Y-%m-%d")
-    selected_date = request.args.get("date", today).strip()
+    selected_date = str(selected_date or today).strip()
 
     try:
         datetime.strptime(selected_date, "%Y-%m-%d")
@@ -1170,7 +1343,13 @@ def home():
     except Exception:
         display_date = datetime.now().strftime("%A, %d %B %Y")
 
-    is_admin = auth.is_admin_session() or auth.has_valid_token()
+    is_admin = auth.can_view_dashboards()
+
+    # What this device already said today, and whether each tap can still be
+    # taken back. Lives in a signed cookie; the sheet never sees it.
+    now = datetime.now()
+    taps = device.rated_today()
+    undoable = {meal: device.can_undo(entry, now) for meal, entry in taps.items()}
 
     return render_template(
         "home.html",
@@ -1184,20 +1363,44 @@ def home():
         selected_date=selected_date,
         week=week_meta,
         week_json=json.dumps(week_menu_lookup),
-        rated=request.args.get("rated", ""),
+        rated=rated,
+        rated_as=rated_as,
+        rated_meal=rated_meal,
+        taps=taps,
+        undoable=undoable,
+        open_state=_meal_open_state(now),
+        enforce_windows=bool(app.config.get("ENFORCE_MEAL_WINDOWS", True)),
         is_admin=is_admin,
     )
 
 
+@app.route("/home", methods=["GET"])
+def home():
+    """Today's menu with a quick reaction per meal and day-wise navigation."""
+    return _render_home(
+        selected_date=request.args.get("date", ""),
+        rated=request.args.get("rated", ""),
+        rated_as=request.args.get("as", ""),
+        rated_meal=request.args.get("meal", ""),
+    )
+
+
+def _tap_was_stored(response):
+    """Only a stored tap spends one of the day's three. Refusals are free."""
+    return response.status_code == 302 and "&as=" in (response.headers.get("Location") or "")
+
+
 @app.route("/home/rate", methods=["POST"])
-@limiter.limit("3 per day")  # one per meal per IP per day
+@limiter.limit("3 per day", key_func=device.device_id, deduct_when=_tap_was_stored)
 def home_rate():
     """
     Records one quick reaction. Anonymous — nothing identifying is stored.
 
-    Limited to three a day per IP, matching the three meals. The per-dish form
-    allows one a day; this allows one per meal, because a student who eats
-    breakfast and dinner has two separate things to say.
+    Three a day per device, matching the three meals, and never two for the
+    same meal: the device remembers what it said today and can take it back
+    for a few minutes (POST /home/undo). A meal cannot be rated before its
+    serving window opens, nor for any day but today — the day switcher shows
+    the week's menus, but an opinion needs a plate.
     """
     meal = str(request.form.get("meal", "")).strip().title()
     rating = str(request.form.get("rating", "")).strip().lower()
@@ -1206,13 +1409,54 @@ def home_rate():
     if meal not in sheets.MEALS or rating not in sheets.RATINGS:
         return redirect(url_for("home", rated="invalid"))
 
+    today = datetime.now().strftime("%Y-%m-%d")
+    date_str = str(request.form.get("date", "") or today).strip()
+    if date_str != today:
+        return redirect(url_for("home", rated="notyet", date=date_str))
+
+    if not _meal_open_state()[meal]["open"]:
+        return redirect(url_for("home", rated="notopen", meal=meal.lower()))
+
+    if meal in device.rated_today():
+        return redirect(url_for("home", rated="already", meal=meal.lower()))
+
     try:
-        if sheets.append_meal_rating(meal, rating, suggestion):
-            return redirect(url_for("home", rated=meal.lower()))
+        stamp = sheets.append_meal_rating(meal, rating, suggestion)
+        if stamp:
+            device.remember(meal, rating, stamp)
+            return redirect(url_for("home", rated=meal.lower(), **{"as": rating}))
         return redirect(url_for("home", rated="failed"))
     except Exception as e:
         print(f"Error recording meal rating: {e}")
         return redirect(url_for("home", rated="failed"))
+
+
+@app.route("/home/undo", methods=["POST"])
+def home_undo():
+    """
+    Takes back this device's tap on one meal, within device.UNDO_WINDOW of
+    making it. The row the device remembered is deleted from the sheet; the
+    cookie forgets it; the buttons come back.
+    """
+    meal = str(request.form.get("meal", "")).strip().title()
+    entry = device.rated_today().get(meal)
+    if meal not in sheets.MEALS or not entry:
+        return redirect(url_for("home"))
+
+    if not device.can_undo(entry):
+        return redirect(url_for("home", rated="undo_late", meal=meal.lower()))
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    try:
+        removed = sheets.delete_meal_rating(entry["ts"], today, meal)
+    except Exception as e:
+        print(f"Error undoing meal rating: {e}")
+        removed = False
+
+    if removed:
+        device.forget(meal)
+        return redirect(url_for("home", rated="undone", meal=meal.lower()))
+    return redirect(url_for("home", rated="failed"))
 
 
 # ── Admin: menu editor ────────────────────────────────────────────────────────
@@ -1330,6 +1574,109 @@ def admin_menu_save_week():
                 f"({days[0][0]} to {days[-1][0]}).",
         saved_dates=[d[0] for d in days],
     )
+
+
+# ── Admin: menu CSV import / template ─────────────────────────────────────────
+
+MENU_IMPORT_MAX_BYTES = 1_000_000   # 1 MB — a year of menus is a few KB
+
+
+@app.route("/admin/menu/template.csv", methods=["GET"])
+@auth.admin_required
+def admin_menu_template_csv():
+    """
+    A blank CSV for one week, matching the importer's columns. Defaults to the
+    week being viewed (?start=YYYY-MM-DD), so "download, fill, upload" round-trips
+    the same seven days.
+    """
+    start = sheets.week_start(request.args.get("start") or None)
+    start_dt = datetime.strptime(start, "%Y-%m-%d")
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["Date", "Breakfast", "Lunch", "Dinner"])
+    for offset in range(7):
+        date_str = (start_dt + timedelta(days=offset)).strftime("%Y-%m-%d")
+        writer.writerow([date_str, "", "", ""])
+
+    return Response(
+        buf.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="menu_template_{start}.csv"'},
+    )
+
+
+@app.route("/admin/menu/import", methods=["POST"])
+@auth.admin_required
+@csrf.protect
+def admin_menu_import():
+    """
+    Bulk-imports menus from an uploaded CSV. Columns (header row,
+    case-insensitive, any order): Date, Breakfast, Lunch, Dinner. Date is
+    YYYY-MM-DD; each meal cell is a comma-separated dish list (quote the cell so
+    its own commas do not split the row). Rows write through save_menu_week(),
+    which upserts by date, so re-importing a date updates it rather than
+    duplicating. A blank meal cell publishes nothing for that meal, exactly like
+    the editor.
+    """
+    start = str(request.form.get("start", "")).strip()
+    start = start if DATE_RE.match(start) else sheets.week_start()
+
+    upload = request.files.get("file")
+    if not upload or not upload.filename:
+        return _render_menu(start, error="Choose a CSV file to import."), 400
+
+    raw = upload.read(MENU_IMPORT_MAX_BYTES + 1)
+    if len(raw) > MENU_IMPORT_MAX_BYTES:
+        return _render_menu(start, error="That file is too large (max 1 MB)."), 400
+
+    try:
+        text = raw.decode("utf-8-sig")   # tolerate a BOM from Excel
+    except UnicodeDecodeError:
+        return _render_menu(start, error="Could not read that file — save it as UTF-8 CSV."), 400
+
+    reader = csv.DictReader(io.StringIO(text))
+    columns = {(name or "").strip().lower(): name for name in (reader.fieldnames or [])}
+    missing = [c for c in ("date", "breakfast", "lunch", "dinner") if c not in columns]
+    if missing:
+        return _render_menu(
+            start,
+            error="CSV needs a header row with columns: Date, Breakfast, Lunch, Dinner.",
+        ), 400
+
+    def cell(row, key):
+        return str(row.get(columns[key], "") or "").strip()
+
+    by_date = {}      # last row for a date wins
+    bad_lines = []
+    for line_no, row in enumerate(reader, start=2):   # line 1 is the header
+        date_str = cell(row, "date")
+        if not date_str:
+            continue                                  # skip blank lines
+        if not DATE_RE.match(date_str):
+            bad_lines.append(str(line_no))
+            continue
+        by_date[date_str] = (date_str, cell(row, "breakfast"),
+                             cell(row, "lunch"), cell(row, "dinner"))
+
+    days = list(by_date.values())
+    if not days:
+        msg = "No valid rows found in that CSV."
+        if bad_lines:
+            s_ = "s" if len(bad_lines) > 1 else ""
+            msg = f"No valid rows — bad date on line{s_} {', '.join(bad_lines)}."
+        return _render_menu(start, error=msg), 400
+
+    if not sheets.save_menu_week(days):
+        return _render_menu(start, error="Could not save the imported menu."), 500
+
+    note = f"Imported {len(days)} day{'s' if len(days) != 1 else ''}."
+    if bad_lines:
+        s_ = "s" if len(bad_lines) > 1 else ""
+        note += f" Skipped line{s_} {', '.join(bad_lines)} (bad date)."
+
+    imported_start = sheets.week_start(sorted(by_date)[0])
+    return _render_menu(imported_start, success=note, saved_dates=list(by_date))
 
 
 @app.route("/health", methods=["GET"])

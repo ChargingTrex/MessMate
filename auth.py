@@ -34,6 +34,7 @@ import sheets
 MEMBER_KEY = "member_email"
 MEMBER_NAME_KEY = "member_name"
 ADMIN_KEY = "is_admin"
+VIEWER_KEY = "is_viewer"   # read-only dashboards, signed in rather than ?token=
 
 # Password generation alphabet — 0/O and 1/l/I removed. These passwords get
 # read off a screen and typed by hand or relayed over chat, where lookalike
@@ -194,6 +195,43 @@ def is_admin_session():
     return bool(session.get(ADMIN_KEY))
 
 
+# ── Viewer (read-only) session ────────────────────────────────────────────────
+# The same access the ?token= query string grants, as a proper sign-in: the
+# dean's bookmark no longer has to carry a secret in its URL.
+
+def verify_viewer(password):
+    """VIEWER_PASSWORD, falling back to DASHBOARD_TOKEN. Fails closed when unset."""
+    expected = (os.environ.get("VIEWER_PASSWORD") or os.environ.get("DASHBOARD_TOKEN", "")).strip()
+    if not expected or not password:
+        return False
+    return secrets.compare_digest(str(expected), str(password))
+
+
+def login_viewer():
+    session.permanent = True
+    session[VIEWER_KEY] = True
+
+
+def logout_viewer():
+    session.pop(VIEWER_KEY, None)
+
+
+def is_viewer_session():
+    return bool(session.get(VIEWER_KEY))
+
+
+def can_view_dashboards():
+    """Admin session, viewer session, or the legacy ?token= — read access."""
+    return is_admin_session() or is_viewer_session() or has_valid_token()
+
+
+def logout_all():
+    """Clears every role's session keys. Used by the shared /signout."""
+    logout_admin()
+    logout_viewer()
+    logout_member()
+
+
 def has_valid_token():
     """
     True if the request carries the legacy ?token=DASHBOARD_TOKEN credential.
@@ -253,7 +291,7 @@ def admin_view_required(view):
     """
     @wraps(view)
     def wrapped(*args, **kwargs):
-        if is_admin_session() or has_valid_token():
+        if can_view_dashboards():
             return view(*args, **kwargs)
         return "Access denied. Add ?token=YOUR_TOKEN to the URL.", 403
     return wrapped

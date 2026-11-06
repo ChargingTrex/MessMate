@@ -26,7 +26,7 @@
   {% set page_title = 'MessMate — Menu Editor' %}{% include '_head.html' %}
   <script defer src="{{ url_for('static', filename='admin_menu.js') }}"></script>
 </head>
-<body class="admin-body">
+<body class="page-wide">
 {% set active = 'menu' %}{% include '_topbar.html' %}
 
 <main class="admin-container">
@@ -65,6 +65,24 @@
       <button type="button" class="submit-btn btn-inline" id="save-week" data-js-only hidden>Save all 7 days</button>
     </div>
   </div>
+
+  <!-- CSV import: download a blank week, fill it, upload it back. Plain form, works without JS. -->
+  <form class="card menu-import" method="POST" action="{{ url_for('admin_menu_import') }}"
+        enctype="multipart/form-data" id="menu-import-form">
+    {{ csrf_field() }}
+    <input type="hidden" name="start" value="{{ start }}">
+    <div class="menu-import-head">
+      <div>
+        <h2>Import from CSV</h2>
+        <p class="subtext">Columns <code>Date, Breakfast, Lunch, Dinner</code>. Dates as YYYY-MM-DD, dishes separated by commas. Re-importing a date updates it.</p>
+      </div>
+      <a class="btn-secondary" href="{{ url_for('admin_menu_template_csv', start=start) }}">Download blank template</a>
+    </div>
+    <div class="menu-import-controls">
+      <input class="menu-file" type="file" id="menu-csv" name="file" accept=".csv,text/csv" required>
+      <button type="submit" class="submit-btn btn-inline">Upload CSV</button>
+    </div>
+  </form>
 
   <div id="menu-editor" class="menu-grid">
     {% for day in week %}

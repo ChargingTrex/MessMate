@@ -65,6 +65,18 @@ not the page. The three layers stay in their own cards and are never summed.
 
 ---
 
+## Styling
+
+Every page uses the one design system documented in
+[docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md). **`ui_config.py` is the single
+global config**: the design tokens (served as `/ui/tokens.css` and loaded by
+every page before `static/style.css`; `static/charts.js` reads them for the
+charts) and the score / tap bands that colour every number (templates via the
+`ui` Jinja global, scripts via `window.MESSMATE_UI`). `static/style.css`
+holds no raw colour or threshold. The student home keeps its own header and
+card treatment by request — see the home module in the stylesheet. The
+ids/classes listed in each template's header comment are test API.
+
 ## Google Sheet schema
 
 Six tabs. Headers must match **exactly**: `get_all_records()` maps row 1 to
@@ -105,10 +117,21 @@ the `try` — an exception escaping the data layer turns a Sheets outage into a
 session marker. Committee reviews are the one attributed surface, and the
 login page says so explicitly.
 
-**Rate limits are per IP and in-memory.** `/submit` allows one a day;
-`/home/rate` allows three, one per meal. Committee submissions are exempt —
-campus Wi-Fi puts everyone behind one NAT address, so a per-IP cap there would
-lock out the whole committee after the first person.
+**Rate limits are per device and in-memory.** The student routes key on
+`device.device_id()`, a random id in a signed cookie, because campus Wi-Fi puts
+everyone behind one NAT address and a per-IP cap is a per-building cap.
+`/submit` allows one review per device every 4 hours; `/home/rate` allows
+three stored taps a day, never two for the same meal, and only counts taps
+that were stored (`deduct_when`). Login routes keep the IP key. Committee
+submissions are exempt.
+
+**A quick tap is for today, for a meal that has been served.** `/home/rate`
+refuses any other date and any meal whose window (`sheets.MEAL_OPENS`) has not
+opened; the page disables those buttons and `home.js` re-checks every minute.
+`app.config["ENFORCE_MEAL_WINDOWS"] = False` turns the window rule off — every
+test harness does, so the suites pass at 6 am. A tap can be undone for
+`device.UNDO_WINDOW` (10 minutes) via `POST /home/undo`, which deletes the
+remembered row; after that the row is the committee's.
 
 **Privilege split.** `?token=` opens the read-only dashboards only. Every route
 that changes state — the roster, the menu — requires an admin session, because
@@ -122,9 +145,9 @@ access logs.
 ### No credentials needed
 
 ```bash
-python test/test_smoke.py           # 38 checks, 19 features, ~1 second
+python test/test_smoke.py           # 45 checks, 21 features, ~1 second
 python test/test_committee.py       # 59 checklist checks
-python test/test_e2e_committee.py   # 64 steps, 9 committee journeys
+python test/test_e2e_committee.py   # 71 steps, 10 committee journeys
 python test/test_e2e_student.py     # 53 steps, 9 student journeys
 python test/test_e2e_home.py        # 55 steps, 7 home/menu journeys
 ```

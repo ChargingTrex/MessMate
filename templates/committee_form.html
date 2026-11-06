@@ -12,22 +12,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MessMate — Committee Review 🍽️</title>
-    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% set page_title = 'MessMate — Committee Review 🍽️' %}{% include '_head.html' %}
 </head>
-<body>
-    <header>
-        <h1>MessMate</h1>
-        <p>Food Committee Review 🍽️</p>
-    </header>
+<body class="page-narrow">
+{% set active = 'committee' %}{% include '_topbar.html' %}
 
-    <main>
+    <main class="page">
+        <div class="page-header">
+            <div>
+                <p class="eyebrow">Food Committee</p>
+                <h1>Today's review 🍽️</h1>
+            </div>
+        </div>
+
         <div class="member-bar">
-            <span>Signed in as <strong>{{ member.Name }}</strong></span>
-            <form method="POST" action="{{ url_for('committee_logout') }}" style="display:inline;">
+            <span>Signed in as <strong>{{ member.Name }}</strong> · <a href="{{ url_for('committee_member_dashboard') }}">Dashboard</a></span>
+            <form method="POST" action="{{ url_for('committee_logout') }}">
                 {{ csrf_field() }}
                 <button type="submit" class="link-btn">Sign out</button>
             </form>
@@ -40,13 +40,10 @@
         <form id="committeeForm" method="POST" action="{{ url_for('committee_submit') }}">
             {{ csrf_field() }}
 
-            <section class="card">
-                <h2>Today's assessment</h2>
-                <p class="subtext-line">
-                    Rate all five areas, then add any detail that would help the
-                    kitchen act on it. One review per day.
-                </p>
-            </section>
+            <p class="subtext-line">
+                Rate all five areas, then add any detail that would help the
+                kitchen act on it. One review per day.
+            </p>
 
             {% set dimensions = [
                 ('taste',   '😋 Taste',   'Flavour and seasoning of what was served'),

@@ -50,6 +50,8 @@ BOOK = fake_sheets.install()
 
 # The UI suites sign in repeatedly; the production caps would trip mid-suite
 app_module.limiter.enabled = False
+# The suites tap any meal at any hour; the serving-window rule is off here
+app.config["ENFORCE_MEAL_WINDOWS"] = False
 
 
 def seed():

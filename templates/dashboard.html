@@ -20,7 +20,7 @@
   {% set page_title = 'MessMate — Admin Dashboard 📊' %}{% include '_head.html' %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="admin-body">
+<body class="page-wide">
 {% from '_macros.html' import score_class, sparkline, chips %}
 {% set active = 'students' %}{% include '_topbar.html' %}
 
@@ -97,7 +97,7 @@
       <div class="meal-block-head">
         <span class="meal-block-name">{% if meal == 'Breakfast' %}🌅{% elif meal == 'Lunch' %}🍛{% else %}🌙{% endif %} {{ meal }}</span>
         <span class="meal-block-time">
-          {% if tally.total %}<strong class="{{ 'tally-good' if tally.score >= 70 else ('tally-mixed' if tally.score >= 40 else 'tally-poor') }}">{{ tally.score }}% liked</strong> · {{ tally.total }} tap{{ '' if tally.total == 1 else 's' }}{% else %}No taps yet{% endif %}
+          {% if tally.total %}<strong class="tally-{{ ui.tap_band(tally.score) }}">{{ tally.score }}% liked</strong> · {{ tally.total }} tap{{ '' if tally.total == 1 else 's' }}{% else %}No taps yet{% endif %}
         </span>
       </div>
       {{ chips(menu_today[meal]) }}

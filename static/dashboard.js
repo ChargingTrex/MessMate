@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", function () {
             label: "Overall Avg Score",
             data: avgScores,
             borderColor: MessMateCharts.THEME.accent,
-            backgroundColor: "rgba(96, 165, 250, 0.14)",
+            backgroundColor: MessMateCharts.THEME.fill,
             borderWidth: 3,
             tension: 0.4,
             fill: true,
@@ -169,14 +169,8 @@ document.addEventListener("DOMContentLoaded", function () {
         chartScores.push(score);
         plottedKeys.push(key);
 
-        // Color bars by score: <2.5=red, 2.5-3.5=amber, >3.5=green
-        if (score < 2.5) {
-          bgColors.push("#EF5350");  // Red
-        } else if (score <= 3.5) {
-          bgColors.push("#FFB300");  // Amber
-        } else {
-          bgColors.push("#66BB6A");  // Green
-        }
+        // Red / amber / green from the shared bands in ui_config
+        bgColors.push(MessMateCharts.scoreColor(score));
       }
     });
 
