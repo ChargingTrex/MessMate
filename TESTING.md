@@ -99,6 +99,15 @@ tests/
 ├── committee_admin_tests.robot         # 29 UI  tests (TC90–TC118)
 ├── committee_dashboard_tests.robot     # 27 UI  tests (TC120–TC146)
 ├── committee_api_tests.robot           # 23 API tests (TC150–TC172)
+├── e2e/                                # 101 end-to-end journey steps (E01–E07)
+│   ├── resources/e2e.resource          # Journey plumbing, HTTP sessions, test-server controls
+│   ├── 01_student_feedback_journey.robot
+│   ├── 02_student_abuse_and_limits_journey.robot
+│   ├── 03_menu_and_meal_reactions_journey.robot
+│   ├── 04_committee_onboarding_journey.robot
+│   ├── 05_committee_rotation_journey.robot
+│   ├── 06_access_control_journey.robot
+│   └── 07_sheets_outage_journey.robot
 ├── run_tests.sh                        # Shell test runner script
 └── results/                            # Auto-generated reports (gitignored)
 
@@ -111,7 +120,60 @@ test/
 └── test_e2e_student.py       # 53 steps across 9 student journeys
 ```
 
-**159 Robot test cases** in total, plus **202 credential-free Python checks**.
+**159 Robot test cases** and **101 Robot end-to-end steps** in total, plus
+**202 credential-free Python checks**.
+
+---
+
+## End-to-End Journeys (`tests/e2e/`)
+
+The page-level suites above check one screen at a time. The journeys follow a
+whole story across roles and layers: what a person does in the browser, what
+actually got stored, and what the next person — a VC, an admin, another
+student — then sees.
+
+```bash
+python test/fake_server.py 5001 &
+robot --variable BASE_URL:http://127.0.0.1:5001 --outputdir tests/results/e2e tests/e2e
+```
+
+About 45 seconds headless. No credentials, no Chart.js CDN needed.
+
+| Journey | Story |
+|---|---|
+| E01 Student feedback | Home page → per-dish form → stored row → `daily_summary` upsert → VC dashboard |
+| E02 Abuse and limits | XSS followed to the dashboard, malformed posts, the real 1/day and 3/day caps |
+| E03 Menu and reactions | Admin edits the menu → students see it → good/bad/skip tallies and stored rows |
+| E04 Committee onboarding | Admin invites → one-time password → forced change → first review → dashboard |
+| E05 Committee rotation | Bulk add with typos, mid-session deactivation, reactivation, password reset |
+| E06 Access control | Four roles × every route, CSRF forgery, open redirects, login probing, brute force |
+| E07 Sheets outage | Every page during a `raise` and an `unavailable` outage, then recovery |
+
+**Steps run in order and share state.** Each test case is one step of its
+journey. When a step fails, every later step in that journey **skips** with
+"An earlier step in this journey failed", so the report points at the first
+real failure instead of a cascade. Journeys are independent of each other:
+each resets the fixture on entry and exit.
+
+**They only run against `test/fake_server.py`.** The journeys switch rate
+limits on, simulate outages and read back stored rows through test-only routes
+that exist only in that file:
+
+| Route | Purpose |
+|---|---|
+| `POST /__test__/reset` | Restore the fixture; rate limits off with empty counters |
+| `POST /__test__/limiter?enabled=1\|0` | Switch the production rate limits on or off |
+| `POST /__test__/backend?mode=ok\|raise\|unavailable` | Simulate a Google Sheets outage |
+| `GET /__test__/sheet/<tab>` | A tab's stored rows as JSON |
+
+Pointed at any other server, every journey **skips** with a message naming
+the fake server, so `robot tests/` against a live spreadsheet never writes
+test data into it.
+
+```bash
+robot --include e2eANDsecurity tests/e2e     # tags combine as everywhere else
+robot --test "E04*" tests/e2e                # one journey
+```
 
 ---
 
