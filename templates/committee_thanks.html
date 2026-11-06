@@ -3,47 +3,43 @@
   ---------------------------------------------------------------
   Serves both the post-submission confirmation and the "you already reviewed
   today" case, which is a normal outcome rather than an error.
+
+  Test Automation Attributes:
+    - class="thanks-container", id="already-heading"
 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MessMate — Review Recorded</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% set page_title = 'MessMate — Review Recorded' %}{% include '_head.html' %}
 </head>
-<body>
-    <header>
-        <h1>MessMate</h1>
-        <p>Food Committee 🍽️</p>
-    </header>
+<body class="page-narrow">
+{% set active = 'committee' %}{% include '_topbar.html' %}
 
-    <main>
-        <section class="card thanks-container" style="text-align:center; padding:40px 20px;">
+    <main class="page">
+        <section class="card thanks-container">
             {% if already_submitted %}
-                <div style="font-size:64px; margin-bottom:16px;">✅</div>
-                <h2 style="margin-bottom:12px; font-size:1.5rem;" id="already-heading">
-                    You've already reviewed today
-                </h2>
-                <p style="color:#666; margin-bottom:24px; line-height:1.6;">
+                <div class="thanks-icon" aria-hidden="true">✅</div>
+                <h2 id="already-heading">You've already reviewed today</h2>
+                <p>
                     Thanks {{ member.Name }} — one review per member per day keeps the
                     averages meaningful.<br>Come back tomorrow.
                 </p>
             {% else %}
-                <div style="font-size:64px; margin-bottom:16px;">🚀</div>
-                <h2 style="margin-bottom:12px; font-size:1.5rem;">Review recorded</h2>
-                <p style="color:#666; margin-bottom:24px; line-height:1.6;">
+                <div class="thanks-icon" aria-hidden="true">🚀</div>
+                <h2>Review recorded</h2>
+                <p>
                     Thanks {{ member.Name }}. Your assessment is on the committee
                     dashboard for the administration to act on.
                 </p>
             {% endif %}
 
-            <form method="POST" action="{{ url_for('committee_logout') }}">
-                {{ csrf_field() }}
-                <button type="submit" class="submit-btn" style="width:auto; padding:14px 32px;">
-                    Sign out
-                </button>
-            </form>
+            <div class="thanks-actions">
+                <form method="POST" action="{{ url_for('committee_logout') }}">
+                    {{ csrf_field() }}
+                    <button type="submit" class="submit-btn">Sign out</button>
+                </form>
+                <a href="{{ url_for('committee_member_dashboard') }}" class="btn-secondary">Committee dashboard</a>
+            </div>
         </section>
     </main>
 </body>

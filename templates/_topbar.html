@@ -1,0 +1,60 @@
+{#
+  Shared top bar (_topbar.html) — the one piece of chrome every page carries.
+  ----------------------------------------------------------------------------
+  Set `active` before including, e.g.
+      {% set active = 'menu' %}{% include '_topbar.html' %}
+
+  Three audiences, one component:
+    admin     an admin session: Overview · Menu · Members · Students ·
+              Committee · Sign out
+    token     a ?token= viewer (read-only): Students · Committee, with the
+              token carried on the links so the bookmark keeps working
+    public    everyone else, including signed-in committee members:
+              Menu · Rate dish · Committee
+
+  With an admin session the token is dropped from links — the session is the
+  credential, and a secret in a URL should travel as little as possible.
+#}
+{% set token_qs = ('?token=' ~ request.args.get('token')) if (request.args.get('token') and not is_admin and not is_viewer) else '' %}
+<header class="app-topbar">
+  <div class="app-topbar-inner">
+    <a class="app-brand" href="{{ url_for('home') }}" aria-label="MessMate student home">
+      <span class="live-dot" title="Live"></span>
+      <span class="brand-logo">MESSMATE</span>
+    </a>
+    <span id="appClock" class="app-clock" aria-label="Current time">--:--:--</span>
+    <nav class="app-topbar-nav" aria-label="{{ 'Admin sections' if is_admin else 'Site' }}">
+      {% if is_admin %}
+      <a href="{{ url_for('admin_overview') }}" class="nav-link"{% if active == 'overview' %} aria-current="page"{% endif %}>Overview</a>
+      <a href="{{ url_for('admin_menu') }}" class="nav-link"{% if active == 'menu' %} aria-current="page"{% endif %}>Menu</a>
+      <a href="{{ url_for('admin_members') }}" class="nav-link"{% if active == 'members' %} aria-current="page"{% endif %}>Members</a>
+      <a href="{{ url_for('dashboard') }}" class="nav-link"{% if active == 'students' %} aria-current="page"{% endif %}>Students</a>
+      <a href="{{ url_for('committee_dashboard') }}" class="nav-link"{% if active == 'committee' %} aria-current="page"{% endif %}>Committee</a>
+      <form method="POST" action="{{ url_for('admin_logout') }}" class="topbar-signout">
+        {{ csrf_field() }}
+        <button type="submit" class="btn-secondary">Sign out</button>
+      </form>
+      {% elif token_qs or is_viewer %}
+      <a href="{{ url_for('dashboard') }}{{ token_qs }}" class="nav-link"{% if active == 'students' %} aria-current="page"{% endif %}>Students</a>
+      <a href="{{ url_for('committee_dashboard') }}{{ token_qs }}" class="nav-link"{% if active == 'committee' %} aria-current="page"{% endif %}>Committee</a>
+      {% if is_viewer %}
+      <form method="POST" action="{{ url_for('signout') }}" class="topbar-signout">
+        {{ csrf_field() }}
+        <button type="submit" class="btn-secondary">Sign out</button>
+      </form>
+      {% endif %}
+      {% else %}
+      <a href="{{ url_for('home') }}" class="nav-link"{% if active == 'home' %} aria-current="page"{% endif %}>Menu</a>
+      <a href="{{ url_for('index') }}" class="nav-link"{% if active == 'form' %} aria-current="page"{% endif %}>Rate dish</a>
+      {% if member %}
+      <a href="{{ url_for('committee_member_dashboard') }}" class="nav-link"{% if active == 'committee-dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
+      {% endif %}
+      {% if member %}
+      <a href="{{ url_for('committee') }}" class="nav-link nav-cta"{% if active == 'committee' %} aria-current="page"{% endif %}>Committee</a>
+      {% else %}
+      <a href="{{ url_for('signin') }}" class="nav-link nav-cta"{% if active == 'signin' %} aria-current="page"{% endif %}>Sign in</a>
+      {% endif %}
+      {% endif %}
+    </nav>
+  </div>
+</header>

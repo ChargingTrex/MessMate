@@ -247,7 +247,8 @@ def phase_1():
     with app.test_client() as client:
         response = login_admin(client)
         check("P1-8", "valid admin password sets an admin session",
-              response.status_code == 302 and "/admin/members" in response.headers.get("Location", ""))
+              response.status_code == 302 and "/admin" in response.headers.get("Location", ""),
+              f"status={response.status_code} loc={response.headers.get('Location')}")
 
     with app.test_client() as client:
         token = csrf_token(client, "/admin/login")

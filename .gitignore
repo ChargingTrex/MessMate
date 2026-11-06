@@ -4,4 +4,20 @@ __pycache__/
 *.pyc
 venv/
 .venv/
-messmate_qr.pngflask.log
+messmate_qr.png
+
+# Runtime + test/report artifacts
+flask.log
+output.xml
+report.html
+log.html
+selenium-screenshot-*.png
+
+# Local demo credentials (never commit)
+DEMO_LOGINS.md
+
+# Local code-index output (CodeGraph keeps its own .gitignore; graphify writes here)
+graphify-out/
+
+# Impeccable skill local state
+.impeccable/

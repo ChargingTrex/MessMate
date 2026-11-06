@@ -4,6 +4,168 @@ All changes to the MessMate codebase are logged here in reverse chronological
 order (newest at top). Before making any change, scroll to the bottom, copy 
 the template, fill it in, and move it to the top.
 
+## [Unreleased] — Student home: type, spacing, colour and the tap moment
+
+### Changed
+- **Type roles.** Every size in the home module is now a token
+  (`--fs-xs` … `--fs-xl`); nothing user-facing sits under the 11.8px floor
+  (the Today badge, serving badge, tally count, button labels and result
+  figures were 9.9–11.5px). Headings balance; the clock, tally and result
+  figures use tabular numerals.
+- **4px spacing scale** throughout the module (`--sp-*`), radius and
+  elevation tokens instead of literals. Cards commit to their edge: no
+  shadow. Non-interactive cards no longer react to hover.
+- **Colour as meaning.** Good / Bad / Skipped rest in the tint of what they
+  mean, so the row reads as three answers and the strongest colour on the
+  card belongs to the action. The selected filter pill and day tab use the
+  one solid accent (`--accent-strong`, AA on white text) instead of the
+  blue-to-indigo gradient; the Today badge is green-on-green-tint instead of
+  white-on-gradient (2.3:1 → 9:1). Zero colour literals remain in the home
+  module; one token added, `--ok-glow`, for the live/serving pulse ring.
+- **Targets.** Filter pills, header links, the suggestion toggle, the day
+  tabs and the Undo button are all ≥44px tall. Filter pills scroll in one
+  row (no orphaned "Dinner"); the day-tab and pill rows fade at the right
+  edge to show they scroll. Under 480px the clock gives way so "Rate Dish"
+  and "Sign in" both fit.
+- **Focus** ring now wins over the selected tab/pill's own shadow.
+  `transition: all` replaced by explicit property lists.
+- **The tap moment.** The chosen button presses in and holds its colour while
+  the other two step back; after the redirect the rated state settles in from
+  a few pixels below, once. When all three meals are rated, one quiet line
+  says so. Both honour `prefers-reduced-motion`.
+- **Ticker pause button** (WCAG 2.2.2): keyboard and touch can stop the
+  moving text; hover alone was the only control before.
+- Pressed state for day tabs and filter pills (`aria-pressed`), kept in sync
+  by `home.js`. The title reads "Thursday's Menu" when another day is
+  showing. The night-time spotlight now says "See you at breakfast".
+- A meal that only has skips shows a grey "--" and "N skipped" instead of a
+  red 0% (the system rule: absence is grey, never a coloured zero).
+- Suggestion input is 16px (no iOS zoom) with a tokenised placeholder colour.
+
+## [Unreleased] — Quick-tap integrity, undo, per-device limits
+
+### Added
+- **`device.py`** — two signed, httponly cookies and nothing else: `mm_device`
+  (a random id the student rate limiters key on) and `mm_rated` (what this
+  device tapped today). Neither reaches the sheet; anonymity is unchanged.
+- **Undo** (`POST /home/undo`): a quick tap can be taken back for 10 minutes.
+  The remembered row is deleted (`sheets.delete_meal_rating`), the cookie
+  forgets it, the buttons come back.
+- **Rated state** on the home card: "You said 👍 Good for lunch today" with
+  Undo, instead of the same three buttons again.
+- **Serving windows as rules** (`sheets.MEAL_OPENS`, `meal_is_open`): a meal
+  cannot be rated before its window opens (buttons disabled, "Dinner opens at
+  7:30 pm"); server-enforced, mirrored by `home.js` every minute.
+  `app.config["ENFORCE_MEAL_WINDOWS"]` switches it off for the test harnesses.
+- One banner per outcome of a tap (`rated=` already / notopen / notyet /
+  limit / undone / undo_late), each with `role="status"` and a next step.
+
+### Changed
+- **Rate limits are per device, not per IP.** `/home/rate`: three stored
+  taps a day per device (refusals are free, `deduct_when`), and never two for
+  the same meal. `/submit`: one dish-by-dish review per device every 4 hours
+  (was one per IP per day). A hostel behind one NAT address no longer shares
+  one cap.
+- A quick tap carries the date it was made for; any day but today is refused,
+  and the day switcher shows another day's menu without a form.
+- A capped quick tap is answered on the home page with its own banner
+  (HTTP 429), not with the per-dish form's message.
+- The dish form's 429 copy now says "in the last 4 hours".
+- The unpublished-menu state keeps its lead line and adds what the student can
+  do ("You can still rate lunch after you eat."), at AA contrast; the spotlight
+  hides when nothing is published today so the message is not repeated.
+- `sheets.append_meal_rating` returns the row's Timestamp (truthy) instead of
+  `True`, so the device can remember which row to undo.
+
+### Tests
+- `test/test_e2e_home.py` H8: one tap per meal per device, other-day refusal,
+  serving windows, undo, refusals not spending the cap, the in-page 429.
+- The fake worksheet gains `delete_rows`. All suites set
+  `ENFORCE_MEAL_WINDOWS = False` so they pass at any hour.
+
+## [Unreleased] — Member dashboard, single UI config, home restored
+
+### Added
+- **Front door with pilot accounts** at `/signin`: one sign-in for every
+  role (the email decides: admin, read-only dean, or committee member),
+  `?next=` support, and in `PILOT_MODE` a list of demo accounts — a card
+  fills the form, the sign-in stays real. A read-only **viewer session**
+  (`dean@messmate.demo`) gives the dashboards without a token in the URL.
+  `/signout` clears any role.
+- **Committee dashboard for members** at `/committee/dashboard`: the
+  committee's score, participation, 7-day trend and dimension charts, who
+  has reviewed today (with the member marked), the member's own record and
+  last review, the written-review feed, and today's student picture as
+  context in its own card. Linked from the top bar, the review page and the
+  thank-you page.
+- **`ui_config.py` — the single global UI config.** Design tokens are
+  declared once there and served as `/ui/tokens.css`, loaded by every page
+  before `style.css`; `charts.js` reads chart colours from them. Score bands
+  (red / amber / green) and tap bands (poor / mixed / good) live there too,
+  used by templates (`ui.score_class`, `ui.tap_band`), the overview's alerts
+  and the charts (`window.MESSMATE_UI`). No raw colour or threshold remains
+  in CSS, JS or templates.
+
+### Changed
+- The student home page is restored to its pre-design-system look (own
+  header with clock and gradient Committee button, its card, chip, tab and
+  reaction-button treatments) while reading the shared tokens.
+
+## [Unreleased] — Unified design system
+
+### Changed
+- One design system for every page (`static/style.css`, documented in
+  `docs/DESIGN_SYSTEM.md`): tokens → base → layout → components → modules.
+  The light-themed student form, thank-you and committee pages now share the
+  dark glass shell, the sticky top bar (`_topbar.html` renders admin, token
+  or public navigation from context) and the same cards, buttons, inputs,
+  badges and alerts as the admin console. No component is scoped to a page
+  any more; body classes only choose the rail width.
+- Stylesheet shrank from 2,549 to ~1,020 lines with the light legacy rules
+  and the `body.admin-body …` override layer removed.
+- Inline styles removed from the committee and thank-you templates; the
+  home page clock is drawn by the shared `app-shell.js`.
+
+## [Unreleased] — Admin overview, weekly menu editor, audit fixes
+
+### Added
+- **Admin overview** at `/admin` — the landing page after sign-in. Today's
+  dish-form score and responses, quick-tap satisfaction per meal, committee
+  score and participation, 7-day roll-ups with sparklines, this week's menu
+  publication grid, who on the committee has reviewed, the latest feedback
+  from all three layers, and an attention list (unpublished meals, low
+  scores, missing reviews, members who never set a password).
+- **Weekly menu editor**: paged by calendar week (Prev / This week / Next),
+  published / not-published state per meal, template shown as placeholder,
+  *Fill blanks from template*, *Copy last week*, unsaved-change tracking and
+  **Save all 7 days** (`POST /admin/menu/save-week`, two Sheets API calls).
+- Student dashboard: 7-day average, best and lowest dish today, today's
+  date card, today's menu with quick-tap tallies per meal, quick-tap
+  suggestions (kept apart from the dish-form list).
+- Committee dashboard: 7-day average, lowest dimension today, and a
+  "reviewed today" roster. Members page: reviewed-today column and summary.
+- Shared `_topbar.html` / `_head.html` partials so every admin page carries
+  the same navigation; the read-only `?token=` view still sees only the two
+  dashboards.
+
+### Fixed
+- Students were shown the built-in weekly template as if it were the menu
+  whenever a day had nothing published, contradicting CONTRIBUTING.md and
+  failing three home journeys. The template is now editor-only.
+- The home page embedded every template dish in its page source via the
+  day-switcher data; it now ships only what is published.
+- Dish names from the sheet were injected with `innerHTML` unescaped on the
+  home page; the ticker announced a hard-coded breakfast and the lunch
+  window started 30 minutes after the printed time.
+- Stat-card and chart headings used `h2` while the stylesheet (and the
+  dashboard Robot keywords) expected `h3`; headings are consistent again.
+- Robot suites: the segmented 7/30-day control now carries the `active`
+  class the suites assert on; the menu editor's save button is labelled
+  "Save" as the suites click it; the student dashboard has the "Today's
+  Date" card and heading text TC26–TC28 look for.
+- Admin sign-in lands on the overview; the Robot `Login As Admin` keyword
+  requests the roster explicitly via `?next=`.
+
 ## Legend
 | Symbol | Meaning |
 |---|---|

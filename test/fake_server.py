@@ -50,6 +50,8 @@ BOOK = fake_sheets.install()
 
 # The UI suites sign in repeatedly; the production caps would trip mid-suite
 app_module.limiter.enabled = False
+# The suites tap any meal at any hour; the serving-window rule is off here
+app.config["ENFORCE_MEAL_WINDOWS"] = False
 
 
 def seed():
@@ -85,6 +87,18 @@ def seed():
                    breakfast="Idli, Sambar, Coconut Chutney",
                    lunch="Rice, Sambar, Poriyal, Curd, Papad",
                    dinner="Chapati, Paneer Gravy, Salad")
+    # Tomorrow is published except dinner, so the overview has a menu gap to
+    # point at; the day after is fully published
+    BOOK.seed_menu((datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d"),
+                   breakfast="Pongal, Vada, Chutney", lunch="Curd Rice, Pickle")
+    BOOK.seed_menu((datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d"),
+                   breakfast="Poori, Aloo Masala", lunch="Veg Pulao, Raita",
+                   dinner="Chapati, Dal, Salad")
+
+    # Quick taps for today, so the taps card and overview score render
+    for rating in ["good", "good", "good", "bad", "skip"]:
+        BOOK.seed_meal_rating(today, "Lunch", rating)
+    BOOK.seed_meal_rating(today, "Breakfast", "good", "More chutney please")
 
     # Student-side data so the student dashboard has something to render.
     # The per-item scores matter: with all ten blank, dashboard.js takes its

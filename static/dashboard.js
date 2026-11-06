@@ -38,13 +38,18 @@ document.addEventListener("DOMContentLoaded", function () {
     let labels = [];
     let avgScores = [];
 
-    if (slicedData.length > 0) {
-      labels = slicedData.map(row => row.Date);
-      avgScores = slicedData.map(row => row.Avg_Overall);
-    } else {
-      labels = ["No Data"];
-      avgScores = [0];
+    if (slicedData.length === 0) {
+      // A flat line pinned at zero reads as "every student rated this 0/5".
+      // Absence of data is not a score, so it gets a state, not a plot.
+      MessMateCharts.empty(
+        trendCanvas,
+        "No ratings in this period",
+        "The trend line needs at least one rated day."
+      );
+      return;
     }
+    labels = slicedData.map(row => row.Date);
+    avgScores = slicedData.map(row => row.Avg_Overall);
 
     if (trendChartInstance) {
       // Update existing chart instead of recreating
@@ -71,12 +76,12 @@ document.addEventListener("DOMContentLoaded", function () {
           datasets: [{
             label: "Overall Avg Score",
             data: avgScores,
-            borderColor: "#2E75B6",
-            backgroundColor: "rgba(46, 117, 182, 0.1)",
+            borderColor: MessMateCharts.THEME.accent,
+            backgroundColor: MessMateCharts.THEME.fill,
             borderWidth: 3,
             tension: 0.4,
             fill: true,
-            pointBackgroundColor: "#1F4E79",
+            pointBackgroundColor: MessMateCharts.THEME.accent,
             pointRadius: 4,
             pointHoverRadius: 6
           }]
@@ -85,12 +90,8 @@ document.addEventListener("DOMContentLoaded", function () {
           responsive: true,
           maintainAspectRatio: false,
           scales: {
-            y: {
-              beginAtZero: true,
-              min: 0,
-              max: 5,
-              ticks: { stepSize: 1 }
-            }
+            y: MessMateCharts.scoreAxis(),
+            x: MessMateCharts.dateAxis()
           },
           plugins: {
             legend: { display: false },
@@ -119,19 +120,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const btn7Days = document.getElementById("btn7Days");
   const btn30Days = document.getElementById("btn30Days");
 
-  if (btn7Days && btn30Days) {
-    btn7Days.addEventListener("click", () => {
-      btn7Days.classList.add("active");
-      btn30Days.classList.remove("active");
-      renderTrendChart(7);
-    });
+  MessMateCharts.segmented(btn7Days, btn30Days, 7, 30, renderTrendChart);
 
-    btn30Days.addEventListener("click", () => {
-      btn30Days.classList.add("active");
-      btn7Days.classList.remove("active");
-      renderTrendChart(30);
-    });
-  }
+  MessMateCharts.deltaNote("avgDelta", trendData, "Avg_Overall", { decimals: 1 });
+  MessMateCharts.deltaNote("countDelta", trendData, "Response_Count", { decimals: 0 });
 
   // ---------------------------------------------------------
   // 2. Per-Item Scores Chart (Horizontal Bar Chart)
@@ -177,24 +169,19 @@ document.addEventListener("DOMContentLoaded", function () {
         chartScores.push(score);
         plottedKeys.push(key);
 
-        // Color bars by score: <2.5=red, 2.5-3.5=amber, >3.5=green
-        if (score < 2.5) {
-          bgColors.push("#EF5350");  // Red
-        } else if (score <= 3.5) {
-          bgColors.push("#FFB300");  // Amber
-        } else {
-          bgColors.push("#66BB6A");  // Green
-        }
+        // Red / amber / green from the shared bands in ui_config
+        bgColors.push(MessMateCharts.scoreColor(score));
       }
     });
 
     // Empty state handling
     if (chartLabels.length === 0) {
       // Show a centered message instead of an empty chart
-      const wrapper = itemCanvas.parentElement;
-      if (wrapper) {
-        wrapper.innerHTML = '<div class="empty-state">No item ratings yet.</div>';
-      }
+      MessMateCharts.empty(
+        itemCanvas,
+        "No item ratings yet today",
+        "Per-dish scores appear here as students submit the detailed form."
+      );
     } else {
       new Chart(itemCtx, {
         type: "bar",
@@ -212,14 +199,7 @@ document.addEventListener("DOMContentLoaded", function () {
           indexAxis: "y",  // Horizontal bar chart
           responsive: true,
           maintainAspectRatio: false,
-          scales: {
-            x: {
-              beginAtZero: true,
-              min: 0,
-              max: 5,
-              ticks: { stepSize: 1 }
-            }
-          },
+          scales: { x: MessMateCharts.scoreAxis(), y: { grid: { display: false } } },
           plugins: {
             legend: { display: false },
             tooltip: {

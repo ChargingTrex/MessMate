@@ -624,6 +624,75 @@ MEAL_TIMINGS = {
 
 RATINGS = ["good", "bad", "skip"]
 
+# ── Weekly template ──────────────────────────────────────────────────────────
+# A starting point for the admin menu editor, keyed by weekday (0=Monday).
+# It is deliberately NOT shown to students: a day with nothing published
+# renders as "Menu not published yet" (see CONTRIBUTING.md). A fabricated menu
+# that happens to be wrong is a worse message than an honest blank, so the
+# template only ever reaches the sheet when an admin fills a day from it and
+# saves. seed_demo.py reuses it for demo data.
+WEEKLY_MENU_DEFAULTS = {
+    0: {  # Monday
+        "Breakfast": "Idli, Medu Vada, Sambar, Coconut Chutney, Coffee/Tea",
+        "Lunch":     "Steamed Rice, Drumstick Sambar, Beans Poriyal, Curd, Papad, Pickle",
+        "Dinner":    "Phulka Chapati, Paneer Butter Masala, Jeera Rice, Dal Tadka, Green Salad",
+    },
+    1: {  # Tuesday
+        "Breakfast": "Poori, Aloo Masala, Kesari Bath, Coffee/Tea",
+        "Lunch":     "Steamed Rice, Tomato Rasam, Cabbage Poriyal, Mor Kuzhambu, Appalam, Pickle",
+        "Dinner":    "Soft Chapati, Mix Veg Korma, Steamed Rice, Moong Dal, Cut Fruits",
+    },
+    2: {  # Wednesday
+        "Breakfast": "Pongal, Medu Vada, Sambar, Ginger Chutney, Coffee/Tea",
+        "Lunch":     "Veg Pulao, Onion Raita, Steamed Rice, Karakuzhambu, Potato Fry, Curd",
+        "Dinner":    "Chapati, Aloo Gobi Masala, Steamed Rice, Yellow Dal, Fresh Salad",
+    },
+    3: {  # Thursday
+        "Breakfast": "Rava Upma, Coconut Chutney, Sambar, Banana, Coffee/Tea",
+        "Lunch":     "Steamed Rice, Arachuvitta Sambar, Beetroot Poriyal, Mysore Rasam, Curd, Papad",
+        "Dinner":    "Parotta / Chapati, Chana Masala, Veg Fried Rice, Veg Manchurian Gravy",
+    },
+    4: {  # Friday
+        "Breakfast": "Masala Dosa, Potato Masala, Sambar, Tomato Chutney, Coffee/Tea",
+        "Lunch":     "Steamed Rice, Pepper Rasam, Aviyal, Vatha Kuzhambu, Curd, Sweet Payasam",
+        "Dinner":    "Phulka Chapati, Kadai Paneer, Peas Pulao, Dal Makhani, Cucumber Salad",
+    },
+    5: {  # Saturday
+        "Breakfast": "Aloo Paratha, Curd, Pickle, Boiled Egg / Sprouts, Coffee/Tea",
+        "Lunch":     "Lemon Rice, Curd Rice, Potato Kara Curry, Appalam, Pickle",
+        "Dinner":    "Chapati, Dal Palak, Steamed Rice, Tomato Soup / Rasam, Green Salad",
+    },
+    6: {  # Sunday
+        "Breakfast": "Chole Bhature, Onion Pickle, Sweet Kesari, Coffee/Tea",
+        "Lunch":     "Special Veg Biryani, Onion Raita, Brinjal Gravy, Veg Cutlet, Gulab Jamun",
+        "Dinner":    "Phulka Chapati, Paneer Tikka Masala, Steamed Rice, Dal Fry, Ice Cream",
+    },
+}
+
+
+def menu_template_for_date(date_str):
+    """{"Breakfast": "Idli, ...", ...} from the weekly template for one date."""
+    try:
+        weekday = datetime.strptime(date_str, "%Y-%m-%d").weekday()
+    except (ValueError, TypeError):
+        return {meal: "" for meal in MEALS}
+    template = WEEKLY_MENU_DEFAULTS.get(weekday, {})
+    return {meal: template.get(meal, "") for meal in MEALS}
+
+
+def week_start(date_str=None):
+    """
+    The Monday on or before a date, as YYYY-MM-DD. The editor pages by
+    calendar week because that is how a mess plans: Monday to Sunday.
+    """
+    try:
+        day = (datetime.strptime(date_str, "%Y-%m-%d") if date_str
+               else datetime.now())
+    except (ValueError, TypeError):
+        day = datetime.now()
+    return (day - timedelta(days=day.weekday())).strftime("%Y-%m-%d")
+
+
 # Menu reads happen on every home-page load, so they are cached like the roster.
 # A shorter TTL than the roster: a menu correction should appear quickly.
 MENU_TTL_SECONDS = 30
@@ -666,43 +735,60 @@ def _split_items(raw):
     return [part.strip() for part in text.split(",") if part.strip()]
 
 
+def _menu_rows_by_date():
+    """{date: row} for every published row, latest row winning a duplicate."""
+    return {str(r.get("Date", "")).strip(): r for r in get_menu_records()}
+
+
 def get_menu_for_date(date_str=None):
     """
     Returns {"Breakfast": [...], "Lunch": [...], "Dinner": [...]} for one date.
     Meals with nothing published come back as empty lists, which the home page
-    renders as "not published yet" rather than pretending the mess is closed.
+    renders as "not published yet" rather than pretending the mess is closed —
+    or inventing a menu. The weekly template is an editor convenience only.
     """
     target = date_str or datetime.now().strftime("%Y-%m-%d")
-
-    for record in get_menu_records():
-        if str(record.get("Date", "")).strip() == target:
-            return {meal: _split_items(record.get(meal, "")) for meal in MEALS}
-
-    return {meal: [] for meal in MEALS}
+    row = _menu_rows_by_date().get(target, {})
+    return {meal: _split_items(row.get(meal, "")) for meal in MEALS}
 
 
 def get_menu_week(start_date=None, days=7):
     """
-    Menu rows for `days` days from start_date, for the admin editor.
-    Always returns one entry per day, with blanks for days not yet published.
+    One entry per day from start_date (default: today), for the editor and the
+    home page's day switcher. Each entry carries:
+
+        date, label, weekday, is_today, is_past
+        Breakfast / Lunch / Dinner   what is published — "" when nothing is
+        published                    {meal: bool} — True when a value is stored
+        template                     {meal: str}  — the weekly template, as a
+                                     suggestion for the editor to offer
+        has_row                      the date has a row in the sheet at all
     """
     start = (datetime.strptime(start_date, "%Y-%m-%d") if start_date
              else datetime.now())
-    published = {str(r.get("Date", "")).strip(): r for r in get_menu_records()}
+    rows = _menu_rows_by_date()
+    today_str = datetime.now().strftime("%Y-%m-%d")
 
     week = []
     for offset in range(days):
         day = start + timedelta(days=offset)
         date_str = day.strftime("%Y-%m-%d")
-        row = published.get(date_str, {})
-        week.append({
+        row = rows.get(date_str)
+        stored = {meal: str((row or {}).get(meal, "") or "").strip()
+                  for meal in MEALS}
+
+        entry = {
             "date": date_str,
             "label": day.strftime("%a %d %b"),
-            "is_today": date_str == datetime.now().strftime("%Y-%m-%d"),
-            "Breakfast": str(row.get("Breakfast", "")),
-            "Lunch": str(row.get("Lunch", "")),
-            "Dinner": str(row.get("Dinner", "")),
-        })
+            "weekday": day.strftime("%A"),
+            "is_today": date_str == today_str,
+            "is_past": date_str < today_str,
+            "has_row": row is not None,
+            "published": {meal: bool(stored[meal]) for meal in MEALS},
+            "template": menu_template_for_date(date_str),
+        }
+        entry.update(stored)
+        week.append(entry)
     return week
 
 
@@ -714,24 +800,49 @@ def save_menu_for_date(date_str, breakfast, lunch, dinner):
 
     Returns True on success, False on failure.
     """
+    return save_menu_week([(date_str, breakfast, lunch, dinner)])
+
+
+def save_menu_week(days):
+    """
+    Upserts several days at once. `days` is a list of
+    (date_str, breakfast, lunch, dinner) tuples.
+
+    One col_values read finds the existing rows; each of those is updated in
+    place, and every new date goes out in a single append_rows call — so a
+    whole unpublished week costs two API calls rather than fourteen.
+
+    Returns True on success, False on failure.
+    """
+    if not days:
+        return True
+
     try:
         worksheet = get_sheet(MENU_TAB)
         if not worksheet:
             return False
 
-        row_data = [date_str, breakfast, lunch, dinner]
         dates = [str(v).strip() for v in worksheet.col_values(1)]
+        new_rows = []
+        for date_str, breakfast, lunch, dinner in days:
+            row_data = [date_str, breakfast, lunch, dinner]
+            if date_str in dates:
+                row_index = dates.index(date_str) + 1   # gspread is 1-indexed
+                worksheet.update(f"A{row_index}:D{row_index}", [row_data])
+            else:
+                new_rows.append(row_data)
+                dates.append(date_str)   # a date repeated in `days` updates, not duplicates
 
-        if date_str in dates:
-            row_index = dates.index(date_str) + 1   # gspread is 1-indexed
-            worksheet.update(f"A{row_index}:D{row_index}", [row_data])
-        else:
-            worksheet.append_row(row_data, value_input_option="RAW")
+        if new_rows:
+            if len(new_rows) == 1:
+                worksheet.append_row(new_rows[0], value_input_option="RAW")
+            else:
+                worksheet.append_rows(new_rows, value_input_option="RAW")
 
         invalidate_menu_cache()
         return True
     except Exception as e:
-        print(f"Error saving menu for {date_str}: {e}")
+        print(f"Error saving menu: {e}")
         return False
 
 
@@ -742,25 +853,26 @@ def append_meal_rating(meal, rating, suggestion=""):
 
     Suggestion is stored RAW; Jinja escapes it when the dashboard renders it.
 
-    Returns True on success, False on failure.
+    Returns the row's Timestamp string on success (truthy; the device cookie
+    keeps it so the tap can be undone), "" on failure.
     """
     try:
         worksheet = get_sheet(MEAL_RATINGS_TAB)
         if not worksheet:
             return False
 
-        now = datetime.now()
+        stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         worksheet.append_row([
-            now.strftime("%Y-%m-%d %H:%M:%S"),
-            now.strftime("%Y-%m-%d"),
+            stamp,
+            stamp[:10],
             meal,
             rating,
             suggestion,
         ], value_input_option="RAW")
-        return True
+        return stamp
     except Exception as e:
         print(f"Error appending meal rating: {e}")
-        return False
+        return ""
 
 
 def get_meal_ratings(date_str=None):
@@ -806,3 +918,52 @@ def summarise_meal_ratings(date_str=None):
         summary[meal]["score"] = round(summary[meal]["good"] / ate * 100) if ate else 0
 
     return summary
+
+
+# ── Serving windows as rules, and taking a tap back ───────────────────────────
+# MEAL_TIMINGS above is the display string. These are the same windows as
+# numbers, so the home page can refuse a rating for a meal that has not been
+# served yet: a student cannot have an opinion about dinner at 8 am, and a row
+# that says they do is noise the committee would average. A meal stays open
+# after its window ends — someone who ate late still ate.
+MEAL_OPENS = {
+    "Breakfast": (7, 30),
+    "Lunch": (12, 0),
+    "Dinner": (19, 30),
+}
+MEAL_OPENS_LABEL = {
+    "Breakfast": "7:30 am",
+    "Lunch": "12:00 pm",
+    "Dinner": "7:30 pm",
+}
+
+
+def meal_is_open(meal, now=None):
+    """True once today's serving window for `meal` has started."""
+    hour, minute = MEAL_OPENS.get(meal, (0, 0))
+    now = now or datetime.now()
+    return (now.hour, now.minute) >= (hour, minute)
+
+
+def delete_meal_rating(timestamp, date_str, meal):
+    """
+    Removes one quick reaction, identified by the Timestamp, Date and Meal the
+    device remembered when it tapped. Used by Undo. Deletes the first matching
+    row only; the fields together are as good as unique.
+
+    Returns True when a row was removed, False otherwise.
+    """
+    try:
+        worksheet = get_sheet(MEAL_RATINGS_TAB)
+        if not worksheet:
+            return False
+        for index, record in enumerate(worksheet.get_all_records()):
+            if (str(record.get("Timestamp", "")).strip() == timestamp
+                    and str(record.get("Date", "")).strip() == date_str
+                    and str(record.get("Meal", "")).strip().title() == meal):
+                worksheet.delete_rows(index + 2)   # row 1 is the header
+                return True
+        return False
+    except Exception as e:
+        print(f"Error deleting meal rating: {e}")
+        return False

@@ -193,5 +193,51 @@ def seed_data():
     print("   2. Check the Google Sheet to confirm data rows")
 
 
+def seed_weekly_menu(days=7):
+    """
+    Populates the 'menu' tab with dummy weekly meals (Breakfast, Lunch, Dinner).
+    """
+    templates = [
+        ("Idli, Medu Vada, Sambar, Coconut Chutney, Coffee/Tea",
+         "Steamed Rice, Drumstick Sambar, Beans Poriyal, Curd, Papad, Pickle",
+         "Phulka Chapati, Paneer Butter Masala, Jeera Rice, Dal Tadka, Green Salad"),
+        ("Poori, Aloo Masala, Kesari Bath, Coffee/Tea",
+         "Steamed Rice, Tomato Rasam, Cabbage Poriyal, Mor Kuzhambu, Appalam, Pickle",
+         "Soft Chapati, Mix Veg Korma, Steamed Rice, Moong Dal, Cut Fruits"),
+        ("Pongal, Medu Vada, Sambar, Ginger Chutney, Coffee/Tea",
+         "Veg Pulao, Onion Raita, Steamed Rice, Karakuzhambu, Potato Fry, Curd",
+         "Chapati, Aloo Gobi Masala, Steamed Rice, Yellow Dal, Fresh Salad"),
+        ("Rava Upma, Coconut Chutney, Sambar, Banana, Coffee/Tea",
+         "Steamed Rice, Arachuvitta Sambar, Beetroot Poriyal, Mysore Rasam, Curd, Papad",
+         "Parotta / Chapati, Chana Masala, Veg Fried Rice, Veg Manchurian Gravy"),
+        ("Masala Dosa, Potato Masala, Sambar, Tomato Chutney, Coffee/Tea",
+         "Steamed Rice, Pepper Rasam, Aviyal, Vatha Kuzhambu, Curd, Sweet Payasam",
+         "Phulka Chapati, Kadai Paneer, Peas Pulao, Dal Makhani, Cucumber Salad"),
+        ("Aloo Paratha, Curd, Pickle, Boiled Egg / Sprouts, Coffee/Tea",
+         "Lemon Rice, Curd Rice, Potato Kara Curry, Appalam, Pickle",
+         "Chapati, Dal Palak, Steamed Rice, Tomato Soup / Rasam, Green Salad"),
+        ("Chole Bhature, Onion Pickle, Sweet Kesari, Coffee/Tea",
+         "Special Veg Biryani, Onion Raita, Brinjal Gravy, Veg Cutlet, Gulab Jamun",
+         "Phulka Chapati, Paneer Tikka Masala, Steamed Rice, Dal Fry, Ice Cream")
+    ]
+
+    print("\n🍽️ Seeding weekly menu...")
+    today = datetime.now()
+    start = today - timedelta(days=1)
+    for i in range(days + 1):
+        day = start + timedelta(days=i)
+        date_str = day.strftime("%Y-%m-%d")
+        b, l, d = templates[day.weekday()]
+        ok = sheets.save_menu_for_date(date_str, b, l, d)
+        print(f"   [{'OK' if ok else 'FAIL'}] {date_str} ({day.strftime('%a')}): {b[:25]}... | {l[:25]}... | {d[:25]}...")
+    print("✅ Weekly menu seeded successfully!")
+
+
 if __name__ == "__main__":
-    seed_data()
+    import sys
+    if "--menu" in sys.argv:
+        seed_weekly_menu()
+    else:
+        seed_data()
+        seed_weekly_menu()
+

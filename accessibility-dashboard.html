@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accessibility Scorecard</title>
+<style>
+  :root {
+    --bg:#0f1724; --bg2:#1a2438; --card:rgba(255,255,255,.04);
+    --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.16);
+    --tx:#f1f5f9; --tx2:#cbd5e1; --tx3:#94a3b8;
+    --ok:#4ade80; --warn:#fbbf24; --bad:#f87171; --acc:#60a5fa;
+    --r:14px; --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  * { box-sizing:border-box; margin:0; padding:0 }
+  body {
+    background:linear-gradient(160deg,var(--bg),var(--bg2) 55%,#0f2027);
+    background-attachment:fixed; min-height:100vh; color:var(--tx2);
+    font:16px/1.6 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    padding:40px 16px 80px;
+  }
+  .wrap { max-width:1080px; margin:0 auto }
+  h1 { font-size:1.9rem; color:var(--tx); letter-spacing:-.02em; margin-bottom:6px }
+  .sub { color:var(--tx3); font-size:.92rem; margin-bottom:28px }
+  h2 { font-size:1.1rem; color:var(--tx); margin:38px 0 14px; letter-spacing:-.01em }
+  a { color:var(--acc) }
+
+  .verdict {
+    border:1px solid rgba(248,113,113,.4); background:rgba(248,113,113,.10);
+    border-radius:var(--r); padding:20px 22px; margin-bottom:22px;
+  }
+  .verdict strong { color:#fecaca; font-size:1.05rem; display:block; margin-bottom:6px }
+  .verdict p { color:var(--tx2); font-size:.9rem }
+  .verdict code { color:#fecaca }
+
+  .top { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr)); gap:16px }
+  .score {
+    border:1px solid var(--line); background:var(--card); border-radius:var(--r);
+    padding:22px; text-align:center;
+  }
+  .score .n { font-size:3.4rem; font-weight:800; color:var(--tx); line-height:1; letter-spacing:-.03em }
+  .score .g { font-size:1.1rem; font-weight:700; color:var(--warn); margin-top:4px }
+  .score .l { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--tx3); margin-top:10px }
+  .meta { border:1px solid var(--line); background:var(--card); border-radius:var(--r); padding:18px 20px }
+  .meta dt { font-size:.7rem; text-transform:uppercase; letter-spacing:.07em; color:var(--tx3); margin-top:10px }
+  .meta dt:first-child { margin-top:0 }
+  .meta dd { font-size:.86rem; color:var(--tx2) }
+
+  .surf { border:1px solid var(--line); background:var(--card); border-radius:var(--r); padding:16px 18px; margin-bottom:10px }
+  .surf-head { display:flex; justify-content:space-between; align-items:baseline; gap:12px }
+  .surf-head span:first-child { font-weight:600; color:var(--tx) }
+  .surf-num { font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums }
+  .of { color:var(--tx3); font-weight:500; font-size:.85em }
+  .bar { height:7px; background:rgba(255,255,255,.07); border-radius:999px; margin:10px 0 8px; overflow:hidden }
+  .bar span { display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,var(--acc),#a78bfa) }
+  .surf-note { font-size:.82rem; color:var(--tx3) }
+
+  .find { border:1px solid var(--line); background:var(--card); border-radius:var(--r); padding:18px 20px; margin-bottom:12px; border-left:1px solid var(--line) }
+  .find.crit { border-color:rgba(248,113,113,.34) }
+  .find.ser { border-color:rgba(251,191,36,.30) }
+  .find header { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:8px }
+  .find h3 { font-size:1rem; color:var(--tx); font-weight:650 }
+  .badge { font-size:.64rem; font-weight:800; letter-spacing:.09em; padding:3px 9px; border-radius:999px }
+  .crit .badge { background:rgba(248,113,113,.18); color:#fecaca }
+  .ser .badge { background:rgba(251,191,36,.16); color:#fde68a }
+  .mod .badge { background:rgba(148,163,184,.18); color:#cbd5e1 }
+  .sc { margin-left:auto; font-size:.76rem; color:var(--tx3); white-space:nowrap }
+  .where { font-size:.8rem; color:var(--acc); margin-bottom:8px }
+  .find p { font-size:.89rem; margin-bottom:8px }
+  .meas code { color:#fde68a; font-size:.82rem }
+  pre { background:rgba(0,0,0,.34); border:1px solid var(--line); border-radius:10px;
+         padding:13px 15px; overflow-x:auto; margin-top:10px }
+  pre code { font:.8rem/1.6 'SF Mono',Menlo,Consolas,monospace; color:#bfdbfe; white-space:pre }
+
+  table { width:100%; border-collapse:collapse; font-size:.85rem;
+           border:1px solid var(--line); border-radius:var(--r); overflow:hidden }
+  th { text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.07em;
+        color:var(--tx3); padding:11px 14px; background:rgba(255,255,255,.03) }
+  td { padding:11px 14px; border-top:1px solid var(--line); vertical-align:top }
+  td code { color:#93c5fd; font-size:.82rem }
+  .v-pass { color:var(--ok); font-weight:650 }
+  .v-fail { color:var(--bad); font-weight:650 }
+  .v-partial { color:var(--warn); font-weight:650 }
+
+  .tier { border:1px solid var(--line); background:var(--card); border-radius:var(--r); padding:18px 20px; margin-bottom:10px }
+  .tier h3 { font-size:.98rem; color:var(--tx); margin-bottom:2px }
+  .effort { font-size:.78rem; color:var(--tx3); margin-bottom:10px }
+  .tier ul { padding-left:18px }
+  .tier li { font-size:.87rem; margin-bottom:4px }
+
+  .note { font-size:.82rem; color:var(--tx3); border:1px dashed var(--line2);
+           border-radius:var(--r); padding:14px 16px; margin-top:12px }
+  :focus-visible { outline:none; box-shadow:0 0 0 3px rgba(96,165,250,.6); border-radius:6px }
+  @media (prefers-reduced-motion:reduce) { *{animation:none!important;transition:none!important} }
+  @media (max-width:640px) { body{padding:24px 14px 60px} h1{font-size:1.5rem} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Accessibility scorecard — MessMate</h1>
+  <p class="sub">WCAG 2.2 Level AA · 2026-10-02</p>
+
+  <div class="verdict">
+    <strong>Does not conform to WCAG 2.2 Level AA.</strong>
+    <p>Failing <code>1.1.1, 1.4.1, 1.4.3, 2.2.2, 3.3.2, 4.1.2</code> — 6 of 55 Level A/AA criteria.
+       Conformance is binary and per page; there is no partial pass. This is a finding,
+       not a conformance claim — publishing a claim is the team's to make.</p>
+  </div>
+
+  <div class="top">
+    <div class="score">
+      <p class="n">74</p>
+      <p class="g">Grade B</p>
+      <p class="l">Audit score — informative</p>
+    </div>
+    <div class="meta">
+      <dl>
+        <dt>Audited</dt><dd>/home, / (rating form), /dashboard, /dashboard/committee, /admin/login, /committee/login</dd>
+        <dt>Not audited</dt><dd>/admin/members, /admin/menu, /committee (member form), /committee/password, /committee/thanks, /thanks</dd>
+        <dt>Tooling</dt><dd>axe-core 4.10.2 (CDN) + custom measurement; WCAG sRGB luminance formula self-tested to 22/22 against published reference values</dd>
+      </dl>
+    </div>
+  </div>
+
+  <h2>Surface breakdown</h2>
+  <div class="surf">
+        <div class="surf-head"><span>Blocking failures</span>
+          <span class="surf-num">24<span class="of">/30</span></span></div>
+        <div class="bar" role="img" aria-label="24 out of 30">
+          <span style="width:80%"></span></div>
+        <p class="surf-note">Keyboard reachable throughout, focus visible on every stop, no traps, no flashing. Two controls expose no accessible name.</p>
+      </div>
+<div class="surf">
+        <div class="surf-head"><span>Colour &amp; contrast</span>
+          <span class="surf-num">15<span class="of">/20</span></span></div>
+        <div class="bar" role="img" aria-label="15 out of 20">
+          <span style="width:75%"></span></div>
+        <p class="surf-note">424 text elements measured; 4 distinct failing pairs, all on the light-theme student pages. Every dark-shell token passes.</p>
+      </div>
+<div class="surf">
+        <div class="surf-head"><span>Typography</span>
+          <span class="surf-num">13<span class="of">/15</span></span></div>
+        <div class="bar" role="img" aria-label="13 out of 15">
+          <span style="width:87%"></span></div>
+        <p class="surf-note">1.4.12 spacing override clipped nothing on any page; reflow clean at 320px on all six.</p>
+      </div>
+<div class="surf">
+        <div class="surf-head"><span>Targets &amp; pointer</span>
+          <span class="surf-num">10<span class="of">/10</span></span></div>
+        <div class="bar" role="img" aria-label="10 out of 10">
+          <span style="width:100%"></span></div>
+        <p class="surf-note">No non-inline target below 24px on any audited page.</p>
+      </div>
+<div class="surf">
+        <div class="surf-head"><span>Motion</span>
+          <span class="surf-num">6<span class="of">/10</span></span></div>
+        <div class="bar" role="img" aria-label="6 out of 10">
+          <span style="width:60%"></span></div>
+        <p class="surf-note">prefers-reduced-motion honoured; the ticker has no accessible pause.</p>
+      </div>
+<div class="surf">
+        <div class="surf-head"><span>Infographics &amp; media</span>
+          <span class="surf-num">4<span class="of">/10</span></span></div>
+        <div class="bar" role="img" aria-label="4 out of 10">
+          <span style="width:40%"></span></div>
+        <p class="surf-note">Charts expose no text alternative; series identified by colour alone.</p>
+      </div>
+<div class="surf">
+        <div class="surf-head"><span>AAA headroom</span>
+          <span class="surf-num">2<span class="of">/5</span></span></div>
+        <div class="bar" role="img" aria-label="2 out of 5">
+          <span style="width:40%"></span></div>
+        <p class="surf-note">Targets and reduced-motion qualify; body text sits below 7:1.</p>
+      </div>
+
+  <h2>Checked by hand</h2>
+  <table><thead><tr><th>Check</th><th>Result</th><th>Detail</th></tr></thead>
+  <tbody><tr><td>Keyboard only</td><td class="v-pass">pass</td><td>Tabbed all six pages. Every control reachable, order matches the visual layout, no traps. Focus visible on every stop after this pass&#x27;s fixes.</td></tr>
+<tr><td>320 CSS px / 400% zoom</td><td class="v-pass">pass</td><td>No horizontal scrolling and no clipping on any of the six pages (scrollWidth == clientWidth).</td></tr>
+<tr><td>Text spacing (1.4.12)</td><td class="v-pass">pass</td><td>Applied line-height 1.5, letter-spacing .12em, word-spacing .16em, paragraph 2em. No content clipped or lost on any page.</td></tr>
+<tr><td>Colour off</td><td class="v-fail">fail</td><td>Status badges pair colour with text. Chart series do not — see F5.</td></tr>
+<tr><td>Alt text meaning</td><td class="v-fail">fail</td><td>No &lt;img&gt; on the audited pages; the one decorative SVG favicon is correctly out of the accessibility tree. Charts carry no alternative — see F2.</td></tr>
+<tr><td>Forms end to end</td><td class="v-partial">partial</td><td>Submitted empty and invalid. Errors are identified in text and recoverable. Two controls lack names — see F3.</td></tr>
+<tr><td>Reduced motion</td><td class="v-pass">pass</td><td>OS setting honoured: the live dot, ticker and glow all stop. Chart animation disabled. Verified via the media query.</td></tr></tbody></table>
+
+  <h2>Open findings (6)</h2>
+  <article class="find crit">
+        <header>
+          <span class="badge">CRITICAL</span>
+          <h3>F1 — Pause, Stop, Hide</h3>
+          <span class="sc">SC 2.2.2 · Level A</span>
+        </header>
+        <p class="where">/home — .ticker-section</p>
+        <p>The ticker scrolls on a 38s infinite loop with no pause, stop or hide control. A CSS hover-pause exists but is unreachable by keyboard or touch.</p>
+        <p class="meas"><strong>Measured:</strong> <code>animation: tickerScroll 38s linear infinite; 0 controls in the region</code></p>
+        <p class="fix"><strong>Fix:</strong> Add a visible pause toggle to the ticker that sets animation-play-state, and expose it as a real button.</p>
+        <pre><code>&lt;button type=&quot;button&quot; id=&quot;tickerPause&quot; class=&quot;ticker-pause&quot;
+        aria-pressed=&quot;false&quot; aria-label=&quot;Pause scrolling notices&quot;&gt;⏸&lt;/button&gt;
+
+/* CSS */
+.ticker-section.is-paused .ticker-content { animation-play-state: paused; }</code></pre>
+      </article>
+<article class="find crit">
+        <header>
+          <span class="badge">CRITICAL</span>
+          <h3>F2 — Non-text Content</h3>
+          <span class="sc">SC 1.1.1 · Level A</span>
+        </header>
+        <p class="where">/dashboard, /dashboard/committee — every &lt;canvas&gt;</p>
+        <p>Chart canvases carry no aria-label, no role and no fallback content, so a screen-reader user gets nothing where a sighted user gets the trend.</p>
+        <p class="meas"><strong>Measured:</strong> <code>canvas#trendChart: aria-label=null, role=null, fallback=&#x27;&#x27; </code></p>
+        <p class="fix"><strong>Fix:</strong> Give each canvas role=&quot;img&quot; and an aria-label that states what the chart shows, generated from the same data the chart plots.</p>
+        <pre><code>&lt;canvas id=&quot;trendChart&quot; role=&quot;img&quot;
+        aria-label=&quot;Line chart: average daily score over the last 7 days, 3.6 to 4.1 out of 5.&quot;&gt;&lt;/canvas&gt;
+
+// keep it true as data changes
+canvas.setAttribute(&#x27;aria-label&#x27;,
+  `Line chart: average daily score over the last ${n} days, ${min} to ${max} out of 5.`);</code></pre>
+      </article>
+<article class="find crit">
+        <header>
+          <span class="badge">CRITICAL</span>
+          <h3>F3 — Labels or Instructions / Name, Role, Value</h3>
+          <span class="sc">SC 3.3.2 / 4.1.2 · Level A</span>
+        </header>
+        <p class="where">/ (rating form) — textarea#review, input[name=suggestion]</p>
+        <p>Both controls rely on a placeholder alone. Placeholders are not accessible names, and they vanish on input.</p>
+        <p class="meas"><strong>Measured:</strong> <code>textarea#review: label=false, aria-label=null, placeholder only</code></p>
+        <p class="fix"><strong>Fix:</strong> Add a visible &lt;label for&gt;, or an aria-label where the design has no room.</p>
+        <pre><code>&lt;label class=&quot;item-label&quot; for=&quot;review&quot;&gt;Comments about today&#x27;s lunch&lt;/label&gt;
+&lt;textarea id=&quot;review&quot; name=&quot;review&quot; ...&gt;&lt;/textarea&gt;
+
+&lt;input name=&quot;suggestion&quot; aria-label=&quot;Suggest a dish for the mess menu&quot; ...&gt;</code></pre>
+      </article>
+<article class="find ser">
+        <header>
+          <span class="badge">SERIOUS</span>
+          <h3>F4 — Contrast (Minimum)</h3>
+          <span class="sc">SC 1.4.3 · Level AA</span>
+        </header>
+        <p class="where">/ and /committee/login — header subtitle, .char-counter, .subtext</p>
+        <p>Four distinct foreground/background pairs fall below 4.5:1 for normal text. All are on the light-theme student pages.</p>
+        <p class="meas"><strong>Measured:</strong> <code>header p (white @ opacity .9 on #2E75B6) = 4.25:1 · .char-counter #888888 on #ffffff = 3.54:1 · .subtext #777777 on #f7f9fc = 4.25:1 · on #ffffff = 4.48:1</code></p>
+        <p class="fix"><strong>Fix:</strong> Drop the header&#x27;s opacity (white on #2E75B6 is 4.84:1), and move both greys to #6e6e6e, the lightest value that clears 4.5:1 on BOTH light backgrounds (5.10:1 on #ffffff, 4.83:1 on #f7f9fc).</p>
+        <pre><code>header p { opacity: 1; }          /* 4.25:1 -&gt; 4.84:1 */
+.char-counter { color: #6e6e6e; } /* 3.54:1 -&gt; 5.10:1 */
+.subtext,
+.subtext-line { color: #6e6e6e; } /* 4.25:1 -&gt; 4.83:1 on #f7f9fc */</code></pre>
+      </article>
+<article class="find ser">
+        <header>
+          <span class="badge">SERIOUS</span>
+          <h3>F5 — Use of Colour</h3>
+          <span class="sc">SC 1.4.1 · Level A</span>
+        </header>
+        <p class="where">/dashboard/committee — committee trend chart</p>
+        <p>When more than one series is enabled, the only thing distinguishing the lines is their colour; the legend maps colour to name and nothing else does. Manifests only once a user switches a second series on.</p>
+        <p class="meas"><strong>Measured:</strong> <code>5 dimension datasets differ by borderColor alone — no dash pattern, no point style, no direct label</code></p>
+        <p class="fix"><strong>Fix:</strong> Give each series its own dash pattern and point style as well as colour, so the legend is not the only key.</p>
+        <pre><code>const SERIES = [
+  {borderDash: [],      pointStyle: &#x27;circle&#x27;},
+  {borderDash: [6, 3],  pointStyle: &#x27;triangle&#x27;},
+  {borderDash: [2, 2],  pointStyle: &#x27;rect&#x27;},
+  {borderDash: [8, 3, 2, 3], pointStyle: &#x27;rectRot&#x27;},
+  {borderDash: [1, 3],  pointStyle: &#x27;cross&#x27;},
+];</code></pre>
+      </article>
+<article class="find mod">
+        <header>
+          <span class="badge">MODERATE</span>
+          <h3>F6 — Info and Relationships</h3>
+          <span class="sc">SC 1.3.1 · Level A</span>
+        </header>
+        <p class="where">/home — ticker and day selector outside landmarks</p>
+        <p>axe reports two regions of content not contained by any landmark.</p>
+        <p class="meas"><strong>Measured:</strong> <code>axe rule &#x27;region&#x27;, 2 nodes, first #tickerSection</code></p>
+        <p class="fix"><strong>Fix:</strong> Wrap the ticker and the selectors in the existing &lt;main&gt;, or give the ticker its own labelled region.</p>
+        <pre><code>&lt;aside class=&quot;ticker-section&quot; aria-label=&quot;Mess notices&quot;&gt; … &lt;/aside&gt;</code></pre>
+      </article>
+
+  <h2>Fixed during this audit</h2>
+  <table><thead><tr><th>SC</th><th>Change</th><th>Where</th></tr></thead>
+  <tbody><tr><td><code>1.4.3</code></td><td>Segmented control active state: white on #3b82f6 measured 3.68:1 at 13px/600. Moved to #2563eb = 5.17:1 — the next step on the same ramp, so the design reads unchanged.</td><td><code>static/style.css --accent-strong</code></td></tr>
+<tr><td><code>2.1.1</code></td><td>The suggestions list scrolls but could not be reached by keyboard (axe: scrollable-region-focusable, serious). Added tabindex=0, role=region, a label, and a focus ring.</td><td><code>both dashboard templates</code></td></tr>
+<tr><td><code>1.3.1</code></td><td>Dashboards had no &lt;main&gt; landmark and jumped h1 -&gt; h3. Added the landmark; stat headings are now h2.</td><td><code>dashboard.html, committee_dashboard.html</code></td></tr>
+<tr><td><code>2.4.7</code></td><td>Native &lt;select&gt; had no visible focus indicator.</td><td><code>static/style.css</code></td></tr>
+<tr><td><code>1.3.1</code></td><td>Admin sign-in page had no h1.</td><td><code>admin_login.html</code></td></tr>
+<tr><td><code>3.3.2</code></td><td>The per-meal suggestion field on /home had a placeholder but no accessible name.</td><td><code>home.html</code></td></tr></tbody></table>
+  <p class="note">Both dashboards and the admin sign-in page now report zero axe violations.</p>
+
+  <h2>Route to the highest achievable rating</h2>
+  <div class="tier"><h3>1 — Unblock (reaches Level A)</h3><p class="effort">~3 hours</p>
+      <ul><li>F1 ticker pause control</li><li>F2 chart text alternatives</li><li>F3 label the two form controls</li><li>F5 non-colour series encoding</li></ul></div>
+<div class="tier"><h3>2 — Conform (reaches Level AA)</h3><p class="effort">~1 hour</p>
+      <ul><li>F4 four contrast values (three one-line CSS changes)</li><li>F6 landmark wrapping</li><li>Audit /admin/members, /admin/menu and the committee member pages — currently untested, not passed</li></ul></div>
+<div class="tier"><h3>3 — Harden (AA + AAA where achievable)</h3><p class="effort">~4 hours</p>
+      <ul><li>Lift body text to 7:1 (1.4.6) — --text-faint 6.03:1 and --text-muted 6.72:1 are close</li><li>Raise targets to 44px (2.5.5) on the primary actions</li><li>Add visible section headings (2.4.10)</li><li>Confirm with a real screen reader — NVDA/Firefox and VoiceOver/Safari</li></ul></div>
+
+  <h2>Needs assistive-technology verification</h2>
+  <ul class="tier"><li>Screen-reader announcement order on the dashboards after the h2/landmark change.</li><li>Whether the committee trend&#x27;s toggled series are distinguishable to a colour-blind user in practice (F5 is a code-level finding; confirm with real users).</li><li>The admin and committee member-only pages, which could not be reached at all.</li></ul>
+
+  <p class="note">The wcag-audit skill synced without its scripts/ directory, so a11y_math.py, audit_page.py and build_dashboard.py were unavailable. The formulas were reimplemented and self-tested; every number here is measured and reproducible.</p>
+</div>
+</body>
+</html>

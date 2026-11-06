@@ -6,7 +6,7 @@ A web app for students to anonymously rate their daily mess lunch. Admins, deans
 
 - **Backend**: Python (Flask), gspread, Google Sheets
 - **Frontend**: HTML/CSS/Vanilla JS, Chart.js (CDN)
-- **Rate Limiting**: Flask-Limiter (1 submission/IP/day)
+- **Rate Limiting**: Flask-Limiter, keyed on an anonymous device cookie (3 quick taps a day, one dish review per 4 hours)
 - **Hosting**: Render.com (free tier)
 
 ## Features
@@ -16,12 +16,17 @@ A web app for students to anonymously rate their daily mess lunch. Admins, deans
 - 📊 Admin dashboard with trend charts and item-level analytics
 - 💡 Student dish suggestion board
 - 🔒 Dashboard protected by secret token
-- 🛡️ Rate limiting prevents spam (1 submit per IP per day)
+- 🛡️ Rate limiting prevents spam — per device, not per IP: three quick taps a day (one per meal, undoable for 10 minutes) and one dish-by-dish review every 4 hours
 - 🔐 Fully anonymous — no student identity stored
 - 🍽️ **Student home page** (`/home`) — today's breakfast, lunch and dinner menu
   with a one-tap reaction per meal: good, bad or skipped, plus a suggestion
-- 📝 **Menu editor** — publish the week from `/admin/menu`, or type straight into
-  the `menu` tab; both write the same rows
+- 📝 **Weekly menu editor** — publish breakfast, lunch and dinner for a whole
+  week from `/admin/menu` (paged by calendar week, fill from a template or copy
+  last week, save a day or all seven), or type straight into the `menu` tab;
+  both write the same rows
+- 🧭 **Admin overview** at `/admin` — today's numbers from all three feedback
+  layers, this week's menu publication state, who on the committee has
+  reviewed, and an attention list of anything that needs a decision
 - 🍽️ **Food Committee module** — member login, a five-dimension review page
   (taste, quality, variety, hygiene, menu), and a separate committee dashboard
 - 👥 **Admin member management UI** — add, bulk-add, rotate, and reset passwords
@@ -153,10 +158,9 @@ http://localhost:5000/dashboard?token=vc2026
 ### 7. Seed Demo Data
 
 ```bash
-python seed_data.py
+python seed_demo.py --dry-run   # show what would be written
+python seed_demo.py --yes       # 30 days of demo data across every tab
 ```
-
-This populates 70 rows across 7 days for a realistic demo.
 
 ## Deployment (Render.com)
 
@@ -184,6 +188,7 @@ messmate/
 ├── .gitignore             # Ignores: credentials.json, .env, __pycache__
 ├── auth.py                # Session auth, password hashing, access decorators
 ├── csrf.py                # CSRF tokens for authenticated POSTs
+├── ui_config.py           # THE UI config: design tokens + score bands (see docs/DESIGN_SYSTEM.md)
 ├── seed_data.py           # Demo data seeding script
 ├── manage_committee.py    # Break-glass roster CLI (admin hash, add, list)
 ├── generate_qr.py         # QR code generator for the mess poster
@@ -204,7 +209,7 @@ messmate/
 ├── test/
 │   └── test_committee.py  # Credential-free verification harness
 └── static/
-    ├── style.css                # Shared mobile-first styles
+    ├── style.css                # The design system — see docs/DESIGN_SYSTEM.md
     ├── dashboard.js             # Student dashboard charts
     ├── committee.js             # Committee rating widget
     └── committee_dashboard.js   # Committee dashboard charts
@@ -221,14 +226,20 @@ messmate/
 | `/health` | GET | Health check → `{"status": "ok"}` |
 | `/home` | GET | Today's menu with a one-tap reaction per meal |
 | `/home/rate` | POST | Record good / bad / skip (3 per IP per day) |
-| `/admin/menu` | GET | Week-at-a-glance menu editor |
+| `/admin` | GET | Admin overview — today's numbers, menu state, alerts |
+| `/admin/menu?start=YYYY-MM-DD` | GET | Weekly menu editor (Monday–Sunday) |
 | `/admin/menu/save` | POST | Publish one day's menu |
+| `/admin/menu/save-week` | POST | Publish all seven days in one request |
 | `/committee/login` | GET, POST | Committee member login |
 | `/committee/logout` | POST | Clear member session |
 | `/committee/password` | GET, POST | Forced password change at first sign-in |
 | `/committee` | GET | Rating page (5 dimensions + review) |
 | `/committee/submit` | POST | Store one review (1 per member per day) |
 | `/committee/thanks` | GET | Confirmation |
+| `/committee/dashboard` | GET | The committee's own dashboard, for signed-in members |
+| `/signin` | GET, POST | Front door for every role; lists the pilot accounts in `PILOT_MODE` |
+| `/signout` | POST | Clears whichever role is signed in |
+| `/ui/tokens.css` | GET | Design tokens, generated from `ui_config.py` |
 | `/admin/login` | GET, POST | Admin login (required for roster changes) |
 | `/admin/logout` | POST | Clear admin session |
 | `/admin/members` | GET | Roster table, add + bulk-add forms |
@@ -242,17 +253,35 @@ messmate/
 | Credential | Can do | Cannot do |
 |---|---|---|
 | `?token=` in the URL | Open both read-only dashboards | Touch the roster |
-| Admin session (`/admin/login`) | Everything, including member management | — |
-| Member session | Submit one review per day | See any dashboard |
+| Viewer session (`dean@messmate.demo` at `/signin`) | The same read-only dashboards, without a secret in the URL | Anything that changes state |
+| Admin session (`/admin/login`) | Everything: overview, menu, members, both dashboards | — |
+| Member session | Submit one review per day, open the committee dashboard | The admin console or the student dashboard |
 
 The split is deliberate: a query-string token leaks into browser history,
 `Referer` headers, and hosting access logs. That is tolerable for a read-only
 page but not for one that can create accounts, so **every roster mutation
 requires a real admin session**.
 
+## Demo: pilot accounts
+
+Set `PILOT_MODE=true` and open `/signin`. The page lists one account per role
+— a student (no account), five committee members, a read-only dean and the
+admin. Picking a card fills the form; the sign-in is the real one, so a
+wrong `PILOT_ADMIN_PASSWORD` is refused like any wrong password. Run
+`python seed_demo.py --yes` first so the member accounts exist.
+
+```env
+PILOT_MODE=true
+PILOT_ADMIN_PASSWORD=<the admin password>     # must match ADMIN_PASSWORD_HASH
+PILOT_MEMBER_PASSWORD=MessMate@2026           # what seed_demo.py writes
+VIEWER_PASSWORD=<optional; defaults to DASHBOARD_TOKEN>
+```
+
+Pilot mode puts passwords on a page. **Leave it off in production.**
+
 ## Notes
 
-- **Rate limiting**: Uses in-memory storage. Resets on server restart (acceptable for prototype on Render's free tier).
+- **Rate limiting**: Keyed on the signed `mm_device` cookie (see `device.py`), so a hostel behind one NAT address is not one bucket. Clearing cookies resets a device; that is the honest limit of "per device" without a login. Counts live in memory and reset on server restart (acceptable for the prototype on Render's free tier).
 - **Anonymity**: No student name, email, or identity is ever collected or stored.
 - **Timestamp format**: `YYYY-MM-DD HH:MM:SS` everywhere. Never change this — date filtering depends on it.
 
@@ -276,11 +305,16 @@ use; it links through to the per-dish form for anyone with more to say.
 Two equally valid editors, both writing the same rows to the `menu` tab:
 
 1. **The spreadsheet** — type straight into the `menu` tab.
-2. **The admin UI** at `/admin/menu` — a week at a glance, one row per day,
-   each saved independently. Needs an admin session.
+2. **The admin UI** at `/admin/menu` — a calendar week at a glance (use
+   Prev / Next to page), one card per day. Save a day on its own, or **Save
+   all 7 days** at once. Empty fields show the built-in weekly template as a
+   placeholder; **Fill blanks from template** and **Copy last week** fill only
+   what is empty, and nothing reaches students until you save. Needs an admin
+   session.
 
 Items are comma-separated (`Idli, Sambar, Coconut Chutney`); newlines work too.
-A blank meal shows as "Menu not published yet" rather than an empty card.
+A blank meal shows students "Menu not published yet" rather than an empty card
+— the template is never shown to students as if it were the menu.
 
 Skips are counted but kept out of a meal's score, which is `good` as a share of
 those who actually ate — a student who never turned up is telling you about
@@ -315,7 +349,7 @@ says so explicitly.
 ### Running the checks
 
 ```bash
-python test/test_smoke.py          # 34 checks, 18 features, ~1 second
+python test/test_smoke.py          # 45 checks, 21 features, ~1 second
 python test/test_committee.py      # no credentials required
 python test/test_e2e_committee.py
 python test/test_e2e_student.py

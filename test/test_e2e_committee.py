@@ -598,6 +598,52 @@ def j9_outage():
 
 # ══════════════════════════════════════════════════════════════════════════════
 
+# ══════════════════════════════════════════════════════════════════════════════
+# J10 — A member sees the committee dashboard, and only what it should show
+# ══════════════════════════════════════════════════════════════════════════════
+
+def j10_member_dashboard():
+    journey("J10 — A member opens the committee dashboard")
+    BOOK.reset()
+    BOOK.seed_member("asha@sai.edu", "Asha Rao", "asha-password")
+    BOOK.seed_member("bala@sai.edu", "Bala Iyer", "bala-password")
+    today = datetime.now().strftime("%Y-%m-%d")
+    BOOK.seed_review("asha@sai.edu", "Asha Rao", today, [4, 2, 3, 5, 4], "Oil is high again")
+    BOOK.seed_student_response(today, 2, "", "A student suggestion", items=[2, "", 3, "", "", "", "", "", "", ""])
+
+    step("the dashboard is closed to visitors",
+         app.test_client().get("/committee/dashboard").status_code == 302)
+
+    client = app.test_client()
+    page = client.get("/committee/login").get_data(as_text=True)
+    token = re.search(r'name="csrf_token" value="([^"]+)"', page).group(1)
+    client.post("/committee/login", data={"email": "bala@sai.edu",
+                                          "password": "bala-password", "csrf_token": token})
+    response = client.get("/committee/dashboard")
+    html = response.get_data(as_text=True)
+
+    step("a signed-in member can open it", response.status_code == 200 and 'id="member-dashboard"' in html)
+    step("it shows the committee's numbers, not just their own",
+         "Oil is high again" in html and "Asha Rao" in html)
+    step("it shows who has reviewed today, marking the member",
+         "(you)" in html and "Reviewed" in html)
+    step("a member with no review yet is told so, not shown someone else's",
+         "not filed a review yet" in html and "My Last Review" in html)
+    step("student feedback is context in its own card, never a committee score",
+         "What students said today" in html and "never mixed" in html
+         and "A student suggestion" not in html)
+
+    # Then they file one and the record updates
+    page = client.get("/committee").get_data(as_text=True)
+    token = re.search(r'name="csrf_token" value="([^"]+)"', page).group(1)
+    client.post("/committee/submit", data={"taste": "3", "quality": "3", "variety": "4",
+                                           "hygiene": "4", "menu": "3", "review": "Bala was here",
+                                           "csrf_token": token})
+    html = client.get("/committee/dashboard").get_data(as_text=True)
+    step("after filing, the dashboard shows the member's own review",
+         "Bala was here" in html and "filed today" in html)
+
+
 def report():
     print(f"\n{'=' * 70}\nEND-TO-END SUMMARY\n{'=' * 70}")
 
@@ -636,4 +682,5 @@ if __name__ == "__main__":
     j7_coexistence()
     j8_multi_day_trend()
     j9_outage()
+    j10_member_dashboard()
     sys.exit(report())

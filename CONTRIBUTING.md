@@ -31,8 +31,16 @@ neither is the source of truth over the other. Both write the same rows to the
 `menu` tab:
 
 1. **The spreadsheet.** Mess staff can type straight into the `menu` tab.
-2. **The admin UI** at `/admin/menu`. A week at a glance, one row per day,
-   each saved independently. Requires an admin session.
+2. **The admin UI** at `/admin/menu`. A calendar week (Monday–Sunday) at a
+   glance, paged with `?start=YYYY-MM-DD`. Each day is its own form and saves
+   on its own (`/admin/menu/save`); with JavaScript, **Save all 7 days** posts
+   every field as `<Meal>__<date>` to `/admin/menu/save-week`, which
+   `save_menu_week()` writes in two API calls. Requires an admin session.
+
+`sheets.WEEKLY_MENU_DEFAULTS` is a template for the **editor only** — it is
+the placeholder in each empty field and what "Fill blanks from template"
+copies in. It is never shown to students: a fabricated menu that happens to be
+wrong is a worse message than an honest "not published yet".
 
 Items are comma-separated (`Idli, Sambar, Coconut Chutney`). Newlines work
 too — `_split_items()` accepts either, and drops blanks, so a trailing comma
@@ -42,11 +50,32 @@ A day with no row, or a meal left blank, renders as **"Menu not published
 yet"** rather than an empty card. An empty card reads as "the mess is closed",
 which is a different and much worse message.
 
-Writes go through `save_menu_for_date()`, which upserts: it updates the row if
-that date exists and appends if not. That is why **`Date` must stay in column
-A** of the `menu` tab — the row lookup scans that column.
+Writes go through `save_menu_week()` (and `save_menu_for_date()`, a one-day
+wrapper), which upserts: existing dates are updated in place, new ones are
+appended in a single `append_rows` call. That is why **`Date` must stay in
+column A** of the `menu` tab — the row lookup scans that column.
+
+## The admin overview
+
+`/admin` is the landing page after sign-in. It reuses `_student_analytics()`,
+`_meal_tap_summary()` and `_committee_analytics()` from `app.py` — the same
+functions the two dashboards render from — so it can never disagree with
+them. Each block is wrapped separately: one unreadable tab blanks one card,
+not the page. The three layers stay in their own cards and are never summed.
 
 ---
+
+## Styling
+
+Every page uses the one design system documented in
+[docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md). **`ui_config.py` is the single
+global config**: the design tokens (served as `/ui/tokens.css` and loaded by
+every page before `static/style.css`; `static/charts.js` reads them for the
+charts) and the score / tap bands that colour every number (templates via the
+`ui` Jinja global, scripts via `window.MESSMATE_UI`). `static/style.css`
+holds no raw colour or threshold. The student home keeps its own header and
+card treatment by request — see the home module in the stylesheet. The
+ids/classes listed in each template's header comment are test API.
 
 ## Google Sheet schema
 
@@ -88,10 +117,21 @@ the `try` — an exception escaping the data layer turns a Sheets outage into a
 session marker. Committee reviews are the one attributed surface, and the
 login page says so explicitly.
 
-**Rate limits are per IP and in-memory.** `/submit` allows one a day;
-`/home/rate` allows three, one per meal. Committee submissions are exempt —
-campus Wi-Fi puts everyone behind one NAT address, so a per-IP cap there would
-lock out the whole committee after the first person.
+**Rate limits are per device and in-memory.** The student routes key on
+`device.device_id()`, a random id in a signed cookie, because campus Wi-Fi puts
+everyone behind one NAT address and a per-IP cap is a per-building cap.
+`/submit` allows one review per device every 4 hours; `/home/rate` allows
+three stored taps a day, never two for the same meal, and only counts taps
+that were stored (`deduct_when`). Login routes keep the IP key. Committee
+submissions are exempt.
+
+**A quick tap is for today, for a meal that has been served.** `/home/rate`
+refuses any other date and any meal whose window (`sheets.MEAL_OPENS`) has not
+opened; the page disables those buttons and `home.js` re-checks every minute.
+`app.config["ENFORCE_MEAL_WINDOWS"] = False` turns the window rule off — every
+test harness does, so the suites pass at 6 am. A tap can be undone for
+`device.UNDO_WINDOW` (10 minutes) via `POST /home/undo`, which deletes the
+remembered row; after that the row is the committee's.
 
 **Privilege split.** `?token=` opens the read-only dashboards only. Every route
 that changes state — the roster, the menu — requires an admin session, because
@@ -105,11 +145,11 @@ access logs.
 ### No credentials needed
 
 ```bash
-python test/test_smoke.py           # 34 checks, 18 features, ~1 second
+python test/test_smoke.py           # 45 checks, 21 features, ~1 second
 python test/test_committee.py       # 59 checklist checks
-python test/test_e2e_committee.py   # 64 steps, 9 committee journeys
+python test/test_e2e_committee.py   # 71 steps, 10 committee journeys
 python test/test_e2e_student.py     # 53 steps, 9 student journeys
-python test/test_e2e_home.py        # 51 steps, 7 home/menu journeys
+python test/test_e2e_home.py        # 55 steps, 7 home/menu journeys
 ```
 
 These replace only `sheets.get_sheet()`. Everything else — the caches, row

@@ -74,6 +74,8 @@ class LocalTransport:
         os.environ["FLASK_SECRET_KEY"] = "smoke-test-secret-key"
         os.environ["SPREADSHEET_ID"] = "fake-spreadsheet-id"
         os.environ["DASHBOARD_TOKEN"] = "vc2026"
+        os.environ["PILOT_MODE"] = "true"
+        os.environ["PILOT_ADMIN_PASSWORD"] = "smoke-admin-password"
 
         import auth
         self.admin_password = "smoke-admin-password"
@@ -230,6 +232,8 @@ def smoke(t):
     check("states that reviews are attributed", "not anonymous" in body)
 
     feature("committee auth")
+    status, _ = t.get(client, "/committee/dashboard")
+    check("the member dashboard is closed to visitors", status == 302, f"status={status}")
     status, _ = t.get(client, "/committee")
     check("rating page is closed to anonymous visitors", status == 302,
           f"status={status}")
@@ -249,6 +253,12 @@ def smoke(t):
                                      "hygiene", "menu")),
               f"status={status}")
 
+        feature("member dashboard")
+        status, body = t.get(member, "/committee/dashboard")
+        check("opens for a signed-in member with their record and the charts",
+              status == 200 and 'id="member-dashboard"' in body and 'id="my-record"' in body
+              and 'id="committeeTrendChart"' in body, f"status={status}")
+
         feature("committee submit")
         token = CSRF_RE.search(body).group(1)
         status, _ = t.post(member, "/committee/submit",
@@ -258,13 +268,51 @@ def smoke(t):
         check("a complete review is accepted", status == 302, f"status={status}")
     else:
         skipped("member sign-in", "write check, live mode is read-only")
+        skipped("member dashboard", "write check, live mode is read-only")
         skipped("review submission", "write check, live mode is read-only")
+
+    # ── Front door ────────────────────────────────────────────────────────
+    feature("sign in")
+    status, body = t.get(client, "/signin")
+    check("the front door renders", status == 200 and 'id="signin-form"' in body, f"status={status}")
+    if t.writes_allowed:
+        check("pilot accounts are listed in pilot mode",
+              'id="pilot-accounts"' in body and 'data-pilot="admin@messmate.demo"' in body)
+        door = t.session()
+        _, page = t.get(door, "/signin")
+        token = CSRF_RE.search(page).group(1)
+        status, _ = t.post(door, "/signin", {"email": "admin@messmate.demo",
+                                            "password": "wrong", "csrf_token": token})
+        check("a wrong password is refused", status == 401, f"status={status}")
+        status, _ = t.post(door, "/signin", {"email": "admin@messmate.demo",
+                                            "password": t.admin_password, "csrf_token": token,
+                                            "next": "/admin/menu"})
+        status2, body2 = t.get(door, "/admin/menu")
+        check("the admin email signs in as admin and honours ?next=",
+              status == 302 and status2 == 200 and 'id="menu-editor"' in body2,
+              f"post={status} next={status2}")
+        dean = t.session()
+        _, page = t.get(dean, "/signin")
+        token = CSRF_RE.search(page).group(1)
+        t.post(dean, "/signin", {"email": "dean@messmate.demo", "password": t.token, "csrf_token": token})
+        status, body = t.get(dean, "/dashboard")
+        status3, _ = t.get(dean, "/admin/members")
+        check("the dean signs in read-only: dashboards open, the roster does not",
+              status == 200 and 'class="stat-cards' in body and status3 == 302,
+              f"dashboard={status} roster={status3}")
+    else:
+        skipped("pilot sign-in", "write check, live mode is read-only")
 
     # ── Admin ─────────────────────────────────────────────────────────────
     feature("admin login")
     status, body = t.get(client, "/admin/login")
     check("admin login page renders",
           status == 200 and 'id="password"' in body, f"status={status}")
+
+    feature("admin overview")
+    status, _ = t.get(client, "/admin")
+    check("overview is closed without an admin session", status == 302,
+          f"status={status}")
 
     feature("admin roster")
     status, _ = t.get(client, "/admin/members")
@@ -276,6 +324,15 @@ def smoke(t):
         token = CSRF_RE.search(page).group(1)
         t.post(admin, "/admin/login",
                {"password": t.admin_password, "csrf_token": token})
+
+        feature("admin overview")
+        status, body = t.get(admin, "/admin")
+        check("overview opens with an admin session and shows its blocks",
+              status == 200 and 'id="overview"' in body and 'id="attention"' in body
+              and 'id="menu-week-status"' in body and 'data-stat="committee-today"' in body,
+              f"status={status}")
+
+        feature("admin roster")
         status, body = t.get(admin, "/admin/members")
         check("roster opens with an admin session",
               status == 200 and 'id="members-table"' in body, f"status={status}")
@@ -286,6 +343,20 @@ def smoke(t):
         status, body = t.get(admin, "/admin/menu")
         check("editor opens with an admin session",
               status == 200 and 'id="menu-editor"' in body, f"status={status}")
+        status, paged = t.get(admin, "/admin/menu?start=2027-03-10")
+        check("the editor pages by calendar week",
+              status == 200 and paged.count('data-menu-day="2027-03-') == 7
+              and 'data-menu-day="2027-03-08"' in paged, f"status={status}")
+        token = CSRF_RE.search(body).group(1)
+        start = re.search(r'name="start" value="([^"]+)"', body).group(1)
+        status, body = t.post(admin, "/admin/menu/save-week",
+                              {"csrf_token": token, "start": start,
+                               f"Breakfast__{start}": "Smoke Idli",
+                               f"Lunch__{start}": "Smoke Rice",
+                               f"Dinner__{start}": "Smoke Roti"})
+        check("saving the week writes and confirms",
+              status == 200 and 'class="alert success"' in body and "Smoke Idli" in body,
+              f"status={status}")
 
         feature("member management")
         token = CSRF_RE.search(body).group(1)
@@ -295,6 +366,7 @@ def smoke(t):
         check("adding a member reveals a one-time password",
               status == 200 and "credential-banner" in body, f"status={status}")
     else:
+        skipped("overview opens for admin", "write check, live mode is read-only")
         skipped("roster opens for admin", "write check, live mode is read-only")
         skipped("member management", "write check, live mode is read-only")
 

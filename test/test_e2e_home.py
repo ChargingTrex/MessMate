@@ -40,6 +40,9 @@ app = app_module.app
 app.config["TESTING"] = True
 LIMITER = app_module.limiter
 LIMITER.enabled = False
+# Serving windows are wall-clock rules; the journeys must pass at 6 am too.
+# H8 switches it on deliberately to test it.
+app.config["ENFORCE_MEAL_WINDOWS"] = False
 
 BOOK = fake_sheets.install()
 TODAY = datetime.now().strftime("%Y-%m-%d")
@@ -88,6 +91,16 @@ class Admin:
         return self.client.post("/admin/login",
                                 data={"password": ADMIN_PASSWORD,
                                       "csrf_token": token})
+
+    def save_week(self, start, days):
+        """days: {date: (breakfast, lunch, dinner)} — the Save-all-7-days request."""
+        token = self._csrf("/admin/menu")
+        data = {"csrf_token": token, "start": start}
+        for date, (b, l, d) in days.items():
+            data[f"Breakfast__{date}"] = b
+            data[f"Lunch__{date}"] = l
+            data[f"Dinner__{date}"] = d
+        return self.client.post("/admin/menu/save-week", data=data)
 
     def save_menu(self, date, breakfast="", lunch="", dinner=""):
         token = self._csrf("/admin/menu")
@@ -198,7 +211,7 @@ def h2_tallies():
 # ══════════════════════════════════════════════════════════════════════════════
 
 def h3_validation():
-    journey("H3 — Bad input is refused, and one IP gets three taps a day")
+    journey("H3 — Bad input is refused, and one device gets three taps a day")
     BOOK.reset()
     BOOK.seed_menu(TODAY, lunch="Rice")
 
@@ -222,7 +235,8 @@ def h3_validation():
          BOOK.meal_ratings().rows[-1][2] == "Lunch",
          f"stored={BOOK.meal_ratings().rows[-1][2]!r}")
 
-    # Three meals a day, so three taps a day
+    # Three meals a day, so three taps a day per device (one browser =
+    # one cookie; the fourth, on an already-rated meal, is refused)
     BOOK.reset()
     BOOK.seed_menu(TODAY, lunch="Rice")
     LIMITER.enabled = True
@@ -293,8 +307,14 @@ def h4_admin_editor():
     step("a different day appends a new row",
          len(BOOK.menu().rows) == 2, f"rows={len(BOOK.menu().rows)}")
 
+    # The page embeds the whole week's published menus for its day switcher,
+    # so the check is on what is rendered for today, not the page source
+    rendered_lunch = re.search(r'<ul class="menu-items" id="menu-lunch">.*?</ul>',
+                               home().get_data(as_text=True), re.S)
     step("tomorrow's menu does not leak onto today's page",
-         "Biryani" not in home().get_data(as_text=True))
+         rendered_lunch is not None and "Biryani" not in rendered_lunch.group(0)
+         and "Curd Rice" in rendered_lunch.group(0),
+         rendered_lunch.group(0) if rendered_lunch else "lunch list not found")
 
     step("a malformed date is refused",
          admin.save_menu("not-a-date", lunch="x").status_code == 400)
@@ -302,6 +322,31 @@ def h4_admin_editor():
     step("the editor requires a CSRF token",
          admin.client.post("/admin/menu/save",
                            data={"date": TODAY, "Lunch": "x"}).status_code == 403)
+
+    # ── Save all 7 days at once ───────────────────────────────────────────
+    BOOK.reset()
+    start = sheets.week_start(TODAY)
+    week_dates = [(datetime.strptime(start, "%Y-%m-%d") + timedelta(days=i)).strftime("%Y-%m-%d")
+                  for i in range(7)]
+    response = admin.save_week(start, {d: (f"B{i}", f"L{i}", f"D{i}")
+                                       for i, d in enumerate(week_dates)})
+    step("saving the whole week writes one row per day",
+         response.status_code == 200 and len(BOOK.menu().rows) == 7,
+         f"status={response.status_code} rows={len(BOOK.menu().rows)}")
+
+    idx = week_dates.index(TODAY)
+    step("today's row from the week save reaches students",
+         f"L{idx}" in home().get_data(as_text=True))
+
+    response = admin.save_week(start, {TODAY: ("Only today", "", "")})
+    step("a week save carrying one day touches only that day",
+         len(BOOK.menu().rows) == 7 and
+         BOOK.menu().rows[idx][1] == "Only today" and
+         sum(1 for r in BOOK.menu().rows if r[2].startswith("L")) == 6,
+         f"rows={[r[1] for r in BOOK.menu().rows]}")
+
+    step("a malformed week start is refused",
+         admin.save_week("next-week", {TODAY: ("x", "", "")}).status_code == 400)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -362,8 +407,16 @@ def h6_layers_stay_separate():
     student_dash = app.test_client().get("/dashboard?token=vc2026").get_data(as_text=True)
     step("the per-dish dashboard shows its own suggestion",
          "Per-dish suggestion" in student_dash)
-    step("quick reactions do not appear on the per-dish dashboard",
-         "Quick reaction suggestion" not in student_dash)
+
+    # The student dashboard shows quick taps too, but in their own labelled
+    # section. The dish-form suggestion list must not absorb them.
+    dish_list = re.search(r"Student Suggestions.*?</div>\s*</div>", student_dash, re.S)
+    step("quick reactions stay out of the per-dish suggestion list",
+         dish_list is not None
+         and "Per-dish suggestion" in dish_list.group(0)
+         and "Quick reaction suggestion" not in dish_list.group(0)
+         and "Quick reaction suggestion" in student_dash,
+         "the two suggestion lists have merged")
 
     committee_dash = app.test_client().get(
         "/dashboard/committee?token=vc2026").get_data(as_text=True)
@@ -406,6 +459,133 @@ def h7_outage():
          "Rice" in home().get_data(as_text=True))
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# H8 — Rating integrity: one tap per meal, today only, once it is served; Undo
+# ══════════════════════════════════════════════════════════════════════════════
+
+def h8_integrity_and_undo():
+    journey("H8 — A tap counts once, for today, after the meal is served, and can be undone")
+    BOOK.reset()
+    BOOK.seed_menu(TODAY, lunch="Rice, Sambar")
+
+    client = app.test_client()
+    first = rate("Lunch", "good", client=client)
+    step("the confirmation names the reaction as well as the meal",
+         "rated=lunch" in first.headers.get("Location", "") and
+         "as=good" in first.headers.get("Location", ""),
+         first.headers.get("Location", ""))
+
+    page = client.get("/home").get_data(as_text=True)
+    step("the lunch card now shows what this device said",
+         'data-rated="good"' in page and "You said" in page)
+    step("the other two meals still offer their buttons",
+         page.count('data-rating="good"') == 2,
+         f"good buttons={page.count('data-rating=\"good\"')}")
+    step("the banner is announced to assistive tech",
+         'id="rated-banner" role="status"' in
+         client.get("/home?rated=lunch&as=good").get_data(as_text=True))
+
+    second = rate("Lunch", "bad", client=client)
+    step("a second tap on the same meal from the same device is refused",
+         "rated=already" in second.headers.get("Location", "") and
+         len(BOOK.meal_ratings().rows) == 1,
+         f"location={second.headers.get('Location', '')} rows={len(BOOK.meal_ratings().rows)}")
+
+    step("a different device can still rate lunch",
+         rate("Lunch", "bad").status_code == 302 and
+         len(BOOK.meal_ratings().rows) == 2)
+
+    # Undo removes exactly this device's row and brings the buttons back
+    undo = client.post("/home/undo", data={"meal": "Lunch"})
+    step("undo is acknowledged",
+         "rated=undone" in undo.headers.get("Location", ""),
+         undo.headers.get("Location", ""))
+    step("undo deletes this device's row and no other",
+         len(BOOK.meal_ratings().rows) == 1 and
+         BOOK.meal_ratings().rows[0][3] == "bad",
+         f"rows={BOOK.meal_ratings().rows}")
+    page = client.get("/home").get_data(as_text=True)
+    step("after undo the lunch buttons are offered again",
+         page.count('data-rating="good"') == 3)
+    step("a second undo with nothing to undo is harmless",
+         client.post("/home/undo", data={"meal": "Lunch"}).status_code == 302 and
+         len(BOOK.meal_ratings().rows) == 1)
+
+    # Only today can be rated: the day switcher shows the week, not a form
+    tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+    other = rate("Lunch", "good", client=app.test_client())
+    posted = app.test_client().post("/home/rate", data={
+        "meal": "Dinner", "rating": "good", "date": tomorrow})
+    step("a tap carrying another date is refused",
+         "rated=notyet" in posted.headers.get("Location", "") and
+         len(BOOK.meal_ratings().rows) == 2,
+         posted.headers.get("Location", ""))
+    other_day = home(f"?date={tomorrow}").get_data(as_text=True)
+    step("another day's page offers no reaction form",
+         'class="rate-slot is-other-day"' in other_day and
+         "Ratings open on the day itself" in other_day)
+
+    # Serving windows, switched on for this block only
+    app.config["ENFORCE_MEAL_WINDOWS"] = True
+    try:
+        from datetime import datetime as real_datetime
+        early = real_datetime.now().replace(hour=6, minute=0)
+        late = real_datetime.now().replace(hour=22, minute=0)
+        step("before 7:30 nothing is open; by 10 pm every meal is",
+             not any(sheets.meal_is_open(m, early) for m in sheets.MEALS) and
+             all(sheets.meal_is_open(m, late) for m in sheets.MEALS))
+        step("lunch opens at noon exactly",
+             sheets.meal_is_open("Lunch", real_datetime.now().replace(hour=12, minute=0)) and
+             not sheets.meal_is_open("Lunch", real_datetime.now().replace(hour=11, minute=59)))
+
+        state = app_module._meal_open_state(early)
+        step("the page is told which meals are closed and when they open",
+             not state["Breakfast"]["open"] and state["Breakfast"]["opens"] == "7:30 am")
+
+        # Whether a live tap is refused depends on the clock; assert the
+        # consistent pair: refused ⇔ the page renders that meal's buttons disabled
+        now_state = app_module._meal_open_state()
+        probe = app.test_client()
+        html = probe.get("/home").get_data(as_text=True)
+        result = probe.post("/home/rate", data={"meal": "Dinner", "rating": "skip"})
+        if now_state["Dinner"]["open"]:
+            step("dinner is open now: the tap is stored and its buttons are live",
+                 "as=skip" in result.headers.get("Location", "") and
+                 'data-rating="skip"\n                                disabled' not in html)
+        else:
+            step("dinner is not open yet: the tap is refused and its buttons are disabled",
+                 "rated=notopen" in result.headers.get("Location", "") and
+                 "Dinner opens at 7:30 pm" in html)
+    finally:
+        app.config["ENFORCE_MEAL_WINDOWS"] = False
+
+    # The daily cap only counts stored taps: refusals are free
+    BOOK.reset()
+    LIMITER.enabled = True
+    try:
+        client = app.test_client()
+        rate("Lunch", "good", client=client)
+        for _ in range(3):
+            rate("Lunch", "good", client=client)       # refused: already rated
+        codes = [rate("Breakfast", "good", client=client).status_code,
+                 rate("Dinner", "good", client=client).status_code]
+        step("refused taps do not spend the day's three",
+             codes == [302, 302] and len(BOOK.meal_ratings().rows) == 3,
+             f"codes={codes} rows={len(BOOK.meal_ratings().rows)}")
+        capped = rate("Lunch", "bad", app.test_client())
+        step("a fresh device is not capped by another device's taps",
+             capped.status_code == 302 and len(BOOK.meal_ratings().rows) == 4)
+        client.post("/home/undo", data={"meal": "Lunch"})
+        over = rate("Lunch", "bad", client=client)
+        step("over the cap, the home page itself answers with the limit banner",
+             over.status_code == 429 and
+             "used today's three quick ratings" in over.get_data(as_text=True) and
+             'data-meal="Lunch"' in over.get_data(as_text=True),
+             f"status={over.status_code}")
+    finally:
+        LIMITER.enabled = False
+
+
 def report():
     print(f"\n{'=' * 70}\nSTUDENT HOME END-TO-END SUMMARY\n{'=' * 70}")
     journeys = {}
@@ -437,4 +617,5 @@ if __name__ == "__main__":
     h5_unpublished_and_sheet()
     h6_layers_stay_separate()
     h7_outage()
+    h8_integrity_and_undo()
     sys.exit(report())
