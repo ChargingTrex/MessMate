@@ -1,0 +1,2270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MessMate User Guide · Official Documentation</title>
+  <meta name="description" content="Complete user guide for MessMate: student meal reviews, food committee quality audits, menu publishing, and administrative dashboards.">
+  <meta name="theme-color" content="#0f1724">
+
+  <!-- OpenGraph / Social Meta -->
+  <meta property="og:title" content="MessMate User Guide">
+  <meta property="og:description" content="Everything you need to know about using MessMate as a student, committee member, or administrator.">
+  <meta property="og:type" content="article">
+  <meta property="og:image" content="favicon.svg">
+
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      /* Design Tokens matching MessMate design system */
+      --bg-900: #0f1724;
+      --bg-850: #0f2027;
+      --bg-800: #1a2438;
+      --app-gradient: linear-gradient(160deg, var(--bg-900) 0%, var(--bg-800) 50%, var(--bg-850) 100%);
+      --surface: rgba(255, 255, 255, 0.04);
+      --surface-hover: rgba(255, 255, 255, 0.07);
+      --surface-active: rgba(255, 255, 255, 0.09);
+      --surface-sunken: rgba(15, 23, 36, 0.65);
+      --border: rgba(255, 255, 255, 0.09);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --border-hover: rgba(255, 255, 255, 0.28);
+      --chrome-bg: rgba(15, 23, 36, 0.88);
+      
+      --text-strong: #f8fafc;
+      --text: #e2e8f0;
+      --text-2: #cbd5e1;
+      --text-3: #94a3b8;
+      --text-muted: #64748b;
+      --text-faint: #475569;
+
+      --brand-from: #60a5fa;
+      --brand-to: #a78bfa;
+      --brand-gradient: linear-gradient(90deg, var(--brand-from), var(--brand-to));
+      --accent: #3b82f6;
+      --accent-strong: #2563eb;
+      --accent-2: #6366f1;
+      --accent-ink: #93c5fd;
+      --accent-bg: rgba(59, 130, 246, 0.12);
+      --accent-bg-hover: rgba(59, 130, 246, 0.20);
+      --accent-border: rgba(59, 130, 246, 0.30);
+      --accent-gradient: linear-gradient(135deg, var(--accent), var(--accent-2));
+
+      --ok: #22c55e;
+      --ok-text: #86efac;
+      --ok-bg: rgba(34, 197, 94, 0.14);
+      --ok-border: rgba(34, 197, 94, 0.32);
+      --ok-glow: rgba(34, 197, 94, 0.55);
+
+      --warn: #fbbf24;
+      --warn-text: #fde047;
+      --warn-bg: rgba(251, 146, 60, 0.15);
+      --warn-border: rgba(251, 191, 36, 0.35);
+
+      --danger: #f87171;
+      --danger-text: #fca5a5;
+      --danger-bg: rgba(239, 68, 68, 0.14);
+      --danger-border: rgba(239, 68, 68, 0.32);
+
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+      --r-sm: 8px;
+      --r-md: 12px;
+      --r-lg: 16px;
+      --r-xl: 20px;
+      --r-pill: 9999px;
+
+      --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+      --shadow-raised: 0 10px 30px -4px rgba(0, 0, 0, 0.6);
+      --focus-ring: 0 0 0 2px var(--bg-900), 0 0 0 4px var(--accent);
+      --dur: 180ms;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Base Reset */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      color-scheme: dark;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-900);
+      background-image: var(--app-gradient);
+      background-attachment: fixed;
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 1rem;
+      background: var(--accent-strong);
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: var(--r-sm);
+      z-index: 1000;
+      text-decoration: none;
+      font-weight: 600;
+      transition: top var(--dur) var(--ease);
+    }
+    .skip-link:focus {
+      top: 1rem;
+      outline: none;
+      box-shadow: var(--focus-ring);
+    }
+
+    /* Top Navigation Bar */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: var(--chrome-bg);
+      border-bottom: 1px solid var(--border);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      padding: 0 1.5rem;
+      gap: 1rem;
+    }
+
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text-strong);
+      font-weight: 800;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .topbar-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+    }
+
+    .brand-pill {
+      background: var(--brand-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+    }
+
+    .guide-tag {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: var(--r-pill);
+      background: var(--surface-active);
+      color: var(--text-2);
+      border: 1px solid var(--border);
+      font-weight: 500;
+    }
+
+    /* Search Box */
+    .search-wrapper {
+      position: relative;
+      flex: 1;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 38px;
+      background: var(--surface-sunken);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 0 2.5rem 0 2.25rem;
+      color: var(--text-strong);
+      font-family: inherit;
+      font-size: 0.88rem;
+      transition: all var(--dur) var(--ease);
+    }
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+      background: rgba(15, 23, 36, 0.95);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-3);
+      pointer-events: none;
+      width: 16px;
+      height: 16px;
+    }
+
+    .search-kbd {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      color: var(--text-3);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-2);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all var(--dur) var(--ease);
+    }
+    .action-btn:hover {
+      background: var(--surface-hover);
+      color: var(--text-strong);
+      border-color: var(--border-hover);
+    }
+
+    .action-btn.primary {
+      background: var(--accent-gradient);
+      color: #fff;
+      border-color: transparent;
+    }
+    .action-btn.primary:hover {
+      opacity: 0.92;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .menu-toggle-btn {
+      display: none;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.4rem;
+      border-radius: var(--r-sm);
+      cursor: pointer;
+    }
+
+    /* Subheader Role Filter Bar */
+    .role-bar {
+      background: rgba(15, 23, 36, 0.65);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: auto;
+      gap: 1rem;
+    }
+
+    .role-filters {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .role-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-3);
+      font-weight: 700;
+      margin-right: 0.25rem;
+    }
+
+    .role-pill {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-2);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.3rem 0.75rem;
+      border-radius: var(--r-pill);
+      cursor: pointer;
+      transition: all var(--dur) var(--ease);
+      white-space: nowrap;
+    }
+    .role-pill:hover {
+      background: var(--surface-hover);
+      color: var(--text-strong);
+    }
+    .role-pill.active {
+      background: var(--accent-gradient);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
+    }
+
+    .live-clock-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      color: var(--text-3);
+      background: var(--surface-sunken);
+      padding: 0.25rem 0.75rem;
+      border-radius: var(--r-pill);
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 8px var(--ok-glow);
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Main Layout */
+    .docs-layout {
+      display: flex;
+      max-width: 1440px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+      padding: 1.5rem;
+      gap: 2rem;
+    }
+
+    /* Left Sidebar Navigation */
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 130px;
+      height: calc(100dvh - 150px);
+      overflow-y: auto;
+      padding-right: 0.75rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .sidebar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .sidebar::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .nav-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .nav-group-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      padding: 0 0.5rem;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .nav-item a {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.45rem 0.65rem;
+      border-radius: var(--r-sm);
+      color: var(--text-2);
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 500;
+      transition: all var(--dur) var(--ease);
+    }
+    .nav-item a:hover {
+      background: var(--surface-hover);
+      color: var(--text-strong);
+    }
+    .nav-item a.active {
+      background: var(--accent-bg);
+      color: var(--accent-ink);
+      border-left: 3px solid var(--accent);
+      font-weight: 600;
+    }
+
+    /* Main Content Area */
+    .main-content {
+      flex: 1;
+      min-width: 0;
+      max-width: 860px;
+    }
+
+    /* Right Sidebar (On This Page) */
+    .toc-rail {
+      width: 220px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 130px;
+      height: calc(100dvh - 150px);
+      overflow-y: auto;
+      font-size: 0.82rem;
+      padding-left: 1rem;
+      border-left: 1px solid var(--border);
+      scrollbar-width: none;
+    }
+    .toc-rail::-webkit-scrollbar {
+      display: none;
+    }
+
+    .toc-title {
+      font-weight: 700;
+      color: var(--text-3);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.75rem;
+    }
+
+    .toc-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .toc-item a {
+      color: var(--text-muted);
+      text-decoration: none;
+      line-height: 1.4;
+      display: block;
+      transition: color var(--dur) var(--ease);
+    }
+    .toc-item a:hover {
+      color: var(--text-strong);
+    }
+    .toc-item a.active {
+      color: var(--accent-ink);
+      font-weight: 600;
+    }
+
+    /* Documentation Content Styling */
+    .hero-banner {
+      background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent 70%),
+                  radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.12), transparent 70%),
+                  var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--r-xl);
+      padding: 2.25rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.65rem;
+      border-radius: var(--r-pill);
+      background: var(--accent-bg);
+      color: var(--accent-ink);
+      border: 1px solid var(--accent-border);
+      margin-bottom: 1rem;
+    }
+
+    .hero-title {
+      font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text-strong);
+      line-height: 1.2;
+      margin-bottom: 0.75rem;
+    }
+
+    .hero-lead {
+      font-size: 1.05rem;
+      color: var(--text-2);
+      max-width: 680px;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+    }
+
+    .stat-pill-box {
+      background: var(--surface-sunken);
+      padding: 0.75rem 1rem;
+      border-radius: var(--r-md);
+      border: 1px solid var(--border);
+    }
+
+    .stat-pill-box h4 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.2rem;
+    }
+
+    .stat-pill-box p {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text-strong);
+    }
+
+    /* Section Styling */
+    .guide-section {
+      margin-bottom: 3.5rem;
+      scroll-margin-top: 140px;
+    }
+
+    .section-header {
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+    }
+
+    .section-title {
+      font-size: 1.65rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-strong);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .section-anchor {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 1.1rem;
+      opacity: 0;
+      transition: opacity var(--dur) var(--ease);
+    }
+    .section-title:hover .section-anchor {
+      opacity: 1;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text-strong);
+      margin: 1.75rem 0 0.75rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      scroll-margin-top: 140px;
+    }
+
+    p {
+      margin-bottom: 1rem;
+      color: var(--text);
+      font-size: 0.98rem;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow-card);
+      transition: border-color var(--dur) var(--ease);
+    }
+    .card:hover {
+      border-color: var(--border-hover);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-strong);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Callouts & Alerts */
+    .callout {
+      border-radius: var(--r-md);
+      padding: 1rem 1.25rem;
+      margin: 1.25rem 0;
+      border-left: 4px solid var(--accent);
+      background: var(--accent-bg);
+      font-size: 0.92rem;
+    }
+    .callout.info {
+      border-left-color: var(--accent);
+      background: var(--accent-bg);
+      color: var(--text);
+    }
+    .callout.warn {
+      border-left-color: var(--warn);
+      background: var(--warn-bg);
+      color: var(--text);
+    }
+    .callout.success {
+      border-left-color: var(--ok);
+      background: var(--ok-bg);
+      color: var(--text);
+    }
+    .callout.danger {
+      border-left-color: var(--danger);
+      background: var(--danger-bg);
+      color: var(--text);
+    }
+    .callout strong {
+      color: var(--text-strong);
+    }
+
+    /* Tables */
+    .table-responsive {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      margin: 1.25rem 0;
+      background: var(--surface-sunken);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-2);
+      font-weight: 700;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Badges & Pills */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.2rem 0.6rem;
+      border-radius: var(--r-pill);
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-ok {
+      background: var(--ok-bg);
+      color: var(--ok-text);
+      border: 1px solid var(--ok-border);
+    }
+    .badge-warn {
+      background: var(--warn-bg);
+      color: var(--warn-text);
+      border: 1px solid var(--warn-border);
+    }
+    .badge-danger {
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border: 1px solid var(--danger-border);
+    }
+    .badge-neutral {
+      background: var(--surface-active);
+      color: var(--text-3);
+      border: 1px solid var(--border);
+    }
+
+    /* Code & Pre */
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      color: #93c5fd;
+    }
+
+    .code-block {
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      margin: 1.25rem 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .code-header {
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .code-copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-2);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all var(--dur) var(--ease);
+    }
+    .code-copy-btn:hover {
+      background: var(--surface-hover);
+      color: var(--text-strong);
+    }
+
+    pre {
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.86rem;
+      line-height: 1.5;
+      color: var(--text-2);
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+    }
+
+    /* Interactive Tap Sandbox */
+    .sandbox-box {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 36, 0.9));
+      border: 2px dashed rgba(59, 130, 246, 0.4);
+      border-radius: var(--r-lg);
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      text-align: center;
+    }
+
+    .sandbox-tag {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--brand-from);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .sandbox-card {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--r-md);
+      padding: 1.25rem;
+      max-width: 440px;
+      margin: 1rem auto;
+      text-align: left;
+    }
+
+    .sandbox-meal-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-strong);
+      margin-bottom: 0.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sandbox-meal-items {
+      font-size: 0.85rem;
+      color: var(--text-2);
+      margin-bottom: 1rem;
+    }
+
+    .sandbox-tap-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .tap-btn-demo {
+      padding: 0.6rem 0.5rem;
+      border-radius: var(--r-sm);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface-hover);
+      color: var(--text-strong);
+      transition: all var(--dur) var(--ease);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+    }
+    .tap-btn-demo:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .tap-btn-demo.good:hover {
+      background: var(--ok-bg);
+      border-color: var(--ok-border);
+      color: var(--ok-text);
+    }
+    .tap-btn-demo.bad:hover {
+      background: var(--danger-bg);
+      border-color: var(--danger-border);
+      color: var(--danger-text);
+    }
+    .tap-btn-demo.skip:hover {
+      background: var(--surface-active);
+      border-color: var(--border-hover);
+    }
+
+    .sandbox-feedback-row {
+      font-size: 0.82rem;
+      color: var(--ok-text);
+      background: var(--ok-bg);
+      border: 1px solid var(--ok-border);
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--r-sm);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.75rem;
+    }
+
+    .sandbox-undo-btn {
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      color: var(--danger-text);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* Workflow Steps */
+    .step-list {
+      list-style: none;
+      counter-reset: guide-counter;
+      margin: 1.25rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .step-item {
+      counter-increment: guide-counter;
+      display: flex;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 1rem 1.25rem;
+    }
+
+    .step-number {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--accent-gradient);
+      color: #fff;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-content h4 {
+      font-size: 0.95rem;
+      color: var(--text-strong);
+      margin-bottom: 0.25rem;
+    }
+
+    .step-content p {
+      font-size: 0.88rem;
+      color: var(--text-2);
+      margin-bottom: 0;
+    }
+
+    /* Quality Pillar Cards */
+    .pillar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin: 1.25rem 0;
+    }
+
+    .pillar-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 1.25rem;
+      transition: all var(--dur) var(--ease);
+    }
+    .pillar-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .pillar-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .pillar-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-strong);
+      margin-bottom: 0.35rem;
+    }
+
+    .pillar-desc {
+      font-size: 0.82rem;
+      color: var(--text-2);
+      line-height: 1.5;
+    }
+
+    /* Score band chips */
+    .band-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+
+    .band-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--r-pill);
+      border: 1px solid var(--border);
+      background: var(--surface-sunken);
+    }
+
+    .color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .color-dot.red { background: var(--danger); }
+    .color-dot.amber { background: var(--warn); }
+    .color-dot.green { background: var(--ok); }
+    .color-dot.grey { background: var(--text-muted); }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border);
+      background: rgba(15, 23, 36, 0.95);
+      padding: 2.5rem 1.5rem;
+      margin-top: auto;
+      font-size: 0.86rem;
+      color: var(--text-3);
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.25rem;
+    }
+
+    .footer-links a {
+      color: var(--text-2);
+      text-decoration: none;
+      transition: color var(--dur) var(--ease);
+    }
+    .footer-links a:hover {
+      color: var(--accent-ink);
+    }
+
+    /* Back to top button */
+    .back-to-top {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface-active);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow-raised);
+      opacity: 0;
+      pointer-events: none;
+      transition: all var(--dur) var(--ease);
+      z-index: 80;
+    }
+    .back-to-top.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .back-to-top:hover {
+      background: var(--accent-strong);
+      color: #fff;
+      transform: translateY(-3px);
+    }
+
+    /* Responsive */
+    @media (max-width: 1080px) {
+      .toc-rail {
+        display: none;
+      }
+    }
+
+    @media (max-width: 820px) {
+      .sidebar {
+        position: fixed;
+        left: -300px;
+        top: 64px;
+        height: calc(100dvh - 64px);
+        background: var(--bg-900);
+        z-index: 100;
+        box-shadow: var(--shadow-raised);
+        border-right: 1px solid var(--border-strong);
+        transition: left 0.3s ease;
+        padding: 1.5rem;
+      }
+      .sidebar.open {
+        left: 0;
+      }
+      .menu-toggle-btn {
+        display: inline-flex;
+      }
+      .search-kbd {
+        display: none;
+      }
+      .hero-banner {
+        padding: 1.5rem;
+      }
+      .docs-layout {
+        padding: 1rem;
+      }
+    }
+
+    /* Phones: the header has to fit 360px — icons only, no "User Guide" tag,
+       and the search box may shrink instead of pushing the page sideways. */
+    @media (max-width: 640px) {
+      .topbar {
+        padding: 0 1rem;
+        gap: 0.5rem;
+      }
+      .guide-tag,
+      .action-btn > span,
+      .action-btn.primary {
+        display: none;
+      }
+      .action-btn {
+        padding: 0.5rem;
+      }
+      .search-wrapper {
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .topbar-brand > span {
+        display: none;
+      }
+    }
+
+    /* Print styles */
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+      }
+      .topbar, .role-bar, .sidebar, .toc-rail, .back-to-top, .footer, .sandbox-box {
+        display: none !important;
+      }
+      .docs-layout {
+        padding: 0;
+        max-width: 100%;
+      }
+      .main-content {
+        max-width: 100%;
+      }
+      .card {
+        border: 1px solid #ccc;
+        box-shadow: none;
+        background: #fafafa;
+        color: #000;
+        page-break-inside: avoid;
+      }
+      a {
+        color: #000;
+        text-decoration: underline;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to main content</a>
+
+  <!-- Top Navigation -->
+  <header class="topbar">
+    <button class="menu-toggle-btn" id="sidebarToggle" aria-label="Toggle navigation menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    </button>
+
+    <a href="#" class="topbar-brand">
+      <img src="favicon.svg" alt="MessMate Icon" class="topbar-logo">
+      <span><span class="brand-pill">MESSMATE</span></span>
+      <span class="guide-tag">User Guide</span>
+    </a>
+
+    <div class="search-wrapper">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input type="text" id="guideSearch" class="search-input" placeholder="Search topics, roles, error codes, rules..." aria-label="Search guide">
+      <span class="search-kbd">/</span>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="action-btn" id="printBtn" title="Print or save as PDF">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 6 2 18 2 18 9"></polyline>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+          <rect x="6" y="14" width="12" height="8"></rect>
+        </svg>
+        <span>Print</span>
+      </button>
+
+      <a href="https://github.com/ChargingTrex/MessMate" target="_blank" rel="noopener noreferrer" class="action-btn" title="View Source on GitHub">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+        <span>GitHub</span>
+      </a>
+
+      <a href="USER_GUIDE.md" class="action-btn primary" title="View Raw Markdown">
+        <span>Raw MD</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Role Filter Sub-bar -->
+  <div class="role-bar">
+    <div class="role-filters" role="tablist" aria-label="Filter documentation by role">
+      <span class="role-label">View As:</span>
+      <button class="role-pill active" data-role="all" role="tab" aria-selected="true">All Roles</button>
+      <button class="role-pill" data-role="student" role="tab" aria-selected="false">🎓 Student</button>
+      <button class="role-pill" data-role="committee" role="tab" aria-selected="false">👥 Food Committee</button>
+      <button class="role-pill" data-role="admin" role="tab" aria-selected="false">🛠️ Administrator</button>
+      <button class="role-pill" data-role="dean" role="tab" aria-selected="false">👔 Dean & Read-Only</button>
+    </div>
+
+    <div class="live-clock-badge" id="servingStatusBadge" title="Live mess serving status">
+      <span class="pulse-dot"></span>
+      <span id="servingStatusText">Checking live meal hours...</span>
+    </div>
+  </div>
+
+  <div class="docs-layout">
+    <!-- Left Navigation Rail -->
+    <nav class="sidebar" id="sidebar" aria-label="Documentation navigation">
+      <div class="nav-group">
+        <div class="nav-group-title">Getting Started</div>
+        <ul class="nav-list">
+          <li class="nav-item"><a href="#overview">Overview & Roles</a></li>
+          <li class="nav-item"><a href="#feedback-streams">Three Feedback Streams</a></li>
+        </ul>
+      </div>
+
+      <div class="nav-group" data-role-group="student">
+        <div class="nav-group-title">For Students</div>
+        <ul class="nav-list">
+          <li class="nav-item"><a href="#students-privacy">Privacy First</a></li>
+          <li class="nav-item"><a href="#students-menu">Checking the Menu</a></li>
+          <li class="nav-item"><a href="#students-quick-tap">1-Tap Quick Rating</a></li>
+          <li class="nav-item"><a href="#students-rules">10-Min Undo & Rules</a></li>
+          <li class="nav-item"><a href="#students-dish-review">Lunch Dish-by-Dish</a></li>
+          <li class="nav-item"><a href="#students-messages">Messages & Errors</a></li>
+        </ul>
+      </div>
+
+      <div class="nav-group" data-role-group="committee">
+        <div class="nav-group-title">For Food Committee</div>
+        <ul class="nav-list">
+          <li class="nav-item"><a href="#committee-signin">First-time Sign In</a></li>
+          <li class="nav-item"><a href="#committee-review">Reviewing a Meal</a></li>
+          <li class="nav-item"><a href="#committee-pillars">5 Core Quality Areas</a></li>
+          <li class="nav-item"><a href="#committee-dashboard">Committee Dashboard</a></li>
+        </ul>
+      </div>
+
+      <div class="nav-group" data-role-group="admin">
+        <div class="nav-group-title">For Administrators</div>
+        <ul class="nav-list">
+          <li class="nav-item"><a href="#admin-overview">Admin Command Center</a></li>
+          <li class="nav-item"><a href="#admin-attention">"Needs Attention" Flags</a></li>
+          <li class="nav-item"><a href="#admin-publish">Publishing Menus (3 Ways)</a></li>
+          <li class="nav-item"><a href="#admin-members">Managing Member Roster</a></li>
+          <li class="nav-item"><a href="#admin-dashboards">Executive Dashboards</a></li>
+          <li class="nav-item"><a href="#admin-thresholds">Score & Tap Color Bands</a></li>
+        </ul>
+      </div>
+
+      <div class="nav-group" data-role-group="dean">
+        <div class="nav-group-title">Deans & Viewers</div>
+        <ul class="nav-list">
+          <li class="nav-item"><a href="#viewers">Viewer & Token Access</a></li>
+        </ul>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Interactive & Reference</div>
+        <ul class="nav-list">
+          <li class="nav-item"><a href="#interactive-sandbox">Interactive Sandbox</a></li>
+          <li class="nav-item"><a href="#pilot-demo">Pilot & Demo Mode</a></li>
+          <li class="nav-item"><a href="#faq">Frequently Asked Questions</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main">
+      <!-- Hero Banner -->
+      <section class="hero-banner">
+        <div class="hero-badge">MessMate Handbook</div>
+        <h1 class="hero-title">MessMate User Guide</h1>
+        <p class="hero-lead">
+          MessMate collects feedback on college mess food in three separate streams and surfaces clear, actionable data to the people who can act on it.
+        </p>
+        
+        <div class="hero-stats">
+          <div class="stat-pill-box">
+            <h4>Quick Taps</h4>
+            <p>1 tap · 3 meals / day</p>
+          </div>
+          <div class="stat-pill-box">
+            <h4>Dish Review</h4>
+            <p>1-5 scale · every 4 hours</p>
+          </div>
+          <div class="stat-pill-box">
+            <h4>Committee Audit</h4>
+            <p>5 areas · per-meal audit</p>
+          </div>
+          <div class="stat-pill-box">
+            <h4>Data Isolation</h4>
+            <p>Never averaged together</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Overview -->
+      <section id="overview" class="guide-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>🚀 Getting Started & Roles</span>
+            <a href="#overview" class="section-anchor" aria-label="Link to this section">#</a>
+          </h2>
+        </div>
+        <p>
+          Depending on your role in the campus community, you will access different parts of MessMate. Find your role below to jump to the right instructions:
+        </p>
+
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>You are</th>
+                <th>Start here</th>
+                <th>Sign-in needed</th>
+                <th>Role Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>🎓 A student</strong></td>
+                <td><a href="#students-menu"><code>/home</code></a> (Today's menu)</td>
+                <td><span class="badge badge-ok">No sign-in</span></td>
+                <td>Check menus, tap 1-click sentiment, rate lunch dishes</td>
+              </tr>
+              <tr>
+                <td><strong>👥 A food committee member</strong></td>
+                <td><a href="#committee-signin"><code>/signin</code></a></td>
+                <td><span class="badge badge-warn">Yes (Assigned account)</span></td>
+                <td>Conduct per-meal quality audits across 5 areas</td>
+              </tr>
+              <tr>
+                <td><strong>🛠️ An administrator</strong></td>
+                <td><a href="#admin-overview"><code>/signin</code></a> or <code>/admin/login</code></td>
+                <td><span class="badge badge-warn">Yes (Admin password)</span></td>
+                <td>Manage menus, roster, and inspect operational metrics</td>
+              </tr>
+              <tr>
+                <td><strong>👔 A dean or read-only viewer</strong></td>
+                <td><a href="#viewers"><code>/signin</code></a> or token link</td>
+                <td><span class="badge badge-neutral">Yes / Secure token</span></td>
+                <td>Inspect high-level trends and committee ratings</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section: Three Feedback Streams -->
+      <section id="feedback-streams" class="guide-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>⚖️ The Three Feedback Streams</span>
+            <a href="#feedback-streams" class="section-anchor" aria-label="Link to this section">#</a>
+          </h2>
+        </div>
+
+        <div class="callout info">
+          <strong>Key Architectural Principle:</strong> The three kinds of feedback are kept strictly separate on purpose and are <strong>never averaged together</strong>. A tally of quick taps, a mean of 1 to 5 dish scores, and an authenticated committee review measure different things from different people.
+        </div>
+
+        <div class="pillar-grid">
+          <div class="pillar-card">
+            <div class="pillar-icon">⚡</div>
+            <div class="pillar-title">1. Student Quick Taps</div>
+            <div class="pillar-desc">
+              Immediate volume sentiment (Good / Bad / Skipped). Answers: <em>"Did students enjoy eating this meal today?"</em>
+            </div>
+          </div>
+          <div class="pillar-card">
+            <div class="pillar-icon">🍲</div>
+            <div class="pillar-title">2. Dish-by-Dish Reviews</div>
+            <div class="pillar-desc">
+              Granular lunch dish ratings (1-5 scale) + text suggestions. Answers: <em>"Which specific preparation worked or failed?"</em>
+            </div>
+          </div>
+          <div class="pillar-card">
+            <div class="pillar-icon">📋</div>
+            <div class="pillar-title">3. Committee Audits</div>
+            <div class="pillar-desc">
+              Structured inspection of taste, quality, variety, hygiene, and menu compliance with attributable member accountability.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= FOR STUDENTS ================= -->
+      <section id="students-section" class="guide-section" data-role-section="student">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>🎓 For Students</span>
+            <a href="#students-section" class="section-anchor" aria-label="Link to this section">#</a>
+          </h2>
+        </div>
+
+        <div id="students-privacy" class="card">
+          <div class="card-title">🔒 Privacy First: Zero Tracking</div>
+          <p>
+            Nothing you submit is linked to you. MessMate stores <strong>no name, no email address, no roll number, and no IP address</strong> with your feedback.
+          </p>
+          <p>
+            You can express your honest feedback without any concern of tracking or repercussions.
+          </p>
+        </div>
+
+        <h3 id="students-menu">1. Checking the Daily Menu</h3>
+        <p>
+          Open <code>/home</code> on your phone or computer. It shows today's breakfast, lunch, and dinner along with serving times:
+        </p>
+
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Meal</th>
+                <th>Standard Serving Window</th>
+                <th>Rating Eligibility</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Breakfast</strong></td>
+                <td><code>7:30 am to 9:30 am</code></td>
+                <td>Opens at 7:30 am, remains open for the day</td>
+              </tr>
+              <tr>
+                <td><strong>Lunch</strong></td>
+                <td><code>12:00 pm to 2:30 pm</code></td>
+                <td>Opens at 12:00 pm, remains open for the day</td>
+              </tr>
+              <tr>
+                <td><strong>Dinner</strong></td>
+                <td><code>7:30 pm to 9:30 pm</code></td>
+                <td>Opens at 7:30 pm, remains open for the day</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ul style="margin-left: 1.5rem; margin-bottom: 1rem; color: var(--text-2);">
+          <li><strong>Day Tabs:</strong> Switch tabs at the top to preview menus for other days of the week.</li>
+          <li><strong>Unpublished Menus:</strong> If a card displays <em>"Menu not published yet"</em>, the mess kitchen has not posted the items yet. The meal is still being served, and you can still submit your rating after eating!</li>
+          <li><strong>Ticker Banner:</strong> The moving banner under the header includes a <strong>Pause</strong> button on its right side.</li>
+        </ul>
+
+        <h3 id="students-quick-tap">2. Rate a Meal in One Tap</h3>
+        <p>Each meal card provides three instant rating buttons:</p>
+        <ul style="margin-left: 1.5rem; margin-bottom: 1.25rem; color: var(--text-2);">
+          <li><strong style="color: var(--ok-text);">👍 Good</strong>: You ate it and liked it.</li>
+          <li><strong style="color: var(--danger-text);">👎 Bad</strong>: You ate it and didn't like it.</li>
+          <li><strong style="color: var(--text-3);">⏭️ Skipped</strong>: You didn't eat this meal in the mess.</li>
+        </ul>
+
+        <div class="callout info">
+          <strong>Adding a Suggestion:</strong> Want to explain why? Open <strong>Add a suggestion</strong> and type your thoughts <em>before</em> tapping Good, Bad, or Skipped. Your suggestion is transmitted together with your tap.
+        </div>
+
+        <h3 id="students-rules">3. Rating Rules & 10-Minute Undo Window</h3>
+        <div class="step-list">
+          <div class="step-item">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>One tap per meal per day</h4>
+              <p>Each phone or browser can rate Breakfast, Lunch, and Dinner once each (up to 3 quick taps daily).</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Serving hours gate</h4>
+              <p>Buttons stay disabled until that meal's serving time starts. Once open, it remains open for the rest of the calendar day.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Today only</h4>
+              <p>Other days' menus can be explored, but can never be rated.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h4>10-minute Undo Guarantee</h4>
+              <p>Tapped by mistake? Click <strong>Undo</strong> on the meal card within 10 minutes. Your rating is wiped and the buttons reappear. After 10 minutes, ratings lock permanently.</p>
+            </div>
+          </div>
+        </div>
+
+        <h3 id="students-dish-review">4. Rate Lunch Dish by Dish</h3>
+        <p>
+          For detailed feedback on lunch preparations, tap <strong>Rate dish by dish</strong> at the bottom of the home page, or go directly to <code>/</code>.
+        </p>
+        <div class="card">
+          <ul style="margin-left: 1.25rem; color: var(--text-2); display: flex; flex-direction: column; gap: 0.5rem;">
+            <li><strong>Overall Score (Required):</strong> Select one of five emoji faces from 😡 (1) to 😄 (5).</li>
+            <li><strong>Individual Dishes (Optional):</strong> Rice with curry, rice with rasam, chapati, chapati with gravy, poriyal, sweet/fruit, salad, curd, papad, pickle/thogayal. Rate only what you tasted.</li>
+            <li><strong>Comments (Optional):</strong> Up to 150 characters of constructive critique.</li>
+            <li><strong>Suggest a Dish (Optional):</strong> Request specific dishes you want the mess to prepare.</li>
+            <li><strong>Frequency Limit:</strong> One submission every <strong>4 hours</strong> per device.</li>
+          </ul>
+        </div>
+
+        <h3 id="students-messages">5. Messages You Might See</h3>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Message Prompt</th>
+                <th>Reason & Resolution</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>You've already rated lunch today</code></td>
+                <td>This device already submitted a rating. Use <strong>Undo</strong> within 10 minutes if you want to alter it.</td>
+              </tr>
+              <tr>
+                <td><code>Dinner isn't being served yet</code></td>
+                <td>The meal's serving window has not started. Please revisit after eating.</td>
+              </tr>
+              <tr>
+                <td><code>Ratings open on the day itself</code></td>
+                <td>You are browsing another day's menu. Switch back to the <strong>Today</strong> tab.</td>
+              </tr>
+              <tr>
+                <td><code>This device has used today's three quick ratings</code></td>
+                <td>All three meals have been rated from this device. Come back tomorrow or rate lunch dish by dish.</td>
+              </tr>
+              <tr>
+                <td><code>That rating is more than 10 minutes old</code></td>
+                <td>The 10-minute grace period for Undo has expired. The score is permanent.</td>
+              </tr>
+              <tr>
+                <td><code>You've already submitted a review in the last 4 hours</code></td>
+                <td>The dish-by-dish form enforces a 4-hour cooldown between reviews on the same device.</td>
+              </tr>
+              <tr>
+                <td><code>Couldn't save that just now</code></td>
+                <td>Temporary network disruption. Tap the button once again.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= FOR COMMITTEE ================= -->
+      <section id="committee-section" class="guide-section" data-role-section="committee">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>👥 For Food Committee Members</span>
+            <a href="#committee-section" class="section-anchor" aria-label="Link to this section">#</a>
+          </h2>
+        </div>
+
+        <div class="callout warn">
+          <strong>Attributable Reviews:</strong> Unlike student feedback, committee reviews are <strong>not anonymous</strong>. Your name and verified email are saved alongside every review so the mess administration and management can follow up with you.
+        </div>
+
+        <h3 id="committee-signin">1. First-Time Sign In</h3>
+        <ol style="margin-left: 1.5rem; margin-bottom: 1.25rem; color: var(--text-2); display: flex; flex-direction: column; gap: 0.5rem;">
+          <li>The admin adds your account and shares a secure one-time password.</li>
+          <li>Open <code>/signin</code> and enter your registered email and temporary password.</li>
+          <li>You will immediately be prompted to create your own permanent password (minimum <strong>8 characters</strong>). You cannot submit reviews until this step is completed.</li>
+          <li>Sign out anytime from the top bar button. If you forget your password, contact the administrator for a one-click reset.</li>
+        </ol>
+
+        <h3 id="committee-review">2. Auditing a Meal</h3>
+        <p>
+          Navigate to <code>/committee</code>. You inspect <strong>each meal separately</strong>, once per meal per day.
+        </p>
+
+        <div class="step-list">
+          <div class="step-item">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Select a Meal</h4>
+              <p>The tabs at the top show Breakfast, Lunch and Dinner. A meal you still have to review is yellow, <span class="badge badge-warn">To review</span>; one you've reviewed turns green, <span class="badge badge-ok">✓ Reviewed</span>. The page opens on the meal most recently served that you haven't reviewed yet.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Rate Dishes on the Published Menu</h4>
+              <p>Every dish on today's published menu for that meal gets its own card. Score each one from 1 to 5. The dishes change with the meal and the day. If the menu has not been published yet, there are no dish cards and you rate only the five areas.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Score the 5 Quality Pillars</h4>
+              <p>Rate Taste, Quality, Variety, Hygiene and Menu from 1 to 5.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h4>Add a Written Review (Optional)</h4>
+              <p>Up to 500 characters on what worked, what didn't, and what the kitchen should change.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">5</div>
+            <div class="step-content">
+              <h4>Submit</h4>
+              <p><strong>Submit</strong> enables only once every dish and all five areas are rated. The thank-you page links to any meal you still have to review today.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout info">
+          <strong>If the menu changes while you rate:</strong> if someone edits that meal's menu while you are filling in your review, MessMate does not save it. It shows the updated dishes and asks you to rate them again, so scores are never filed under the wrong dish.
+        </div>
+
+        <h3 id="committee-pillars">3. The 5 Core Quality Pillars</h3>
+        <div class="pillar-grid">
+          <div class="pillar-card">
+            <div class="pillar-icon">👅</div>
+            <div class="pillar-title">1. Taste</div>
+            <div class="pillar-desc">Flavour and seasoning of what was served.</div>
+          </div>
+          <div class="pillar-card">
+            <div class="pillar-icon">✨</div>
+            <div class="pillar-title">2. Quality</div>
+            <div class="pillar-desc">Freshness, temperature, and cooking.</div>
+          </div>
+          <div class="pillar-card">
+            <div class="pillar-icon">🥗</div>
+            <div class="pillar-title">3. Variety</div>
+            <div class="pillar-desc">Range and balance across the counters.</div>
+          </div>
+          <div class="pillar-card">
+            <div class="pillar-icon">🧼</div>
+            <div class="pillar-title">4. Hygiene</div>
+            <div class="pillar-desc">Cleanliness of food, counters, and utensils.</div>
+          </div>
+          <div class="pillar-card">
+            <div class="pillar-icon">📜</div>
+            <div class="pillar-title">5. Menu</div>
+            <div class="pillar-desc">Did the meal match the published menu?</div>
+          </div>
+        </div>
+
+        <h3 id="committee-dashboard">4. Committee Member Dashboard</h3>
+        <p>
+          Visit <code>/committee/dashboard</code> to review your team's ongoing audits:
+        </p>
+        <ul style="margin-left: 1.5rem; color: var(--text-2); display: flex; flex-direction: column; gap: 0.4rem;">
+          <li><strong>Today's Committee Score:</strong> Average score, how many members have reviewed (and how many meal reviews that adds up to), the 7-day average, and the lowest-scoring area.</li>
+          <li><strong>Your Own Record:</strong> Your meal reviews this month and your last review.</li>
+          <li><strong>Student Voice Context:</strong> What students reported today is surfaced in a dedicated side card for reference without blending into your audit.</li>
+          <li><strong>Recent Committee Reviews:</strong> Written reviews from members, newest first, each labelled with its date and meal.</li>
+        </ul>
+      </section>
+
+      <!-- ================= FOR ADMINISTRATORS ================= -->
+      <section id="admin-section" class="guide-section" data-role-section="admin">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>🛠️ For Administrators</span>
+            <a href="#admin-section" class="section-anchor" aria-label="Link to this section">#</a>
+          </h2>
+        </div>
+
+        <h3 id="admin-overview">1. Administrative Command Center</h3>
+        <p>
+          Sign in at <code>/signin</code> using the administrative credentials or directly at <code>/admin/login</code>. The main dashboard at <code>/admin</code> aggregates operations in a single view:
+        </p>
+        <ul style="margin-left: 1.5rem; color: var(--text-2); margin-bottom: 1.25rem;">
+          <li>Today's lunch dish-by-dish score and quick-tap sentiment per meal.</li>
+          <li>Committee audit score, active participation count, and 7-day trends.</li>
+          <li>Menu publishing status across the upcoming 7 calendar days.</li>
+        </ul>
+
+        <h3 id="admin-attention">2. Automated "Needs Attention" Flags</h3>
+        <p>
+          The top of <code>/admin</code> displays urgent alerts that require immediate administrative intervention:
+        </p>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Alert Condition</th>
+                <th>Trigger Logic</th>
+                <th>Direct Remediation Link</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Today's Menu Missing</strong></td>
+                <td>Any meal today is blank or unpublished</td>
+                <td><code>/admin/menu</code></td>
+              </tr>
+              <tr>
+                <td><strong>Upcoming Menu Incomplete</strong></td>
+                <td>Unpublished meal found in next 6 days</td>
+                <td><code>/admin/menu</code></td>
+              </tr>
+              <tr>
+                <td><strong>Low Student Rating</strong></td>
+                <td>Today's lunch or a specific dish falls below <strong>2.5 / 5.0</strong></td>
+                <td><code>/dashboard</code></td>
+              </tr>
+              <tr>
+                <td><strong>Low Meal Sentiment</strong></td>
+                <td>Fewer than <strong>40%</strong> of students liked a meal (min 5 ratings)</td>
+                <td><code>/dashboard</code></td>
+              </tr>
+              <tr>
+                <td><strong>Committee Quality Alarm</strong></td>
+                <td>Committee rates any quality pillar below <strong>2.5 / 5.0</strong></td>
+                <td><code>/dashboard/committee</code></td>
+              </tr>
+              <tr>
+                <td><strong>Missing Committee Audits</strong></td>
+                <td>From 3 pm, active members who haven't reviewed any meal today</td>
+                <td><code>/dashboard/committee</code></td>
+              </tr>
+              <tr>
+                <td><strong>Pending Onboarding</strong></td>
+                <td>Active members who haven't signed in to set their own password</td>
+                <td><code>/admin/members</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 id="admin-publish">3. Publishing Menus (3 Seamless Ways)</h3>
+        <p>
+          Students only see dishes once published; blank meals explicitly show <em>"Menu not published yet"</em>. All three methods synchronize directly to the same backend:
+        </p>
+
+        <div class="card">
+          <div class="card-title">Method 1: The Visual Weekly Editor (<code>/admin/menu</code>)</div>
+          <p>Cards for each day Monday to Sunday:</p>
+          <ul style="margin-left: 1.25rem; color: var(--text-2); font-size: 0.9rem;">
+            <li>Navigate weeks with <strong>◀ Prev</strong>, <strong>This week</strong>, and <strong>Next ▶</strong>.</li>
+            <li>Type dish names separated by commas (e.g. <code>Idli, Sambar, Coconut Chutney</code>) or line breaks.</li>
+            <li><strong>Fill blanks from template:</strong> Copies the standard rotational baseline into empty cells without overwriting typed text.</li>
+            <li><strong>Copy last week:</strong> Copies the previous week's live menu into blank slots.</li>
+            <li>Click <strong>Save</strong> on an individual day or <strong>Save all 7 days</strong> at once.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Method 2: Bulk CSV Import</div>
+          <ol style="margin-left: 1.25rem; color: var(--text-2); font-size: 0.9rem;">
+            <li>Click <strong>Download blank template</strong> for the selected week.</li>
+            <li>Columns: <code>Date, Breakfast, Lunch, Dinner</code> with dates in <code>YYYY-MM-DD</code> format. Separate dishes in cells with commas.</li>
+            <li>Save as a UTF-8 CSV (< 1MB) and click <strong>Upload CSV</strong>. Menus are parsed and updated instantly.</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Method 3: Direct Google Sheet Sync</div>
+          <p>
+            Mess staff can type directly into the <code>menu</code> tab of the connected Google Sheet: one row per date with <code>Date</code> in Column A. Edits reflect in MessMate within 30 seconds.
+          </p>
+        </div>
+
+        <h3 id="admin-members">4. Committee Member Roster (<code>/admin/members</code>)</h3>
+        <div class="card">
+          <ul style="margin-left: 1.25rem; color: var(--text-2); display: flex; flex-direction: column; gap: 0.5rem;">
+            <li><strong>Add Member:</strong> Enter name and email to generate an instant one-time login.</li>
+            <li><strong>Bulk Import:</strong> Paste lists of members as <code>Name, email</code>. MessMate validates rows, adds valid members, and flags any syntax errors.</li>
+            <li><strong>Copy One-Time Passwords:</strong> Copy passwords immediately upon creation. Only cryptographic hashes are stored, so they cannot be retrieved later.</li>
+            <li><strong>Password Reset:</strong> Issue a replacement one-time password if a member gets locked out.</li>
+            <li><strong>Deactivate / Reactivate:</strong> Never delete members; deactivation preserves historical audit trails and committee records across academic rotations.</li>
+          </ul>
+        </div>
+
+        <h3 id="admin-dashboards">5. Executive Dashboards</h3>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Dashboard</th>
+                <th>URL</th>
+                <th>Primary Metrics</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Student Feedback</strong></td>
+                <td><code>/dashboard</code></td>
+                <td>Lunch dish scores, 7-day trendlines, total sample volume, top-rated vs lowest-rated dishes, quick-tap percentages, and student suggestion feed.</td>
+              </tr>
+              <tr>
+                <td><strong>Committee Audits</strong></td>
+                <td><code>/dashboard/committee</code></td>
+                <td>Committee score, members reviewed and participation, 7-day average, lowest area, today by area, 7-day trend, who has reviewed today, and the written reviews.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 id="admin-thresholds">6. Color Bands & Interpretation Standard</h3>
+        <p>Scores and percentages are coloured the same way on every dashboard:</p>
+        
+        <div class="band-legend">
+          <div class="band-item">
+            <span class="color-dot red"></span>
+            <span><strong>Red:</strong> Score &lt; 2.5 or Tap &lt; 40%</span>
+          </div>
+          <div class="band-item">
+            <span class="color-dot amber"></span>
+            <span><strong>Amber:</strong> Score 2.5 – 3.5 or Tap 40% – 69%</span>
+          </div>
+          <div class="band-item">
+            <span class="color-dot green"></span>
+            <span><strong>Green:</strong> Score &gt; 3.5 or Tap &ge; 70%</span>
+          </div>
+          <div class="band-item">
+            <span class="color-dot grey"></span>
+            <span><strong>Grey ("--"):</strong> No responses yet (not a zero)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= FOR DEANS & VIEWERS ================= -->
+      <section id="viewers" class="guide-section" data-role-section="dean">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>👔 For Deans & Read-Only Viewers</span>
+            <a href="#viewers" class="section-anchor" aria-label="Link to this section">#</a>
+          </h2>
+        </div>
+        <p>
+          University leadership, wardens, and mess supervisors who require operational oversight have two secure ways to access executive reports:
+        </p>
+
+        <div class="card">
+          <div class="card-title">Option A: Read-Only Account Login</div>
+          <p>
+            Sign in at <code>/signin</code> using your viewer credentials. You have read access to <code>/dashboard</code> and <code>/dashboard/committee</code> without permissions to alter menus or edit members.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Option B: Secure Token Link</div>
+          <p>
+            You may be provided an executive URL containing a secure access token (<code>/dashboard?token=…</code>). This allows immediate, credential-free dashboard inspection on mobile or tablet.
+          </p>
+          <div class="callout danger">
+            <strong>Security Warning:</strong> Do not forward your token link publicly. Anyone with the token parameter can view dashboard data.
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= INTERACTIVE SANDBOX ================= -->
+      <section id="interactive-sandbox" class="guide-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>🧪 Interactive Simulator: Try 1-Tap Rating</span>
+            <a href="#interactive-sandbox" class="section-anchor" aria-label="Link to this section">#</a>
+          </h2>
+        </div>
+
+        <div class="sandbox-box">
+          <div class="sandbox-tag">Interactive Feature Demonstration</div>
+          <h3 style="margin-top: 0; justify-content: center;">Test the Student Quick-Tap & 10-Min Undo Flow</h3>
+          <p style="font-size: 0.9rem; color: var(--text-2); max-width: 520px; margin: 0 auto 1rem auto;">
+            Try out the rating buttons below just like a student on <code>/home</code>. Notice how the undo countdown timer activates immediately!
+          </p>
+
+          <div class="sandbox-card">
+            <div class="sandbox-meal-title">
+              <span>Today's Lunch</span>
+              <span class="badge badge-ok">Serving Active</span>
+            </div>
+            <div class="sandbox-meal-items">
+              Steamed Rice, Sambar, Rasam, Paneer Butter Masala, Curd, Papad
+            </div>
+
+            <div class="sandbox-tap-group" id="demoTapButtons">
+              <button class="tap-btn-demo good" onclick="simulateTap('👍 Good')">
+                <span>👍</span>
+                <span>Good</span>
+              </button>
+              <button class="tap-btn-demo bad" onclick="simulateTap('👎 Bad')">
+                <span>👎</span>
+                <span>Bad</span>
+              </button>
+              <button class="tap-btn-demo skip" onclick="simulateTap('⏭️ Skipped')">
+                <span>⏭️</span>
+                <span>Skipped</span>
+              </button>
+            </div>
+
+            <div class="sandbox-feedback-row" id="demoFeedback" style="display: none;">
+              <span id="demoFeedbackText">You said 👍 Good for lunch today.</span>
+              <button class="sandbox-undo-btn" id="demoUndoBtn" onclick="simulateUndo()">
+                Undo (<span id="demoTimer">10:00</span>)
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PILOT & DEMO MODE ================= -->
+      <section id="pilot-demo" class="guide-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>🔬 Demo & Pilot Mode</span>
+            <a href="#pilot-demo" class="section-anchor" aria-label="Link to this section">#</a>
+          </h2>
+        </div>
+
+        <p>
+          MessMate includes a built-in <strong>Pilot Mode</strong> designed for campus demonstrations, presentations, and stakeholder reviews:
+        </p>
+
+        <div class="card">
+          <p>
+            When pilot mode is enabled in configuration, <code>/signin</code> displays one-click demo login cards for each role (Student, Committee Member, Administrator, Dean).
+          </p>
+          <div class="code-block">
+            <div class="code-header">
+              <span>Terminal — Seeding Demo Dataset</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>python seed_demo.py --yes</code></pre>
+          </div>
+          <div class="callout danger">
+            <strong>Production Precaution:</strong> Pilot mode displays sample credentials directly on screen for testing simplicity. Pilot mode must remain <strong>strictly disabled</strong> in production deployments.
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= FAQ ================= -->
+      <section id="faq" class="guide-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>❓ Frequently Asked Questions</span>
+            <a href="#faq" class="section-anchor" aria-label="Link to this section">#</a>
+          </h2>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Can I change my quick-tap rating after submitting?</div>
+          <p>
+            Yes, but only within <strong>10 minutes</strong>. Click the <strong>Undo</strong> button on the meal card on <code>/home</code>. After 10 minutes, the score is locked in permanently to ensure dataset integrity.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Why are student quick taps and committee audits separate?</div>
+          <p>
+            Student quick taps measure high-volume emotional sentiment from hundreds of diners, while committee reviews rate each dish and five quality areas, meal by meal, with a name attached. Averaging them together would dilute both signals.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">What happens if a meal menu isn't uploaded?</div>
+          <p>
+            MessMate never shows made-up food. The card displays <em>"Menu not published yet"</em>. Students can still rate the meal after eating, and committee members rate the 5 quality areas without individual dish breakdowns.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Right Sidebar (On this page) -->
+    <aside class="toc-rail" aria-label="Table of contents">
+      <div class="toc-title">On This Page</div>
+      <ul class="toc-list" id="tocList">
+        <li class="toc-item"><a href="#overview">Overview & Roles</a></li>
+        <li class="toc-item"><a href="#feedback-streams">3 Feedback Streams</a></li>
+        <li class="toc-item"><a href="#students-section">For Students</a></li>
+        <li class="toc-item"><a href="#committee-section">For Committee</a></li>
+        <li class="toc-item"><a href="#admin-section">For Administrators</a></li>
+        <li class="toc-item"><a href="#viewers">Deans & Viewers</a></li>
+        <li class="toc-item"><a href="#interactive-sandbox">Interactive Sandbox</a></li>
+        <li class="toc-item"><a href="#pilot-demo">Pilot & Demo Mode</a></li>
+        <li class="toc-item"><a href="#faq">FAQs</a></li>
+      </ul>
+    </aside>
+  </div>
+
+  <!-- Back to top button -->
+  <button class="back-to-top" id="backToTop" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+  </button>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <strong>MessMate</strong> · Open-source campus dining quality platform.
+        <br>
+        <span style="font-size: 0.78rem; color: var(--text-muted);">
+          Hosted on GitHub Pages · Built for students, committee members & mess management.
+        </span>
+      </div>
+      <div class="footer-links">
+        <a href="#overview">Documentation</a>
+        <a href="https://github.com/ChargingTrex/MessMate" target="_blank" rel="noopener">GitHub</a>
+        <a href="USER_GUIDE.md">Raw Markdown</a>
+        <a href="#main">Back to top</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    // Live Serving Time Detector
+    function updateServingStatus() {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const currentMinutes = hours * 60 + minutes;
+
+      const breakfastStart = 7 * 60 + 30; // 07:30
+      const breakfastEnd = 9 * 60 + 30;   // 09:30
+      const lunchStart = 12 * 60;         // 12:00
+      const lunchEnd = 14 * 60 + 30;      // 14:30
+      const dinnerStart = 19 * 60 + 30;   // 19:30
+      const dinnerEnd = 21 * 60 + 30;     // 21:30
+
+      const textEl = document.getElementById('servingStatusText');
+      if (!textEl) return;
+
+      if (currentMinutes >= breakfastStart && currentMinutes <= breakfastEnd) {
+        textEl.textContent = 'Breakfast is being served right now (7:30 - 9:30 am)';
+      } else if (currentMinutes >= lunchStart && currentMinutes <= lunchEnd) {
+        textEl.textContent = 'Lunch is being served right now (12:00 - 2:30 pm)';
+      } else if (currentMinutes >= dinnerStart && currentMinutes <= dinnerEnd) {
+        textEl.textContent = 'Dinner is being served right now (7:30 - 9:30 pm)';
+      } else if (currentMinutes < breakfastStart) {
+        textEl.textContent = 'Next meal: Breakfast opens at 7:30 am';
+      } else if (currentMinutes < lunchStart) {
+        textEl.textContent = 'Next meal: Lunch opens at 12:00 pm';
+      } else if (currentMinutes < dinnerStart) {
+        textEl.textContent = 'Next meal: Dinner opens at 7:30 pm';
+      } else {
+        textEl.textContent = 'Kitchen closed for today · Reopens 7:30 am';
+      }
+    }
+    updateServingStatus();
+    setInterval(updateServingStatus, 60000);
+
+    // Interactive Demo Sandbox
+    let undoInterval = null;
+    let secondsLeft = 600; // 10 minutes
+
+    function simulateTap(sentiment) {
+      document.getElementById('demoTapButtons').style.display = 'none';
+      const feedback = document.getElementById('demoFeedback');
+      const feedbackText = document.getElementById('demoFeedbackText');
+      feedbackText.textContent = `You said ${sentiment} for lunch today.`;
+      feedback.style.display = 'flex';
+
+      secondsLeft = 600;
+      updateTimerDisplay();
+      if (undoInterval) clearInterval(undoInterval);
+      undoInterval = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft <= 0) {
+          clearInterval(undoInterval);
+          document.getElementById('demoUndoBtn').style.display = 'none';
+        } else {
+          updateTimerDisplay();
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(secondsLeft / 60);
+      const secs = secondsLeft % 60;
+      document.getElementById('demoTimer').textContent = 
+        `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    function simulateUndo() {
+      if (undoInterval) clearInterval(undoInterval);
+      document.getElementById('demoFeedback').style.display = 'none';
+      document.getElementById('demoTapButtons').style.display = 'grid';
+    }
+
+    // Role Filter Pills
+    const rolePills = document.querySelectorAll('.role-pill');
+    rolePills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        rolePills.forEach(p => {
+          p.classList.remove('active');
+          p.setAttribute('aria-selected', 'false');
+        });
+        pill.classList.add('active');
+        pill.setAttribute('aria-selected', 'true');
+
+        const role = pill.getAttribute('data-role');
+        const sections = document.querySelectorAll('[data-role-section]');
+        const navGroups = document.querySelectorAll('[data-role-group]');
+
+        if (role === 'all') {
+          sections.forEach(s => s.style.display = 'block');
+          navGroups.forEach(g => g.style.display = 'block');
+        } else {
+          sections.forEach(s => {
+            s.style.display = s.getAttribute('data-role-section') === role ? 'block' : 'none';
+          });
+          navGroups.forEach(g => {
+            g.style.display = g.getAttribute('data-role-group') === role ? 'block' : 'none';
+          });
+          // Scroll to the targeted section smoothly
+          const target = document.querySelector(`[data-role-section="${role}"]`);
+          if (target) target.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+
+    // Realtime Search
+    const searchInput = document.getElementById('guideSearch');
+    searchInput.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const sections = document.querySelectorAll('.guide-section');
+      
+      sections.forEach(section => {
+        if (!q) {
+          section.style.display = 'block';
+          return;
+        }
+        const text = section.innerText.toLowerCase();
+        if (text.includes(q)) {
+          section.style.display = 'block';
+        } else {
+          section.style.display = 'none';
+        }
+      });
+    });
+
+    // Keyboard shortcut '/' to search
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement !== searchInput) {
+        e.preventDefault();
+        searchInput.focus();
+      } else if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.value = '';
+        searchInput.dispatchEvent(new Event('input'));
+        searchInput.blur();
+      }
+    });
+
+    // Mobile Sidebar Toggle
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    if (sidebarToggle && sidebar) {
+      sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+      });
+      // Close on nav item click on mobile
+      sidebar.addEventListener('click', (e) => {
+        if (e.target.tagName === 'A' && window.innerWidth < 820) {
+          sidebar.classList.remove('open');
+        }
+      });
+    }
+
+    // Scrollspy for TOC
+    const tocLinks = document.querySelectorAll('.toc-item a');
+    const observedSections = document.querySelectorAll('.guide-section');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          tocLinks.forEach(link => {
+            if (link.getAttribute('href') === `#${id}`) {
+              link.classList.add('active');
+            } else {
+              link.classList.remove('active');
+            }
+          });
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+
+    observedSections.forEach(section => observer.observe(section));
+
+    // Back to top button
+    const backToTop = document.getElementById('backToTop');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 400) {
+        backToTop.classList.add('visible');
+      } else {
+        backToTop.classList.remove('visible');
+      }
+    });
+    backToTop.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Print button
+    const printBtn = document.getElementById('printBtn');
+    if (printBtn) {
+      printBtn.addEventListener('click', () => {
+        window.print();
+      });
+    }
+
+    // Code copy helper
+    function copyCode(btn) {
+      const code = btn.closest('.code-block').querySelector('code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
