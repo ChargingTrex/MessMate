@@ -1,0 +1,116 @@
+/* Hallmark · shape: narrative workflow (draw e2e769 dealt marquee hero; swapped: the guide must explain in seconds) · genre: editorial · theme: Solstice (deal 1/3, seed short-picture-led-how-to-guide-f6ed·57d6d4ba·2026-11-08·r0) · job: try · draw: e2e769
+ * hero: counter (the role chooser is the action, beside the phone menu) · nav: edge-aligned, wordmark and one link · footer: colophon mast · imagery: screenshots 10, phone variants for wide shots under 40rem (selenium, in-memory demo data) · signature: the three-way chooser set large beside the real menu · solstice: long-light
+ * axes: light/high-contrast-serif/warm · posture: restrained · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H5 E4 S5 R5 V4 · weakest: P, a how-to argues little; it takes one position, read only your own part, and the chooser enforces it */
+@import url("./tokens.css");
+@import url("./base.css");
+
+/* ── Chrome ─────────────────────────────────────────────────────────────── */
+.nav { border-bottom: var(--rule-bar) solid var(--color-ink); background: var(--color-paper); }
+.nav .container { display: flex; align-items: center; justify-content: space-between; gap: var(--space-lg); min-height: 72px; }
+.wordmark { font-family: var(--font-display); font-size: var(--text-xl); line-height: 1; color: var(--color-ink); text-decoration: none; }
+.nav-link { display: inline-flex; align-items: center; min-height: 44px; font-size: var(--text-md); font-weight: 500; color: var(--color-ink); white-space: nowrap; text-decoration-line: underline; text-decoration-color: var(--color-ink); transition: text-decoration-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out); }
+.nav-link:hover { text-decoration-color: var(--color-accent); }
+a:hover { text-decoration-color: var(--color-accent); }
+
+/* ── Hero ───────────────────────────────────────────────────────────────── */
+.hero { padding-block: var(--space-2xl); min-height: min(calc(100dvh - 74px), 960px); display: flex; align-items: center; }
+.hero .container { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-3xl); align-items: center; }
+.hero h1 { max-width: 12ch; }
+.hero .lead { margin-top: var(--space-lg); color: var(--color-ink-2); }
+.roles { list-style: none; margin: var(--space-xl) 0 0; padding: 0; border-top: var(--rule-bar) solid var(--color-ink); max-width: 36rem; }
+.roles li { border-bottom: var(--rule-hair) solid var(--color-rule); }
+.role { display: grid; gap: var(--space-2xs); padding-block: var(--space-md); min-height: 44px; color: var(--color-ink); text-decoration: none; }
+.role-name { font-family: var(--font-display); font-size: var(--text-title); line-height: 1.2; text-decoration-line: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; text-decoration-color: var(--color-rule); transition: text-decoration-color var(--dur-short) var(--ease-out); }
+.role-line { color: var(--color-ink-2); }
+.role:hover .role-name, .role:focus-visible .role-name { text-decoration-color: var(--color-accent); }
+.role:active .role-name, .nav-link:active, .faq a:active, .head a:active { color: var(--color-accent); }
+
+/* Screens: real captures, square, an ink hairline; the hero's stands on the paper shadow */
+.screen { margin: 0; }
+.screen-frame { position: relative; overflow: hidden; background: var(--color-ink); outline: var(--rule-hair) solid color-mix(in oklab, var(--color-ink) 10%, transparent); outline-offset: -1px; }
+.screen-frame picture { display: contents; }
+.screen-frame img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+.screen figcaption { margin-top: var(--space-sm); font: 600 var(--text-sm)/1.4 var(--font-outlier); color: var(--color-muted); max-width: 48ch; }
+.screen--phone .screen-frame { aspect-ratio: 3 / 4; }
+.screen--tall .screen-frame { aspect-ratio: 9 / 16; }
+.screen--wide .screen-frame { aspect-ratio: 16 / 10; }
+.hero .screen { justify-self: center; }
+/* The phone sizes to the screen height so the whole hero holds the fold at 1280 x 800 */
+.hero .screen-frame { box-shadow: var(--shadow-card); height: min(68dvh, 640px); aspect-ratio: 9 / 16; }
+
+/* ── Sections ───────────────────────────────────────────────────────────── */
+.section { padding-block: var(--section-gap); }
+.section--tight { padding-block: var(--section-gap-s); }
+.section > .container { border-top: var(--rule-bar) solid var(--color-ink); padding-top: var(--space-2xl); }
+.head { display: grid; gap: var(--space-md); margin-bottom: var(--space-2xl); }
+.head .lead { color: var(--color-ink-2); }
+.head--split { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: var(--gap-columns); align-items: end; }
+.head--split .lead { grid-column: 2; }
+
+/* Steps: a real list; the number rides inside the heading */
+.steps { list-style: none; margin: 0; padding: 0; counter-reset: step; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2xl) var(--gap-columns); }
+.steps > li { counter-increment: step; display: grid; gap: var(--space-sm); align-content: start; }
+.steps h3::before, .stages h3::before { content: counter(step) ". "; }
+.steps p { color: var(--color-ink-2); max-width: 34ch; }
+.steps .screen { margin-bottom: var(--space-sm); }
+
+/* The rules, as the theme's ruled well */
+.rules { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--gap-columns); align-items: start; }
+.well { background: var(--color-paper-2); border: var(--rule-bar) solid var(--color-ink); outline: var(--rule-hair) solid var(--color-gold); outline-offset: -7px; box-shadow: var(--shadow-card); padding: var(--space-lg) var(--space-xl); }
+.well dl { margin: 0; }
+.well div { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--space-lg); padding-block: var(--space-md); border-bottom: var(--rule-hair) dotted var(--color-gold); }
+.well div:last-child { border-bottom: 0; }
+.well dt { font-family: var(--font-display); font-size: var(--text-title); line-height: 1.2; }
+.well dd { margin: 0; color: var(--color-ink-2); align-self: center; }
+
+/* Committee stages: a vertical run, the screen on the right */
+.stages { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+.stages > li { counter-increment: step; display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: var(--gap-columns); align-items: center; padding-block: var(--space-2xl); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.stages > li:first-child { padding-top: 0; }
+.stages > li:last-child { border-bottom: 0; padding-bottom: 0; }
+.stages .text { display: grid; gap: var(--space-sm); }
+.stages p { color: var(--color-ink-2); max-width: 38ch; }
+.stages .screen--phone { justify-self: center; width: min(100%, 460px); }
+.note { font: 600 var(--text-sm)/1.4 var(--font-outlier); color: var(--color-muted); }
+
+/* Mess office: one wide screen, two beneath at 7 and 5 */
+.showcase { display: grid; gap: var(--space-2xl); }
+.showcase-pair { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--gap-columns); align-items: start; }
+
+/* Questions as rows */
+.faq { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--gap-columns); align-items: start; }
+.faq dl { margin: 0; border-top: var(--rule-hair) solid var(--color-rule); }
+.faq div { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--gap-columns); padding-block: var(--space-lg); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.faq dt { font-family: var(--font-display); font-size: var(--text-title); line-height: 1.2; }
+.faq dd { margin: 0; color: var(--color-ink-2); }
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+.footer { background: var(--color-ink); color: var(--color-paper); padding-block: var(--space-3xl) var(--space-2xl); }
+.footer .container { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--gap-columns); align-items: end; }
+.footer .wordmark { color: var(--color-paper); font-size: var(--text-section); }
+.footer p { margin-top: var(--space-md); color: var(--color-paper-3); }
+.footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-xs); justify-items: start; }
+.footer a { display: inline-flex; align-items: center; min-height: 44px; color: var(--color-paper); }
+.footer a:hover { text-decoration-color: var(--color-gold); }
+.footer a:active { color: var(--color-gold-2); }
+.footer :focus-visible { outline-color: var(--color-gold); }
+
+/* ── Narrow screens ─────────────────────────────────────────────────────── */
+@media (max-width: 60rem) {
+  .hero { min-height: 0; }
+  .hero .container, .rules, .faq, .stages > li, .showcase-pair, .footer .container, .head--split { grid-template-columns: minmax(0, 1fr); }
+  .head--split .lead { grid-column: auto; }
+  .hero .container { gap: var(--space-2xl); }
+  .steps { grid-template-columns: minmax(0, 1fr); max-width: 30rem; }
+  .well div, .faq div { grid-template-columns: minmax(0, 1fr); gap: var(--space-2xs); }
+  .well { padding: var(--space-md) var(--space-lg); }
+}
+@media (max-width: 60rem) {
+  .hero .screen-frame { height: auto; width: min(100%, 320px); }
+}
+/* Under 40rem the wide shots swap to phone captures (the <picture> sources), so their frames take the phone's shape */
+@media (max-width: 40rem) {
+  .screen--wide .screen-frame { aspect-ratio: 3 / 4; }
+  .screen--low .screen-frame img { object-position: bottom center; }
+}

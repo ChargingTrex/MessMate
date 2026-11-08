@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to use MessMate</title>
+  <meta name="description" content="A short picture guide to MessMate for students, food committee members and the mess office.">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Yeseva+One&family=Archivo:wght@400;500&family=Archivo+Narrow:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="guide.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <a class="wordmark" href="./" aria-label="MessMate guide, home">MessMate</a>
+    <a class="nav-link" href="../">Developer guide</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="container">
+      <div>
+        <h1 id="hero-title">How to use MessMate.</h1>
+        <p class="lead">Pick your part below; each one takes a minute to read.</p>
+        <ul class="roles">
+          <li><a class="role" href="#students"><span class="role-name">I’m a student</span><span class="role-line">The menu and one-tap ratings. No account.</span></a></li>
+          <li><a class="role" href="#committee"><span class="role-name">I’m on the food committee</span><span class="role-line">Meal reviews, dish by dish.</span></a></li>
+          <li><a class="role" href="#office"><span class="role-name">I run the mess office</span><span class="role-line">Menus, members and the day’s numbers.</span></a></li>
+        </ul>
+      </div>
+      <figure class="screen screen--tall">
+        <div class="screen-frame"><img src="../screenshots/student-home.webp" width="780" height="1688" alt="MessMate on a phone: today’s date, day tabs, and lunch being served with its dishes" fetchpriority="high"></div>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" id="students" aria-labelledby="students-title">
+    <div class="container">
+      <div class="head">
+        <h2 id="students-title">Rate a meal in one tap</h2>
+      </div>
+      <ol class="steps">
+        <li>
+          <figure class="screen screen--phone"><div class="screen-frame"><img src="../screenshots/student-today.webp" width="780" height="1688" alt="Today’s lunch and dinner cards, each with its serving time and dishes" loading="lazy" decoding="async"></div></figure>
+          <h3>Open today’s menu</h3>
+          <p>Every meal with its serving time.</p>
+        </li>
+        <li>
+          <figure class="screen screen--phone"><div class="screen-frame"><img src="../screenshots/student-tap.webp" width="780" height="1688" alt="A breakfast card with green Good, red Bad and grey Skipped buttons" loading="lazy" decoding="async"></div></figure>
+          <h3>Tap once after you eat</h3>
+          <p>Good, Bad or Skipped, with an optional note.</p>
+        </li>
+        <li>
+          <figure class="screen screen--phone"><div class="screen-frame"><img src="../screenshots/student-rated.webp" width="780" height="1688" alt="The lunch card saying You said Good for lunch today, with an Undo button" loading="lazy" decoding="async"></div></figure>
+          <h3>Tapped the wrong one?</h3>
+          <p>Undo works for 10 minutes.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="rules-title">
+    <div class="container rules">
+      <h2 id="rules-title">The rules of a tap</h2>
+      <div class="well">
+        <dl>
+          <div><dt>One tap a meal</dt><dd>Breakfast, lunch and dinner, once a day each.</dd></div>
+          <div><dt>After serving starts</dt><dd>Dinner stays grey until 7:30&nbsp;pm.</dd></div>
+          <div><dt>Today only</dt><dd>Other days are to read, not rate.</dd></div>
+          <div><dt>Nothing tied to you</dt><dd>No name, email or roll number kept.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="committee" aria-labelledby="committee-title">
+    <div class="container">
+      <div class="head">
+        <h2 id="committee-title">Review each meal, dish by dish</h2>
+        <p class="lead">Your name is saved with every review you file.</p>
+      </div>
+      <ol class="stages">
+        <li>
+          <div class="text">
+            <h3>Sign in</h3>
+            <p>Use the email and one-time password the admin gave you, then choose your own.</p>
+          </div>
+          <figure class="screen screen--wide screen--low"><div class="screen-frame"><picture><source media="(max-width: 40rem)" srcset="../screenshots/signin-phone.webp" width="780" height="1688"><img src="../screenshots/signin.webp" width="1600" height="1000" alt="The MessMate sign-in page with email and password fields" loading="lazy" decoding="async"></picture></div></figure>
+        </li>
+        <li>
+          <div class="text">
+            <h3>Pick a meal, rate every dish</h3>
+            <p>Yellow meals still need you. Score each dish and the five areas, then submit.</p>
+          </div>
+          <figure class="screen screen--phone"><div class="screen-frame"><img src="../screenshots/committee-review.webp" width="780" height="1688" alt="The committee review page with Breakfast, Lunch and Dinner tabs above the dish cards" loading="lazy" decoding="async"></div></figure>
+        </li>
+        <li>
+          <div class="text">
+            <h3>See where things stand</h3>
+            <p>Your dashboard shows today’s score, the week’s trend and your own reviews.</p>
+          </div>
+          <figure class="screen screen--wide"><div class="screen-frame"><picture><source media="(max-width: 40rem)" srcset="../screenshots/committee-member-dashboard-phone.webp" width="780" height="1688"><img src="../screenshots/committee-member-dashboard.webp" width="1600" height="1000" alt="The committee dashboard: today’s score, scores by area and the seven-day trend" loading="lazy" decoding="async"></picture></div></figure>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section" id="office" aria-labelledby="office-title">
+    <div class="container">
+      <div class="head head--split">
+        <h2 id="office-title">Publish the menu, read the day</h2>
+        <p class="lead">Sign in as admin. The <a href="../#admin-section">developer guide</a> covers every screen.</p>
+      </div>
+      <div class="showcase">
+        <figure class="screen screen--wide">
+          <div class="screen-frame"><picture><source media="(max-width: 40rem)" srcset="../screenshots/admin-overview-phone.webp" width="780" height="1688"><img src="../screenshots/admin-overview.webp" width="1600" height="1000" alt="Today at the mess: a needs-attention panel, the day’s scores and the week’s menu status" loading="lazy" decoding="async"></picture></div>
+          <figcaption>Today at a glance, with anything that needs a decision.</figcaption>
+        </figure>
+        <div class="showcase-pair">
+          <figure class="screen screen--wide">
+            <div class="screen-frame"><picture><source media="(max-width: 40rem)" srcset="../screenshots/admin-menu-phone.webp" width="780" height="1688"><img src="../screenshots/admin-menu.webp" width="1600" height="1000" alt="The weekly menu editor with a CSV import panel and one card per day" loading="lazy" decoding="async"></picture></div>
+            <figcaption>The week’s menu, typed in or imported.</figcaption>
+          </figure>
+          <figure class="screen screen--wide">
+            <div class="screen-frame"><picture><source media="(max-width: 40rem)" srcset="../screenshots/admin-members-phone.webp" width="780" height="1688"><img src="../screenshots/admin-members.webp" width="1600" height="1000" alt="The committee member list with add, reset and deactivate controls" loading="lazy" decoding="async"></picture></div>
+            <figcaption>Who is on the committee.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="faq-title">
+    <div class="container faq">
+      <h2 id="faq-title">When something looks wrong</h2>
+      <dl>
+        <div><dt>I can’t tap dinner</dt><dd>It opens when serving starts, at 7:30&nbsp;pm.</dd></div>
+        <div><dt>It says I already rated</dt><dd>One tap per meal per day, from each phone.</dd></div>
+        <div><dt>I want to say more</dt><dd>Use Rate dish by dish, under the menu.</dd></div>
+        <div><dt>Who sees my rating?</dt><dd>Only totals, never which tap was yours.</dd></div>
+        <div><dt>I forgot my committee password</dt><dd>Ask the admin to reset it.</dd></div>
+      </dl>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div>
+      <a class="wordmark" href="./">MessMate</a>
+      <p>A pilot at the Sai University mess.</p>
+    </div>
+    <ul>
+      <li><a href="../">Developer guide</a></li>
+      <li><a href="https://github.com/ChargingTrex/MessMate">Source code on GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+</body>
+</html>
