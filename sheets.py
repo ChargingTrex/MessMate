@@ -333,7 +333,18 @@ MEMBER_HEADERS = [
 
 REVIEW_HEADERS = [
     "Timestamp", "Date", "Member_Email", "Member_Name",
-    "Taste", "Quality", "Variety", "Hygiene", "Menu", "Review"
+    "Taste", "Quality", "Variety", "Hygiene", "Menu", "Review", "Meal"
+]
+# Meal is LAST on purpose: it was added after the tab went live, and appending
+# it keeps every existing column where it was. Rows written before it existed
+# have Meal blank — a whole-day review — and count as no particular meal.
+
+# One row per dish per review. The dish list differs meal to meal and day to
+# day (it comes from the menu tab), so it cannot be fixed columns on the
+# review row. Long format keeps "how has Sambar done this month" a filter.
+COMMITTEE_DISH_RATINGS_TAB = "committee_dish_ratings"
+DISH_RATING_HEADERS = [
+    "Timestamp", "Date", "Meal", "Member_Email", "Dish", "Rating"
 ]
 
 # The five dimensions the committee rates. Order matters — it drives the
@@ -506,9 +517,18 @@ def update_committee_member(email, **fields):
         return False
 
 
-def append_committee_review(data_dict):
+def append_committee_review(data_dict, dish_ratings=None):
     """
-    Appends one committee review row in REVIEW_HEADERS order.
+    Appends one committee review row in REVIEW_HEADERS order, plus one
+    committee_dish_ratings row per entry in `dish_ratings` — a list of
+    (dish_name, rating) pairs in menu order.
+
+    Dish rows are written FIRST. The review row is what has_submitted_today()
+    checks, so if the dish write fails nothing is recorded and the member can
+    simply retry. The other order would mark the meal reviewed with its dish
+    ratings missing and no way to resubmit. A failure between the two writes
+    can leave orphan dish rows; get_committee_dish_ratings() ignores dish rows
+    with no matching review row for exactly that reason.
 
     CRITICAL: Review is stored RAW, not html.escape()d. It is rendered through
     Jinja2 on the dashboard, which auto-escapes — escaping here too would show
@@ -522,17 +542,32 @@ def append_committee_review(data_dict):
         if not worksheet:
             return False
         now = datetime.now()
+        stamp = now.strftime("%Y-%m-%d %H:%M:%S")
+        date_str = now.strftime("%Y-%m-%d")
+        email = str(data_dict.get("Member_Email", "")).strip().lower()
+        meal = data_dict.get("Meal", "")
+
+        if dish_ratings:
+            dish_sheet = get_sheet(COMMITTEE_DISH_RATINGS_TAB)
+            if not dish_sheet:
+                return False
+            dish_sheet.append_rows(
+                [[stamp, date_str, meal, email, dish, rating]
+                 for dish, rating in dish_ratings],
+                value_input_option="RAW")
+
         row_data = [
-            now.strftime("%Y-%m-%d %H:%M:%S"),   # Timestamp
-            now.strftime("%Y-%m-%d"),            # Date — plain text, never parsed
-            str(data_dict.get("Member_Email", "")).strip().lower(),
+            stamp,                               # Timestamp
+            date_str,                            # Date — plain text, never parsed
+            email,
             data_dict.get("Member_Name", ""),
             data_dict.get("Taste", ""),
             data_dict.get("Quality", ""),
             data_dict.get("Variety", ""),
             data_dict.get("Hygiene", ""),
             data_dict.get("Menu", ""),
-            data_dict.get("Review", "")
+            data_dict.get("Review", ""),
+            meal,                                # Meal — Breakfast / Lunch / Dinner
         ]
         worksheet.append_row(row_data, value_input_option="RAW")
         return True
@@ -570,16 +605,46 @@ def get_committee_reviews(days=None):
         return []
 
 
-def has_submitted_today(email, date_str=None):
+def reviewed_meals(email, date_str=None):
     """
-    True if this member already has a review row for the given date
-    (defaults to today). Used to enforce one review per member per day.
+    The meals this member has reviewed on a date (default today), as a set of
+    MEALS names. A legacy whole-day row (blank Meal) adds nothing.
+
+    Fails OPEN like has_submitted_today(): an unreachable sheet reads as
+    "nothing reviewed yet".
+    """
+    if not email:
+        return set()
+
+    target_date = date_str or datetime.now().strftime("%Y-%m-%d")
+    target_email = str(email).strip().lower()
+
+    meals = set()
+    for record in get_committee_reviews():
+        if (str(record.get("Date", "")).strip() == target_date and
+                str(record.get("Member_Email", "")).strip().lower() == target_email):
+            meal = str(record.get("Meal", "")).strip().title()
+            if meal in MEALS:
+                meals.add(meal)
+    return meals
+
+
+def has_submitted_today(email, date_str=None, meal=None):
+    """
+    With `meal`: True if this member has already reviewed that meal on the
+    given date (defaults to today) — the one-review-per-meal-per-day rule.
+
+    Without `meal`: True if they have any review row that date, legacy
+    whole-day rows included. Dashboards use this for "has rated today".
 
     Fails OPEN: if the sheet is unreachable this returns False, so an outage
     lets a member through rather than locking the committee out entirely.
     """
     if not email:
         return False
+
+    if meal:
+        return meal in reviewed_meals(email, date_str)
 
     target_date = date_str or datetime.now().strftime("%Y-%m-%d")
     target_email = str(email).strip().lower()
@@ -589,6 +654,34 @@ def has_submitted_today(email, date_str=None):
                 str(record.get("Member_Email", "")).strip().lower() == target_email):
             return True
     return False
+
+
+def get_committee_dish_ratings(date_str=None):
+    """
+    Per-dish committee ratings, optionally for one date, as record dicts.
+
+    Only rows backed by a committee_reviews row (same Date, Meal and member)
+    are returned, so orphans from a half-failed write never count — see
+    append_committee_review(). [] on error.
+    """
+    try:
+        worksheet = get_sheet(COMMITTEE_DISH_RATINGS_TAB)
+        if not worksheet:
+            return []
+        records = worksheet.get_all_records()
+
+        def key(r):
+            return (str(r.get("Date", "")).strip(),
+                    str(r.get("Meal", "")).strip().title(),
+                    str(r.get("Member_Email", "")).strip().lower())
+
+        filed = {key(r) for r in get_committee_reviews()}
+        return [r for r in records
+                if key(r) in filed and
+                (date_str is None or key(r)[0] == date_str)]
+    except Exception as e:
+        print(f"Error reading committee dish ratings: {e}")
+        return []
 
 
 # ══════════════════════════════════════════════════════════════════════════════

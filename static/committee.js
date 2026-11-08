@@ -9,7 +9,9 @@
  * is a clean follow-up.
  *
  * Unlike the student form — where per-item ratings are optional and only the
- * overall score gates submit — all five committee dimensions are required.
+ * overall score gates submit — every dish on the meal's menu and all five
+ * committee dimensions are required. Dish groups carry data-dish, area groups
+ * data-dimension; the count of dishes varies by meal, so nothing here assumes it.
  */
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -19,7 +21,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const submitBtn = document.getElementById("submit-btn");
   const submitHint = document.getElementById("submit-hint");
-  const groups = Array.from(document.querySelectorAll(".emoji-group[data-dimension]"));
+  const groups = Array.from(
+    document.querySelectorAll(".emoji-group[data-dish], .emoji-group[data-dimension]"));
 
   function refreshSubmitState() {
     const rated = groups.filter(group => {
@@ -33,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (submitHint) {
       submitHint.textContent = complete
         ? "Ready to submit"
-        : `Rated ${rated} of ${groups.length} — rate all five areas to enable submit`;
+        : `Rated ${rated} of ${groups.length} — rate every dish and all five areas to enable submit`;
     }
   }
 

@@ -2,6 +2,8 @@
 
 A web app for students to anonymously rate their daily mess lunch. Admins, deans, and the VC get a live dashboard with scores, trends, and suggestions.
 
+**Using MessMate?** The [user guide](docs/USER_GUIDE.md) explains it for students, committee members, admins and deans. This README covers setup and development.
+
 ## Tech Stack
 
 - **Backend**: Python (Flask), gspread, Google Sheets
@@ -58,31 +60,49 @@ A web app for students to anonymously rate their daily mess lunch. Admins, deans
 Create a Google Sheet with two tabs:
 
 **Tab 1: `responses`** (headers in row 1):
+
 ```
 Timestamp | Overall | Rice_Curry | Rice_Rasam | Chapati | Chapati_Gravy | Poriyal | Sweet | Salad | Curd | Papad | Pickle | Review | Suggestion
 ```
 
 **Tab 2: `daily_summary`** (headers in row 1):
+
 ```
 Date | Avg_Overall | Response_Count | Avg_Rice_Curry | Avg_Rice_Rasam | Avg_Chapati | Avg_Chapati_Gravy | Avg_Poriyal | Avg_Sweet | Avg_Salad | Avg_Curd | Avg_Papad | Avg_Pickle
 ```
 
 **Tab 3: `committee_members`** (headers in row 1):
+
 ```
 Email | Name | Password_Hash | Active | Must_Change_Password | Term_Start | Term_End | Created_At
 ```
 
-**Tab 4: `committee_reviews`** (headers in row 1):
+**Tab 4: `committee_reviews`** (headers in row 1) — one row per member per meal per day:
+
 ```
-Timestamp | Date | Member_Email | Member_Name | Taste | Quality | Variety | Hygiene | Menu | Review
+Timestamp | Date | Member_Email | Member_Name | Taste | Quality | Variety | Hygiene | Menu | Review | Meal
+```
+
+> **Upgrading an existing sheet:** type `Meal` into the first empty header cell
+> (K1) of `committee_reviews` and create the `committee_dish_ratings` tab below
+> before deploying. Without the `Meal` header the app cannot see which meals a
+> member has reviewed, so the once-per-meal limit would not apply. Older rows
+> keep a blank `Meal` and read as whole-day reviews.
+
+**Tab 4b: `committee_dish_ratings`** (headers in row 1) — one row per dish per committee review. Dish names come from that day's `menu` row:
+
+```
+Timestamp | Date | Meal | Member_Email | Dish | Rating
 ```
 
 **Tab 5: `menu`** (headers in row 1):
+
 ```
 Date | Breakfast | Lunch | Dinner
 ```
 
 **Tab 6: `meal_ratings`** (headers in row 1):
+
 ```
 Timestamp | Date | Meal | Rating | Suggestion
 ```
@@ -91,7 +111,7 @@ Timestamp | Date | Meal | Rating | Suggestion
 > so a rename silently breaks every lookup. Run `python manage_committee.py list`
 > to validate them.
 >
-> Set the `Date` column of `committee_reviews` to **Plain Text** formatting.
+> Set the `Date` column of `committee_reviews` and `committee_dish_ratings` to **Plain Text** formatting.
 > Google Sheets reformats date-looking cells, and all committee filtering reads
 > that column as a literal `YYYY-MM-DD` string.
 >
@@ -114,6 +134,7 @@ SESSION_COOKIE_SECURE=true                    # set in production (HTTPS only)
 ```
 
 Generate the admin password hash:
+
 ```bash
 python manage_committee.py hash-admin-password
 ```
@@ -123,11 +144,13 @@ The password itself is never stored — keep it in a password manager. Without
 unreachable.
 
 Generate a secret key:
+
 ```bash
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
 Get the Spreadsheet ID from the Google Sheet URL:
+
 ```
 https://docs.google.com/spreadsheets/d/SPREADSHEET_ID_IS_HERE/edit
 ```
@@ -147,7 +170,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open http://localhost:5000 in your browser.
+Open <http://localhost:5000> in your browser.
 
 ### 6. Access the Dashboard
 
@@ -167,6 +190,7 @@ python seed_demo.py --yes       # 30 days of demo data across every tab
 See [MessMate Hosting Guide](MessMate_Hosting_Guide.md) for detailed deployment instructions.
 
 Quick steps:
+
 1. Push to a private GitHub repo
 2. Create a Render.com Web Service → connect the repo
 3. Build command: `pip install -r requirements.txt`
@@ -218,7 +242,7 @@ messmate/
 ## Routes
 
 | Route | Method | Description |
-|-------|--------|-------------|
+| ------- | -------- | ------------- |
 | `/` | GET | Student feedback form |
 | `/submit` | POST | Process submission (1/IP/day rate limit) |
 | `/thanks` | GET | Thank-you page |
@@ -251,7 +275,7 @@ messmate/
 ### Access levels
 
 | Credential | Can do | Cannot do |
-|---|---|---|
+| --- | --- | --- |
 | `?token=` in the URL | Open both read-only dashboards | Touch the roster |
 | Viewer session (`dean@messmate.demo` at `/signin`) | The same read-only dashboards, without a secret in the URL | Anything that changes state |
 | Admin session (`/admin/login`) | Everything: overview, menu, members, both dashboards | — |
@@ -292,7 +316,7 @@ tally of taps, a mean of 1–5 dish scores and a committee review measure
 different things from different populations.
 
 | Surface | Who | What it asks |
-|---|---|---|
+| --- | --- | --- |
 | `/home` | any student, no login | One tap per meal: good / bad / skip, plus a suggestion |
 | `/` | any student, no login | Per-dish 1–5 ratings, a review and a suggestion |
 | `/committee` | committee members | Taste, quality, variety, hygiene, menu — attributed |

@@ -1,11 +1,16 @@
 <!--
   Food Committee Rating Form (committee_form.html)
   -------------------------------------------------
-  Five required dimensions plus an optional written review.
+  One review per meal per day. The meal toggle (Breakfast / Lunch / Dinner)
+  is plain links to ?meal=<name>, green once reviewed, yellow while still to
+  do. Each dish on today's menu for the meal (from the menu tab) gets a
+  required 1-5 rating, then the five required areas, then an optional review.
   Reuses the student form's emoji widget, driven by static/committee.js.
 
   Test Automation Attributes:
-    - data-dimension="<name>" on each rating group
+    - id="meal-toggle", data-meal="<Meal>" + data-reviewed on each toggle link
+    - data-dish="<index>" + data-dish-name on each dish rating group
+    - data-dimension="<name>" on each area rating group
     - id="submit-btn" on the submit button
     - class="error-banner" on the error alert
 -->
@@ -21,7 +26,7 @@
         <div class="page-header">
             <div>
                 <p class="eyebrow">Food Committee</p>
-                <h1>Today's review 🍽️</h1>
+                <h1>Today's {{ meal|lower }} review 🍽️</h1>
             </div>
         </div>
 
@@ -37,13 +42,65 @@
         <div class="alert error error-banner">{{ error }}</div>
         {% endif %}
 
+        <nav id="meal-toggle" class="meal-toggle" aria-label="Choose a meal to review">
+            {% for tab in meal_tabs %}
+            <a href="{{ url_for('committee', meal=tab.name) }}"
+               class="meal-toggle-btn {{ 'is-reviewed' if tab.reviewed else 'is-pending' }}"
+               data-meal="{{ tab.name }}" data-reviewed="{{ 'true' if tab.reviewed else 'false' }}"
+               {% if tab.name == meal %}aria-current="page"{% endif %}>
+                <span class="meal-toggle-name">{{ tab.name }}</span>
+                <span class="meal-toggle-state">{{ '✓ Reviewed' if tab.reviewed else 'To review' }}</span>
+            </a>
+            {% endfor %}
+        </nav>
+
+        {% if meal_done %}
+        <section class="card meal-done" id="meal-done">
+            <h2>{{ meal }} is reviewed ✅</h2>
+            <p class="subtext-line">
+                You've already reviewed today's {{ meal|lower }}. Pick a yellow
+                meal above to review the next one.
+            </p>
+        </section>
+        {% else %}
         <form id="committeeForm" method="POST" action="{{ url_for('committee_submit') }}">
             {{ csrf_field() }}
+            <input type="hidden" name="meal" value="{{ meal }}">
 
             <p class="subtext-line">
-                Rate all five areas, then add any detail that would help the
-                kitchen act on it. One review per day.
+                Rate each dish on today's {{ meal|lower }} menu and all five
+                areas, then add any detail that would help the kitchen act on
+                it. One review per meal per day.
             </p>
+
+            <section class="dish-section" aria-labelledby="dishes-heading">
+                <h2 id="dishes-heading">Dishes</h2>
+                {% if dishes %}
+                    {% for dish in dishes %}
+                    {% set key = 'dish_' ~ loop.index0 %}
+                    <div class="card item-card">
+                        <label class="item-label">{{ dish }}</label>
+                        <div class="emoji-group small-group" data-input="{{ key }}_val"
+                             data-dish="{{ loop.index0 }}" data-dish-name="{{ dish }}">
+                            <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="1" aria-label="{{ dish }}: 1 of 5">😡</button>
+                            <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="2" aria-label="{{ dish }}: 2 of 5">😕</button>
+                            <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="3" aria-label="{{ dish }}: 3 of 5">😐</button>
+                            <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="4" aria-label="{{ dish }}: 4 of 5">🙂</button>
+                            <button type="button" class="emoji-btn" data-item="{{ key }}" data-value="5" aria-label="{{ dish }}: 5 of 5">😄</button>
+                        </div>
+                        <input type="hidden" name="{{ key }}" id="{{ key }}_val">
+                        <input type="hidden" name="dish_name_{{ loop.index0 }}" value="{{ dish }}">
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="card notice-box" id="no-menu">
+                        Today's {{ meal|lower }} menu isn't published yet, so there
+                        are no dishes to rate. You can still rate the five areas.
+                    </div>
+                {% endif %}
+            </section>
+
+            <h2 class="section-heading">Overall</h2>
 
             {% set dimensions = [
                 ('taste',   '😋 Taste',   'Flavour and seasoning of what was served'),
@@ -79,9 +136,10 @@
                 <button type="submit" id="submit-btn" class="submit-btn" disabled>
                     Submit review 🚀
                 </button>
-                <p class="char-counter" id="submit-hint">Rate all five areas to enable submit</p>
+                <p class="char-counter" id="submit-hint">Rate every dish and all five areas to enable submit</p>
             </div>
         </form>
+        {% endif %}
     </main>
 
     <script src="{{ url_for('static', filename='committee.js') }}"></script>

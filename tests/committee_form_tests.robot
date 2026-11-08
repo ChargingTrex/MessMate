@@ -116,11 +116,13 @@ TC72 All Five Dimensions Are Present
         Page Should Contain Element    id=${dimension}_val
     END
 
-TC73 Submit Is Disabled Until Every Dimension Is Rated
+TC73 Submit Is Disabled Until Every Dish And Dimension Is Rated
     [Tags]    smoke    committee
     [Documentation]    Unlike the student form, where per-item ratings are
-    ...    optional, all five committee dimensions are required.
+    ...    optional, every dish and all five committee dimensions are required.
     Login And Reach Rating Page
+    Element Should Be Disabled    id=submit-btn
+    Rate All Dishes    4
     Element Should Be Disabled    id=submit-btn
     Rate Dimension    taste      4
     Rate Dimension    quality    4
@@ -135,7 +137,30 @@ TC74 Progress Hint Tracks How Many Are Rated
     Login And Reach Rating Page
     Rate Dimension    taste      3
     Rate Dimension    quality    3
-    Element Text Should Be Contains    id=submit-hint    Rated 2 of 5
+    Element Text Should Be Contains    id=submit-hint    Rated 2 of
+
+TC74a The Meal Toggle Shows Each Meal's Dishes From The Menu
+    [Tags]    smoke    committee
+    [Documentation]    Dish names come from today's menu tab and differ by
+    ...    meal. test/fake_server.py seeds lunch as Rice, Sambar, Poriyal,
+    ...    Curd, Papad and dinner as Chapati, Paneer Gravy, Salad.
+    Login And Reach Rating Page
+    Open Meal    Lunch
+    Page Should Contain Element    css=.emoji-group[data-dish-name="Poriyal"]
+    ${lunch}=    Get Element Count    css=.emoji-group[data-dish]
+    Should Be Equal As Integers    ${lunch}    5
+    Open Meal    Dinner
+    Page Should Contain Element    css=.emoji-group[data-dish-name="Paneer Gravy"]
+    Page Should Not Contain Element    css=.emoji-group[data-dish-name="Poriyal"]
+    ${dinner}=    Get Element Count    css=.emoji-group[data-dish]
+    Should Be Equal As Integers    ${dinner}    3
+
+TC74b Unreviewed Meals Are Yellow On The Toggle
+    [Tags]    committee
+    Login And Reach Rating Page
+    FOR    ${meal}    IN    Breakfast    Lunch    Dinner
+        Element Should Have Class    css=#meal-toggle a[data-meal="${meal}"]    is-pending
+    END
 
 TC75 Selecting An Emoji Marks It And Records The Value
     [Tags]    committee
@@ -182,7 +207,7 @@ TC79 Review Field Enforces Its Maximum Length
 TC80 A Complete Review Submits Successfully
     [Tags]    smoke    committee
     Login And Reach Rating Page
-    Rate All Dimensions    4
+    Rate Whole Form    4
     Input Text    id=review    Robot Framework submitted this review
     Submit Committee Review
     Page Should Contain    Review recorded
@@ -190,24 +215,27 @@ TC80 A Complete Review Submits Successfully
 TC81 Review Is Optional
     [Tags]    committee
     Login And Reach Rating Page
-    Rate All Dimensions    3
+    Rate Whole Form    3
     Submit Committee Review
     Page Should Contain    Review recorded
 
-TC82 A Second Review The Same Day Is Refused
+TC82 A Second Review Of The Same Meal Is Refused
     [Tags]    smoke    committee
-    [Documentation]    One review per member per day keeps averages meaningful.
+    [Documentation]    One review per member per meal per day keeps averages
+    ...    meaningful. The reviewed meal turns green and shows as done.
     Login And Reach Rating Page
-    Rate All Dimensions    5
+    Open Meal    Lunch
+    Rate Whole Form    5
     Submit Committee Review
-    Go To    ${COMMITTEE_URL}
-    Wait Until Page Contains Element    id=already-heading    timeout=${TIMEOUT}
-    Page Should Contain    already reviewed today
+    Go To    ${COMMITTEE_URL}?meal=Lunch
+    Wait Until Page Contains Element    id=meal-done    timeout=${TIMEOUT}
     Page Should Not Contain Element    id=committeeForm
+    Element Should Have Class    css=#meal-toggle a[data-meal="Lunch"]    is-reviewed
+    Element Should Have Class    css=#meal-toggle a[data-meal="Dinner"]    is-pending
 
 TC83 A Member Who Already Rated Sees The Notice On Sign In
     [Tags]    committee
-    [Documentation]    The fixture member has already rated today.
+    [Documentation]    The fixture member has already rated all three meals today.
     Login As Committee Member    ${RATED_EMAIL}    ${RATED_PASSWORD}
     Wait Until Page Contains Element    id=already-heading    timeout=${TIMEOUT}
     Page Should Not Contain Element    id=committeeForm
@@ -216,7 +244,7 @@ TC84 Double Submission Is Prevented Client Side
     [Tags]    committee
     [Documentation]    The button disables itself so a double tap cannot post twice.
     Login And Reach Rating Page
-    Rate All Dimensions    4
+    Rate Whole Form    4
     Click Element    id=submit-btn
     Wait Until Page Contains Element    css=.thanks-container    timeout=${TIMEOUT}
 

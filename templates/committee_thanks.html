@@ -2,7 +2,8 @@
   Committee Thank You / Already Submitted (committee_thanks.html)
   ---------------------------------------------------------------
   Serves both the post-submission confirmation and the "you already reviewed
-  today" case, which is a normal outcome rather than an error.
+  this meal / every meal today" case, which is a normal outcome rather than an
+  error. Links on to any meal still to review (id="next-meal").
 
   Test Automation Attributes:
     - class="thanks-container", id="already-heading"
@@ -19,18 +20,34 @@
         <section class="card thanks-container">
             {% if already_submitted %}
                 <div class="thanks-icon" aria-hidden="true">✅</div>
-                <h2 id="already-heading">You've already reviewed today</h2>
+                {% if meal %}
+                <h2 id="already-heading">You've already reviewed {{ meal|lower }} today</h2>
                 <p>
-                    Thanks {{ member.Name }} — one review per member per day keeps the
-                    averages meaningful.<br>Come back tomorrow.
+                    Thanks {{ member.Name }} — one review per member per meal keeps the
+                    averages meaningful.
                 </p>
+                {% else %}
+                <h2 id="already-heading">You've already reviewed today's meals</h2>
+                <p>
+                    Thanks {{ member.Name }} — breakfast, lunch and dinner are all
+                    reviewed. One review per member per meal keeps the averages
+                    meaningful.<br>Come back tomorrow.
+                </p>
+                {% endif %}
             {% else %}
                 <div class="thanks-icon" aria-hidden="true">🚀</div>
                 <h2>Review recorded</h2>
                 <p>
-                    Thanks {{ member.Name }}. Your assessment is on the committee
-                    dashboard for the administration to act on.
+                    Thanks {{ member.Name }}. Your {{ meal|lower ~ ' ' if meal }}assessment
+                    is on the committee dashboard for the administration to act on.
                 </p>
+            {% endif %}
+
+            {% if remaining %}
+            <p class="next-meal" id="next-meal">
+                Still to review today:
+                {% for m in remaining %}<a href="{{ url_for('committee', meal=m) }}" data-meal="{{ m }}">{{ m }}</a>{{ ', ' if not loop.last }}{% endfor %}
+            </p>
             {% endif %}
 
             <div class="thanks-actions">

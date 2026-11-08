@@ -507,20 +507,63 @@ def committee_password():
 
 # ── Committee: rating ─────────────────────────────────────────────────────────
 
+def _parse_meal(val):
+    """'lunch' / 'Lunch' -> 'Lunch'; anything not in sheets.MEALS -> None."""
+    meal = str(val or "").strip().title()
+    return meal if meal in sheets.MEALS else None
+
+
+def _default_committee_meal(reviewed, now=None):
+    """
+    The meal the rating page opens on when none is asked for: the latest meal
+    that has started serving and is not yet reviewed — at 1 pm, Lunch. Before
+    breakfast, or once every served meal is done, the first unreviewed meal.
+    """
+    now = now or datetime.now()
+    served = [m for m in sheets.MEALS if sheets.meal_is_open(m, now)]
+    for meal in reversed(served):
+        if meal not in reviewed:
+            return meal
+    for meal in sheets.MEALS:
+        if meal not in reviewed:
+            return meal
+    return sheets.MEALS[0]
+
+
+def _render_committee_form(member, meal, reviewed, error=None, status=200):
+    """
+    The rating page for one meal: today's dishes for it from the menu tab, the
+    five areas, and the meal toggle with each meal's reviewed state.
+    """
+    dishes = sheets.get_menu_for_date().get(meal, [])
+    meal_tabs = [{"name": m, "reviewed": m in reviewed,
+                  "timing": sheets.MEAL_TIMINGS.get(m, "")}
+                 for m in sheets.MEALS]
+    return render_template(
+        "committee_form.html", member=member, meal=meal, dishes=dishes,
+        meal_tabs=meal_tabs, meal_done=meal in reviewed, error=error,
+    ), status
+
+
 @app.route("/committee", methods=["GET"])
 @auth.login_required
 @auth.password_change_required
 def committee():
-    """The committee rating page — five dimensions plus an optional review."""
+    """
+    The committee rating page for one meal (?meal=Lunch): a 1-5 rating per
+    dish on today's menu for that meal, the five areas, and an optional review.
+    """
     member = auth.current_member()
+    reviewed = sheets.reviewed_meals(member["Email"])
 
-    # One review per member per day. Checked on GET so the member sees the
-    # already-submitted page instead of filling in a form that will be refused.
-    if sheets.has_submitted_today(member["Email"]):
+    # One review per member per meal per day. With all three done, the member
+    # gets the already-reviewed page rather than a toggle of finished meals.
+    if all(m in reviewed for m in sheets.MEALS):
         return render_template("committee_thanks.html",
                                member=member, already_submitted=True)
 
-    return render_template("committee_form.html", member=member)
+    meal = _parse_meal(request.args.get("meal")) or _default_committee_meal(reviewed)
+    return _render_committee_form(member, meal, reviewed)
 
 
 @app.route("/committee/submit", methods=["POST"])
@@ -533,24 +576,56 @@ def committee_submit():
 
     Deliberately NOT rate limited by IP: campus Wi-Fi puts the whole committee
     behind one NAT address, so a per-IP cap would lock out everyone after the
-    first submission. Duplicate control is per member per day instead.
+    first submission. Duplicate control is per member per meal per day instead.
+
+    Dishes are posted as dish_<i> (rating) with dish_name_<i> (the name the
+    page showed). The server checks those names against the menu as it stands
+    NOW: if staff edited the menu while the member was rating, the indexes no
+    longer line up, and saving would file ratings under the wrong dishes.
     """
     member = auth.current_member()
+    reviewed = sheets.reviewed_meals(member["Email"])
+
+    meal = _parse_meal(request.form.get("meal"))
+    if not meal:
+        return _render_committee_form(
+            member, _default_committee_meal(reviewed), reviewed,
+            error="Choose Breakfast, Lunch or Dinner to review.", status=400)
+
+    # Every dish on today's menu for this meal is required
+    dishes = sheets.get_menu_for_date().get(meal, [])
+    posted_names = [str(request.form.get(f"dish_name_{i}", "")).strip()
+                    for i in range(len(dishes))]
+    extra_dish = request.form.get(f"dish_name_{len(dishes)}") is not None
+    if posted_names != dishes or extra_dish:
+        return _render_committee_form(
+            member, meal, reviewed, status=409,
+            error=f"Today's {meal.lower()} menu changed while you were rating. "
+                  "Check the dishes below and rate them again.")
+
+    dish_ratings = []
+    for i, dish in enumerate(dishes):
+        value = parse_dimension(request.form.get(f"dish_{i}"))
+        if value is None:
+            return _render_committee_form(
+                member, meal, reviewed, status=400,
+                error=f"Please rate {dish} (1-5).")
+        dish_ratings.append((dish, value))
 
     # All five dimensions are required
     ratings = {}
     for dimension in sheets.DIMENSIONS:
         value = parse_dimension(request.form.get(dimension.lower()))
         if value is None:
-            return render_template(
-                "committee_form.html", member=member,
-                error=f"Please rate {dimension} (1-5)."
-            ), 400
+            return _render_committee_form(
+                member, meal, reviewed, status=400,
+                error=f"Please rate {dimension} (1-5).")
         ratings[dimension] = value
 
-    if sheets.has_submitted_today(member["Email"]):
-        return render_template("committee_thanks.html",
-                               member=member, already_submitted=True)
+    if meal in reviewed:
+        return render_template("committee_thanks.html", member=member,
+                               already_submitted=True, meal=meal,
+                               remaining=[m for m in sheets.MEALS if m not in reviewed])
 
     # CRITICAL: stored raw, not html.escape()d. Jinja2 auto-escapes it on the
     # dashboard; escaping here too would render literal "&amp;" to admins.
@@ -560,29 +635,33 @@ def committee_submit():
         "Member_Email": member["Email"],
         "Member_Name": member.get("Name", ""),
         "Review": review_text,
+        "Meal": meal,
     }
     data.update(ratings)
 
     try:
-        if sheets.append_committee_review(data):
-            return redirect(url_for("committee_thanks"))
-        return render_template(
-            "committee_form.html", member=member,
-            error="Failed to save your review. Please try again."
-        ), 500
+        if sheets.append_committee_review(data, dish_ratings):
+            return redirect(url_for("committee_thanks", meal=meal))
+        return _render_committee_form(
+            member, meal, reviewed, status=500,
+            error="Failed to save your review. Please try again.")
     except Exception as e:
         print(f"Error writing committee review: {e}")
-        return render_template(
-            "committee_form.html", member=member,
-            error="An error occurred saving your review."
-        ), 500
+        return _render_committee_form(
+            member, meal, reviewed, status=500,
+            error="An error occurred saving your review.")
 
 
 @app.route("/committee/thanks", methods=["GET"])
 @auth.login_required
 def committee_thanks():
-    """Post-submission confirmation."""
-    return render_template("committee_thanks.html", member=auth.current_member())
+    """Post-submission confirmation, with a link on to any meal still unreviewed."""
+    member = auth.current_member()
+    reviewed = sheets.reviewed_meals(member["Email"])
+    return render_template(
+        "committee_thanks.html", member=member,
+        meal=_parse_meal(request.args.get("meal")),
+        remaining=[m for m in sheets.MEALS if m not in reviewed])
 
 
 @app.route("/committee/dashboard", methods=["GET"])
@@ -1001,7 +1080,17 @@ def _committee_analytics():
         dimension_data[dimension] = {"avg": _average(values),
                                      "count": len(values)}
 
-    today_count = len(today_reviews)
+    # Reviews are per meal now, so one member can file up to three a day.
+    # today_count is MEMBERS who reviewed (every template shows it as "X of
+    # N members"), which keeps participation a true percentage of the roster.
+    filed = {str(r.get("Member_Email", "")).strip().lower() for r in today_reviews}
+    today_count = len(filed)
+    today_review_count = len(today_reviews)
+    today_meal_counts = {
+        meal: sum(1 for r in today_reviews
+                  if str(r.get("Meal", "")).strip().title() == meal)
+        for meal in sheets.MEALS
+    }
     today_avg = _average(today_all_scores)
     participation = (round(today_count / active_members * 100)
                      if active_members else 0)
@@ -1011,7 +1100,6 @@ def _committee_analytics():
     highest_dimension = max(rated_dims, key=lambda x: x[1]) if rated_dims else None
 
     # Who has filed today, so a dean can see at a glance who is missing
-    filed = {str(r.get("Member_Email", "")).strip().lower() for r in today_reviews}
     attendance = sorted(
         ({"name": m.get("Name", "") or m.get("Email", ""),
           "email": str(m.get("Email", "")).strip().lower(),
@@ -1055,6 +1143,7 @@ def _committee_analytics():
             review_feed.append({
                 "name": review.get("Member_Name", "") or "Committee member",
                 "date": review.get("Date", ""),
+                "meal": str(review.get("Meal", "")).strip().title(),
                 "text": text,
                 "_sort": (str(review.get("Date", "")),
                           str(review.get("Timestamp", ""))),
@@ -1066,6 +1155,8 @@ def _committee_analytics():
         "dimension_data": dimension_data,
         "today_avg": today_avg,
         "today_count": today_count,
+        "today_review_count": today_review_count,
+        "today_meal_counts": today_meal_counts,
         "active_members": active_members,
         "participation": participation,
         "lowest_dimension": lowest_dimension,
@@ -1080,7 +1171,9 @@ def _committee_analytics():
 def _empty_committee_analytics():
     return {
         "trend_data": [], "dimension_data": {}, "today_avg": 0,
-        "today_count": 0, "active_members": 0, "participation": 0,
+        "today_count": 0, "today_review_count": 0,
+        "today_meal_counts": {m: 0 for m in sheets.MEALS},
+        "active_members": 0, "participation": 0,
         "lowest_dimension": None, "highest_dimension": None,
         "attendance": [], "week_avg": 0, "week_reviews": 0, "reviews": [],
     }

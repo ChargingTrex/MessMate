@@ -13,7 +13,12 @@ Resource          resources/committee_keywords.resource
 Suite Setup       Reset Test Fixture
 
 *** Variables ***
-&{FULL_RATING}    taste=4    quality=4    variety=4    hygiene=4    menu=4
+# A complete dinner review. test/fake_server.py seeds today's dinner as
+# "Chapati, Paneer Gravy, Salad"; each dish is posted as dish_<i> with the
+# name the page showed in dish_name_<i>.
+&{FULL_RATING}    meal=Dinner    taste=4    quality=4    variety=4    hygiene=4    menu=4
+...               dish_name_0=Chapati    dish_0=4    dish_name_1=Paneer Gravy    dish_1=4
+...               dish_name_2=Salad    dish_2=4
 
 *** Test Cases ***
 
@@ -148,7 +153,7 @@ TC166 The Submitted Review Reaches The Dashboard
     ${response}=    GET    url=${BASE_URL}/dashboard/committee?token=${DASHBOARD_TOKEN}
     Should Contain    ${response.text}    Submitted over the API
 
-TC167 A Second Submission The Same Day Is Refused
+TC167 A Second Submission Of The Same Meal Is Refused
     [Tags]    api    committee
     Create Session    repeat    ${BASE_URL}
     ${page}=     GET On Session    repeat    /committee/login
@@ -180,7 +185,7 @@ TC168 An Out Of Range Rating Is Rejected
     ${page}=     GET On Session    invalid    /committee
     ${token}=    Extract Csrf Token    ${page.text}
     ${submit}=   POST On Session    invalid    /committee/submit
-    ...    data=${{ {'taste': '9', 'quality': '4', 'variety': '4', 'hygiene': '4', 'menu': '4', 'csrf_token': $token} }}
+    ...    data=${{ {'meal': 'Dinner', 'dish_name_0': 'Chapati', 'dish_0': '4', 'dish_name_1': 'Paneer Gravy', 'dish_1': '4', 'dish_name_2': 'Salad', 'dish_2': '4', 'taste': '9', 'quality': '4', 'variety': '4', 'hygiene': '4', 'menu': '4', 'csrf_token': $token} }}
     ...    expected_status=400
     Should Be Equal As Integers    ${submit.status_code}    400
 
@@ -196,7 +201,7 @@ TC169 A Missing Dimension Is Rejected
     ${page}=     GET On Session    partial    /committee
     ${token}=    Extract Csrf Token    ${page.text}
     ${submit}=   POST On Session    partial    /committee/submit
-    ...    data=${{ {'taste': '4', 'quality': '4', 'csrf_token': $token} }}
+    ...    data=${{ {'meal': 'Dinner', 'dish_name_0': 'Chapati', 'dish_0': '4', 'dish_name_1': 'Paneer Gravy', 'dish_1': '4', 'dish_name_2': 'Salad', 'dish_2': '4', 'taste': '4', 'quality': '4', 'csrf_token': $token} }}
     ...    expected_status=400
     Should Contain    ${submit.text}    error-banner
 
