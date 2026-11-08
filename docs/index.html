@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MessMate User Guide · Official Documentation</title>
+  <title>MessMate Developer Guide</title>
   <meta name="description" content="Complete user guide for MessMate: student meal reviews, food committee quality audits, menu publishing, and administrative dashboards.">
   <meta name="theme-color" content="#0f1724">
 
   <!-- OpenGraph / Social Meta -->
-  <meta property="og:title" content="MessMate User Guide">
+  <meta property="og:title" content="MessMate Developer Guide">
   <meta property="og:description" content="Everything you need to know about using MessMate as a student, committee member, or administrator.">
   <meta property="og:type" content="article">
   <meta property="og:image" content="favicon.svg">
@@ -1190,6 +1190,33 @@
         text-decoration: underline;
       }
     }
+    /* ── Screenshots ─────────────────────────────────────────────── */
+    .shot { margin: 1.25rem 0 1.75rem; }
+    .shot a {
+      display: block;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      background: var(--bg-900);
+      box-shadow: var(--shadow-card);
+      transition: border-color var(--dur) var(--ease);
+    }
+    .shot a:hover { border-color: var(--border-hover); }
+    .shot a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .shot img { display: block; width: 100%; height: auto; }
+    .shot figcaption { margin-top: 0.6rem; font-size: 0.875rem; line-height: 1.5; color: var(--text-muted); }
+    .shot-phone { max-width: 300px; margin-inline: auto; }
+    .shot-pair {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 300px));
+      justify-content: center;
+      gap: 1.5rem;
+      margin: 1.25rem 0 1.75rem;
+    }
+    .shot-pair .shot { margin: 0; }
+    @media (max-width: 640px) {
+      .shot-pair { grid-template-columns: minmax(0, 300px); }
+    }
   </style>
 </head>
 <body>
@@ -1208,7 +1235,7 @@
     <a href="#" class="topbar-brand">
       <img src="favicon.svg" alt="MessMate Icon" class="topbar-logo">
       <span><span class="brand-pill">MESSMATE</span></span>
-      <span class="guide-tag">User Guide</span>
+      <span class="guide-tag">Developer Guide</span>
     </a>
 
     <div class="search-wrapper">
@@ -1327,10 +1354,13 @@
       <!-- Hero Banner -->
       <section class="hero-banner">
         <div class="hero-badge">MessMate Handbook</div>
-        <h1 class="hero-title">MessMate User Guide</h1>
+        <h1 class="hero-title">MessMate Developer Guide</h1>
         <p class="hero-lead">
           MessMate collects feedback on college mess food in three separate streams and surfaces clear, actionable data to the people who can act on it.
         </p>
+        <div class="callout info">
+          <strong>Just using MessMate?</strong> The <a href="guide/">simple guide</a> shows students, committee members and the mess office what to do, in pictures. This page is the full reference.
+        </div>
         
         <div class="hero-stats">
           <div class="stat-pill-box">
@@ -1501,6 +1531,8 @@
           <li><strong>Ticker Banner:</strong> The moving banner under the header includes a <strong>Pause</strong> button on its right side.</li>
         </ul>
 
+        <figure class="shot shot-phone"><a href="screenshots/student-home.webp" aria-label="Open the full-size screenshot: The MessMate home page on a phone: today's date, the day tabs, meal filters, and the meal being served now with its dishes"><img src="screenshots/student-home.webp" width="780" height="1688" alt="The MessMate home page on a phone: today's date, the day tabs, meal filters, and the meal being served now with its dishes" loading="lazy" decoding="async"></a><figcaption>The home page on a phone. The day tabs preview the week; the card at the top shows the meal being served now.</figcaption></figure>
+
         <h3 id="students-quick-tap">2. Rate a Meal in One Tap</h3>
         <p>Each meal card provides three instant rating buttons:</p>
         <ul style="margin-left: 1.5rem; margin-bottom: 1.25rem; color: var(--text-2);">
@@ -1512,6 +1544,8 @@
         <div class="callout info">
           <strong>Adding a Suggestion:</strong> Want to explain why? Open <strong>Add a suggestion</strong> and type your thoughts <em>before</em> tapping Good, Bad, or Skipped. Your suggestion is transmitted together with your tap.
         </div>
+
+        <figure class="shot shot-phone"><a href="screenshots/student-tap.webp" aria-label="Open the full-size screenshot: A breakfast card listing its dishes, with green Good, red Bad and grey Skipped buttons and an Add a suggestion link"><img src="screenshots/student-tap.webp" width="780" height="1688" alt="A breakfast card listing its dishes, with green Good, red Bad and grey Skipped buttons and an Add a suggestion link" loading="lazy" decoding="async"></a><figcaption>Each meal card: the dishes, the share of students who liked it, the three buttons, and Add a suggestion.</figcaption></figure>
 
         <h3 id="students-rules">3. Rating Rules & 10-Minute Undo Window</h3>
         <div class="step-list">
@@ -1545,6 +1579,8 @@
           </div>
         </div>
 
+        <figure class="shot shot-phone"><a href="screenshots/student-rated.webp" aria-label="Open the full-size screenshot: The lunch card after rating, saying You said Good for lunch today with an Undo button; below it the dinner buttons are greyed out with Dinner opens at 7:30 pm"><img src="screenshots/student-rated.webp" width="780" height="1688" alt="The lunch card after rating, saying You said Good for lunch today with an Undo button; below it the dinner buttons are greyed out with Dinner opens at 7:30 pm" loading="lazy" decoding="async"></a><figcaption>After a tap the card shows your answer and an Undo button for 10 minutes. Dinner's buttons stay greyed out until it opens at 7:30 pm.</figcaption></figure>
+
         <h3 id="students-dish-review">4. Rate Lunch Dish by Dish</h3>
         <p>
           For detailed feedback on lunch preparations, tap <strong>Rate dish by dish</strong> at the bottom of the home page, or go directly to <code>/</code>.
@@ -1558,6 +1594,8 @@
             <li><strong>Frequency Limit:</strong> One submission every <strong>4 hours</strong> per device.</li>
           </ul>
         </div>
+
+        <figure class="shot shot-phone"><a href="screenshots/student-dish-form.webp" aria-label="Open the full-size screenshot: The Rate today's lunch form: five faces from Terrible to Excellent for the overall score, then optional ratings for each dish"><img src="screenshots/student-dish-form.webp" width="780" height="1688" alt="The Rate today's lunch form: five faces from Terrible to Excellent for the overall score, then optional ratings for each dish" loading="lazy" decoding="async"></a><figcaption>The dish-by-dish lunch form. Only the overall score is required.</figcaption></figure>
 
         <h3 id="students-messages">5. Messages You Might See</h3>
         <div class="table-responsive">
@@ -1623,6 +1661,8 @@
           <li>Sign out anytime from the top bar button. If you forget your password, contact the administrator for a one-click reset.</li>
         </ol>
 
+        <figure class="shot"><a href="screenshots/signin.webp" aria-label="Open the full-size screenshot: The MessMate sign-in page with Email and Password fields and a Sign in button"><img src="screenshots/signin.webp" width="1600" height="1000" alt="The MessMate sign-in page with Email and Password fields and a Sign in button" loading="lazy" decoding="async"></a><figcaption>The sign-in page. The email you use decides whether you land on the committee pages or the admin console.</figcaption></figure>
+
         <h3 id="committee-review">2. Auditing a Meal</h3>
         <p>
           Navigate to <code>/committee</code>. You inspect <strong>each meal separately</strong>, once per meal per day.
@@ -1664,6 +1704,11 @@
               <p><strong>Submit</strong> enables only once every dish and all five areas are rated. The thank-you page links to any meal you still have to review today.</p>
             </div>
           </div>
+        </div>
+
+        <div class="shot-pair">
+          <figure class="shot shot-phone"><a href="screenshots/committee-review.webp" aria-label="Open the full-size screenshot: The committee review page for lunch, with Breakfast, Lunch and Dinner tabs each marked To review, above the first dish cards"><img src="screenshots/committee-review.webp" width="780" height="1688" alt="The committee review page for lunch, with Breakfast, Lunch and Dinner tabs each marked To review, above the first dish cards" loading="lazy" decoding="async"></a><figcaption>The meal tabs, marked To review or Reviewed.</figcaption></figure>
+          <figure class="shot shot-phone"><a href="screenshots/committee-review-dishes.webp" aria-label="Open the full-size screenshot: Committee dish cards for lunch, each with five faces to score the dish from 1 to 5"><img src="screenshots/committee-review-dishes.webp" width="780" height="1688" alt="Committee dish cards for lunch, each with five faces to score the dish from 1 to 5" loading="lazy" decoding="async"></a><figcaption>One card per dish on that meal's published menu.</figcaption></figure>
         </div>
 
         <div class="callout info">
@@ -1709,6 +1754,7 @@
           <li><strong>Student Voice Context:</strong> What students reported today is surfaced in a dedicated side card for reference without blending into your audit.</li>
           <li><strong>Recent Committee Reviews:</strong> Written reviews from members, newest first, each labelled with its date and meal.</li>
         </ul>
+        <figure class="shot"><a href="screenshots/committee-member-dashboard.webp" aria-label="Open the full-size screenshot: The committee member dashboard: today's committee score, members reviewed, 7-day average, lowest area, the member's own reviews this month and last review, a bar chart by area and a 7-day trend line"><img src="screenshots/committee-member-dashboard.webp" width="1600" height="1000" alt="The committee member dashboard: today's committee score, members reviewed, 7-day average, lowest area, the member's own reviews this month and last review, a bar chart by area and a 7-day trend line" loading="lazy" decoding="async"></a><figcaption>The member dashboard: the committee's numbers for today, your own record, scores by area and the 7-day trend.</figcaption></figure>
       </section>
 
       <!-- ================= FOR ADMINISTRATORS ================= -->
@@ -1729,6 +1775,8 @@
           <li>Committee audit score, active participation count, and 7-day trends.</li>
           <li>Menu publishing status across the upcoming 7 calendar days.</li>
         </ul>
+
+        <figure class="shot"><a href="screenshots/admin-overview.webp" aria-label="Open the full-size screenshot: The admin overview, Today at the mess: a Needs attention panel reading All clear, six score tiles, today's menu with reactions, and the menu publication grid for the next 7 days"><img src="screenshots/admin-overview.webp" width="1600" height="1000" alt="The admin overview, Today at the mess: a Needs attention panel reading All clear, six score tiles, today's menu with reactions, and the menu publication grid for the next 7 days" loading="lazy" decoding="async"></a><figcaption>The admin overview. Needs attention lists anything that needs a decision; here everything is clear.</figcaption></figure>
 
         <h3 id="admin-attention">2. Automated "Needs Attention" Flags</h3>
         <p>
@@ -1809,6 +1857,8 @@
           </ol>
         </div>
 
+        <figure class="shot"><a href="screenshots/admin-menu.webp" aria-label="Open the full-size screenshot: The weekly menu editor: week navigation, Fill blanks from template, Copy last week and Save all 7 days buttons, the Import from CSV panel, and one card per day with breakfast, lunch and dinner fields"><img src="screenshots/admin-menu.webp" width="1600" height="1000" alt="The weekly menu editor: week navigation, Fill blanks from template, Copy last week and Save all 7 days buttons, the Import from CSV panel, and one card per day with breakfast, lunch and dinner fields" loading="lazy" decoding="async"></a><figcaption>The weekly menu editor, with the CSV import panel above the day cards.</figcaption></figure>
+
         <div class="card">
           <div class="card-title">Method 3: Direct Google Sheet Sync</div>
           <p>
@@ -1826,6 +1876,8 @@
             <li><strong>Deactivate / Reactivate:</strong> Never delete members; deactivation preserves historical audit trails and committee records across academic rotations.</li>
           </ul>
         </div>
+
+        <figure class="shot"><a href="screenshots/admin-members.webp" aria-label="Open the full-size screenshot: The committee members page: a table of members with status, whether they reviewed today, reviews this month, and Deactivate and Reset password actions, above the Add a member and Add many forms"><img src="screenshots/admin-members.webp" width="1600" height="1000" alt="The committee members page: a table of members with status, whether they reviewed today, reviews this month, and Deactivate and Reset password actions, above the Add a member and Add many forms" loading="lazy" decoding="async"></a><figcaption>The member roster, with the forms to add one member or a whole rotation.</figcaption></figure>
 
         <h3 id="admin-dashboards">5. Executive Dashboards</h3>
         <div class="table-responsive">
@@ -1851,6 +1903,9 @@
             </tbody>
           </table>
         </div>
+
+        <figure class="shot"><a href="screenshots/dashboard-students.webp" aria-label="Open the full-size screenshot: The student feedback dashboard: today's average, responses, 7-day average, best and lowest dish, and quick-tap results per meal with liked percentages"><img src="screenshots/dashboard-students.webp" width="1600" height="1000" alt="The student feedback dashboard: today's average, responses, 7-day average, best and lowest dish, and quick-tap results per meal with liked percentages" loading="lazy" decoding="async"></a><figcaption>The student feedback dashboard.</figcaption></figure>
+        <figure class="shot"><a href="screenshots/dashboard-committee.webp" aria-label="Open the full-size screenshot: The committee dashboard: today's score, members reviewed, active members, participation, 7-day average, lowest area, a bar chart by area and a 7-day trend"><img src="screenshots/dashboard-committee.webp" width="1600" height="1000" alt="The committee dashboard: today's score, members reviewed, active members, participation, 7-day average, lowest area, a bar chart by area and a 7-day trend" loading="lazy" decoding="async"></a><figcaption>The committee dashboard.</figcaption></figure>
 
         <h3 id="admin-thresholds">6. Color Bands & Interpretation Standard</h3>
         <p>Scores and percentages are coloured the same way on every dashboard:</p>
