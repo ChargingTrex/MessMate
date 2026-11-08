@@ -25,7 +25,7 @@ Three deliberately separate feedback layers that are **never averaged together**
 ## Operating Context
 
 - **Status (confirmed): prototype / pilot proposal.** Not launched; the user needs to demonstrate it to university management and then implement it. No students, committee members or administrators use it for real today.
-- Data store is a Google Sheet (tabs: `responses`, `daily_summary`, `committee_members`, `committee_reviews`, `menu`, `meal_ratings`) read and written through a service account. Menu rows are typed either in the sheet or in the admin weekly editor.
+- Data store is a Google Sheet (tabs: `responses`, `daily_summary`, `committee_members`, `committee_reviews`, `committee_dish_ratings`, `menu`, `meal_ratings`) read and written through a service account. Menu rows are typed either in the sheet or in the admin weekly editor.
 - Intended deployment: Render.com free tier via gunicorn; local dev with `python app.py`. Students on a campus network may share one public IP (hostel NAT), which matters for anything keyed on IP.
 - Meal windows shown to students: breakfast 7:30–9:30 am, lunch 12:00–2:30 pm, dinner 7:30–9:30 pm. Display-only; nothing enforces them.
 - Rhythm: the menu is planned Monday–Sunday; the committee reviews daily; management reads the overview after sign-in.

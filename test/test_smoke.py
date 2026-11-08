@@ -262,10 +262,14 @@ def smoke(t):
         feature("committee submit")
         token = CSRF_RE.search(body).group(1)
         status, _ = t.post(member, "/committee/submit",
-                           {"taste": "4", "quality": "4", "variety": "4",
+                           {"meal": "Breakfast",
+                            "dish_name_0": "Idli", "dish_0": "4",
+                            "dish_name_1": "Sambar", "dish_1": "4",
+                            "taste": "4", "quality": "4", "variety": "4",
                             "hygiene": "4", "menu": "4",
                             "review": "smoke review", "csrf_token": token})
-        check("a complete review is accepted", status == 302, f"status={status}")
+        check("a complete breakfast review with its dishes is accepted",
+              status == 302, f"status={status}")
     else:
         skipped("member sign-in", "write check, live mode is read-only")
         skipped("member dashboard", "write check, live mode is read-only")

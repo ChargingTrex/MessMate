@@ -17,7 +17,7 @@ things from different populations.
 |---|---|---|---|
 | `/home` | any student, no login | One tap per meal: good / bad / skip, plus an optional suggestion | `meal_ratings` |
 | `/` | any student, no login | Per-dish 1–5 ratings, a review and a suggestion | `responses`, rolled up into `daily_summary` |
-| `/committee` | committee members, signed in | Taste, quality, variety, hygiene, menu — attributed, not anonymous | `committee_reviews` |
+| `/committee` | committee members, signed in | Per meal: each dish on today's menu, plus taste, quality, variety, hygiene, menu — attributed, not anonymous | `committee_reviews`, `committee_dish_ratings` |
 
 If you add a fourth, give it its own tab and its own dashboard section. Do not
 fold it into an existing average.
@@ -87,7 +87,8 @@ dict keys, so a rename silently breaks every lookup downstream.
 | `responses` | Timestamp, Overall, Rice_Curry, Rice_Rasam, Chapati, Chapati_Gravy, Poriyal, Sweet, Salad, Curd, Papad, Pickle, Review, Suggestion |
 | `daily_summary` | Date, Avg_Overall, Response_Count, Avg_Rice_Curry, … Avg_Pickle |
 | `committee_members` | Email, Name, Password_Hash, Active, Must_Change_Password, Term_Start, Term_End, Created_At |
-| `committee_reviews` | Timestamp, Date, Member_Email, Member_Name, Taste, Quality, Variety, Hygiene, Menu, Review |
+| `committee_reviews` | Timestamp, Date, Member_Email, Member_Name, Taste, Quality, Variety, Hygiene, Menu, Review, Meal |
+| `committee_dish_ratings` | Timestamp, Date, Meal, Member_Email, Dish, Rating |
 | `menu` | Date, Breakfast, Lunch, Dinner |
 | `meal_ratings` | Timestamp, Date, Meal, Rating, Suggestion |
 

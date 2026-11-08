@@ -39,6 +39,7 @@ os.environ.setdefault("SPREADSHEET_ID", "fake-spreadsheet-id")
 os.environ.setdefault("DASHBOARD_TOKEN", "vc2026")
 
 import auth  # noqa: E402
+import sheets  # noqa: E402
 
 os.environ["ADMIN_PASSWORD_HASH"] = auth.hash_password(ADMIN_PASSWORD)
 
@@ -71,8 +72,9 @@ def seed():
 
     # One member has already rated today, so the already-reviewed path is
     # reachable without a test having to submit first
-    BOOK.seed_review("robot-test-rated@sai.edu", "Robot Test Rated", today,
-                     [4, 4, 3, 5, 4], "Already reviewed earlier today")
+    for meal in sheets.MEALS:
+        BOOK.seed_review("robot-test-rated@sai.edu", "Robot Test Rated", today,
+                         [4, 4, 3, 5, 4], "Already reviewed earlier today", meal=meal)
 
     # Six days of history so the trend chart and its 7/30 toggle have data
     for offset in range(1, 7):

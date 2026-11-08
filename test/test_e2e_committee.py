@@ -159,6 +159,7 @@ class Member:
     def rate(self, taste=4, quality=4, variety=4, hygiene=4, menu=4, review=""):
         token = self._csrf("/committee")
         return self.client.post("/committee/submit", data={
+            "meal": "Lunch",
             "taste": str(taste), "quality": str(quality), "variety": str(variety),
             "hygiene": str(hygiene), "menu": str(menu), "review": review,
             "csrf_token": token})
@@ -268,9 +269,9 @@ def j2_rating_day():
          len(BOOK.reviews().rows) == 3 and
          "already reviewed" in again.get_data(as_text=True).lower())
 
-    landing = repeat.rating_page().get_data(as_text=True)
-    step("that member sees the already-reviewed page rather than a blank form",
-         "already reviewed" in landing.lower())
+    landing = repeat.client.get("/committee?meal=Lunch").get_data(as_text=True)
+    step("that member sees lunch marked done rather than a blank lunch form",
+         'id="meal-done"' in landing and 'id="committeeForm"' not in landing)
 
     html = dashboard().get_data(as_text=True)
     dimension_data = dashboard_json("dimensionData", html)
@@ -437,7 +438,7 @@ def j5_privilege_boundary():
 
     step("the same protection covers committee routes",
          Member("victim@sai.edu").client.post("/committee/submit", data={
-             "taste": "5", "quality": "5", "variety": "5",
+             "meal": "Lunch", "taste": "5", "quality": "5", "variety": "5",
              "hygiene": "5", "menu": "5"}).status_code in (302, 403))
 
 
@@ -636,7 +637,8 @@ def j10_member_dashboard():
     # Then they file one and the record updates
     page = client.get("/committee").get_data(as_text=True)
     token = re.search(r'name="csrf_token" value="([^"]+)"', page).group(1)
-    client.post("/committee/submit", data={"taste": "3", "quality": "3", "variety": "4",
+    client.post("/committee/submit", data={"meal": "Lunch",
+                                           "taste": "3", "quality": "3", "variety": "4",
                                            "hygiene": "4", "menu": "3", "review": "Bala was here",
                                            "csrf_token": token})
     html = client.get("/committee/dashboard").get_data(as_text=True)

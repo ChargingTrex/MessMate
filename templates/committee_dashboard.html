@@ -49,9 +49,9 @@
     </div>
 
     <div class="stat-card">
-      <h3>Reviews Today</h3>
+      <h3>Reviewed Today</h3>
       <p class="stat-value{% if today_count == 0 %} is-empty{% endif %}" id="stat-today-count">{{ today_count }}</p>
-      <p class="stat-note">of {{ active_members }} members</p>
+      <p class="stat-note">of {{ active_members }} members{% if today_review_count %} · {{ today_review_count }} meal review{{ '' if today_review_count == 1 else 's' }}{% endif %}</p>
     </div>
 
     <div class="stat-card">
@@ -132,7 +132,7 @@
           {% for review in reviews %}
           <div class="suggestion-item">
             <p class="suggestion-text">"{{ review.text }}"</p>
-            <p class="suggestion-time">{{ review.name }} — {{ review.date }}</p>
+            <p class="suggestion-time">{{ review.name }} — {{ review.date }}{% if review.meal %} · {{ review.meal }}{% endif %}</p>
           </div>
           {% endfor %}
         {% else %}

@@ -123,6 +123,7 @@ class FakeBook:
         self.tabs = {
             sheets.COMMITTEE_MEMBERS_TAB: FakeWorksheet(sheets.MEMBER_HEADERS),
             sheets.COMMITTEE_REVIEWS_TAB: FakeWorksheet(sheets.REVIEW_HEADERS),
+            sheets.COMMITTEE_DISH_RATINGS_TAB: FakeWorksheet(sheets.DISH_RATING_HEADERS),
             "responses": FakeWorksheet(STUDENT_HEADERS),
             "daily_summary": FakeWorksheet(SUMMARY_HEADERS),
             sheets.MENU_TAB: FakeWorksheet(sheets.MENU_HEADERS),
@@ -146,6 +147,9 @@ class FakeBook:
     def reviews(self):
         return self.tabs[sheets.COMMITTEE_REVIEWS_TAB]
 
+    def dish_ratings(self):
+        return self.tabs[sheets.COMMITTEE_DISH_RATINGS_TAB]
+
     def responses(self):
         return self.tabs["responses"]
 
@@ -163,10 +167,12 @@ class FakeBook:
         ])
         sheets.invalidate_roster_cache()
 
-    def seed_review(self, email, name, date, scores, review=""):
-        """scores is [taste, quality, variety, hygiene, menu]."""
+    def seed_review(self, email, name, date, scores, review="", meal="Lunch"):
+        """scores is [taste, quality, variety, hygiene, menu]. meal="" seeds a
+        legacy whole-day row from before reviews were per meal."""
         self.reviews().rows.append(
-            [f"{date} 13:00:00", date, email.lower(), name] + list(scores) + [review])
+            [f"{date} 13:00:00", date, email.lower(), name] + list(scores)
+            + [review, meal])
 
     def seed_student_response(self, date, overall, review="", suggestion="",
                               items=None):

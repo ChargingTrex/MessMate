@@ -5,7 +5,7 @@ Fills every dashboard with realistic 30-day demo data ending *today*:
 
     /dashboard            responses + daily_summary
     /home                 menu + meal_ratings
-    /dashboard/committee  committee_members + committee_reviews
+    /dashboard/committee  committee_members + committee_reviews + committee_dish_ratings
 
 Supersedes seed_data.py, which wrote one row per API call (300+ calls, well
 past Google's 60-writes-per-minute-per-user quota) and only covered the
@@ -151,10 +151,27 @@ def wipe_data_rows(worksheet):
 
 
 def get_or_create_tab(spreadsheet, title, headers, rows=500):
-    """Returns the named worksheet, creating it with headers if it is missing."""
+    """
+    Returns the named worksheet, creating it with headers if it is missing.
+
+    An existing tab whose row 1 is a strict prefix of `headers` is upgraded in
+    place — that is how committee_reviews gains its trailing Meal column. Any
+    other mismatch is left alone: rewriting headers over someone's columns
+    would silently relabel their data.
+    """
     try:
-        return spreadsheet.worksheet(title)
+        worksheet = spreadsheet.worksheet(title)
     except Exception:
+        worksheet = None
+    if worksheet is not None:
+        existing = [h.strip() for h in worksheet.row_values(1)]
+        if existing != headers and headers[:len(existing)] == existing:
+            print(f"   adding {', '.join(headers[len(existing):])} to '{title}' headers")
+            if worksheet.col_count < len(headers):
+                worksheet.add_cols(len(headers) - worksheet.col_count)
+            worksheet.update([headers], "A1")
+        return worksheet
+    else:
         print(f"   creating missing tab '{title}'")
         worksheet = spreadsheet.add_worksheet(title=title, rows=rows,
                                               cols=max(len(headers), 10))
@@ -301,10 +318,14 @@ def build_committee_members():
 
 def build_committee_reviews(dates):
     """
-    Five-dimension reviews, at most one per member per day — the same
-    constraint sheets.has_submitted_today() enforces in the live app.
+    Per-meal reviews, at most one per member per meal per day — the constraint
+    sheets.has_submitted_today(meal=...) enforces in the live app — plus one
+    committee_dish_ratings row per dish on that day's menu for the meal.
+
+    Returns (review_rows, dish_rows).
     """
-    rows = []
+    meal_hours = {"Breakfast": [8, 9], "Lunch": [13, 14], "Dinner": [20, 21]}
+    rows, dish_rows = [], []
     for index, date_str in enumerate(dates):
         mean = drifting_mean(index, len(dates), start=3.0, end=4.1)
         # Not everyone reviews every day; participation climbs over the month.
@@ -316,28 +337,39 @@ def build_committee_reviews(dates):
         reviewers = random.sample(COMMITTEE_MEMBERS,
                                   k=random.randint(floor, 5) if index >= len(dates) - 3
                                   else random.randint(floor, 4))
+        menu = sheets.menu_template_for_date(date_str)
         for position, (email, name) in enumerate(reviewers):
-            scores = {
-                "Taste": score_around(mean),
-                "Quality": score_around(mean),
-                "Variety": score_around(mean - 0.4),   # the standing complaint
-                "Hygiene": score_around(mean + 0.4),
-                "Menu": score_around(mean),
-            }
-            rows.append([
-                timestamp_for(date_str, [13, 14, 15]),
-                date_str, email, name,
-                scores["Taste"], scores["Quality"], scores["Variety"],
-                scores["Hygiene"], scores["Menu"],
-                # The feed shows text-only reviews, so today always needs at
-                # least one — otherwise the newest entry is silently stale.
-                random.choice(COMMITTEE_REVIEW_TEXTS)
-                if (random.random() < 0.45 or
-                    (index == len(dates) - 1 and position == 0)) else "",
-            ])
+            # Everyone who turns up reviews lunch; some also do the others
+            meals = ["Lunch"] + [m for m in ("Breakfast", "Dinner")
+                                 if random.random() < 0.5]
+            for meal in meals:
+                scores = {
+                    "Taste": score_around(mean),
+                    "Quality": score_around(mean),
+                    "Variety": score_around(mean - 0.4),   # the standing complaint
+                    "Hygiene": score_around(mean + 0.4),
+                    "Menu": score_around(mean),
+                }
+                stamp = timestamp_for(date_str, meal_hours[meal])
+                rows.append([
+                    stamp, date_str, email, name,
+                    scores["Taste"], scores["Quality"], scores["Variety"],
+                    scores["Hygiene"], scores["Menu"],
+                    # The feed shows text-only reviews, so today always needs at
+                    # least one — otherwise the newest entry is silently stale.
+                    random.choice(COMMITTEE_REVIEW_TEXTS)
+                    if (random.random() < 0.45 or
+                        (index == len(dates) - 1 and position == 0
+                         and meal == "Lunch")) else "",
+                    meal,
+                ])
+                for dish in sheets._split_items(menu.get(meal, "")):
+                    dish_rows.append([stamp, date_str, meal, email, dish,
+                                      score_around(mean)])
 
     rows.sort(key=lambda r: r[0])
-    return rows
+    dish_rows.sort(key=lambda r: r[0])
+    return rows, dish_rows
 
 
 # ── Writing ───────────────────────────────────────────────────────────────────
@@ -421,9 +453,12 @@ def main():
                   "committee_members", build_committee_members(), wipe,
                   args.dry_run)
     if wanted("committee_reviews"):
+        review_rows, dish_rows = build_committee_reviews(dates)
         write_tab(tab(sheets.COMMITTEE_REVIEWS_TAB, sheets.REVIEW_HEADERS, 1000),
-                  "committee_reviews", build_committee_reviews(dates), wipe,
-                  args.dry_run)
+                  "committee_reviews", review_rows, wipe, args.dry_run)
+        write_tab(tab(sheets.COMMITTEE_DISH_RATINGS_TAB,
+                      sheets.DISH_RATING_HEADERS, 5000),
+                  "committee_dish_ratings", dish_rows, wipe, args.dry_run)
 
     if not args.dry_run:
         sheets.invalidate_roster_cache()

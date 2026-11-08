@@ -98,6 +98,28 @@ Rate All Dimensions
         Rate Dimension    ${dimension}    ${score}
     END
 
+Rate All Dishes
+    [Arguments]    ${score}=4
+    [Documentation]    Rates every dish on the selected meal's menu. The dish
+    ...    count comes from the menu tab and differs meal to meal.
+    ${count}=    Get Element Count    css=.emoji-group[data-dish]
+    FOR    ${index}    IN RANGE    ${count}
+        Click Element    css=.emoji-btn[data-item="dish_${index}"][data-value="${score}"]
+    END
+
+Rate Whole Form
+    [Arguments]    ${score}=4
+    [Documentation]    Rates every dish and all five areas, enabling submit.
+    Rate All Dishes        ${score}
+    Rate All Dimensions    ${score}
+
+Open Meal
+    [Arguments]    ${meal}
+    [Documentation]    Switches the rating page to one meal via its toggle.
+    Click Element    css=#meal-toggle a[data-meal="${meal}"]
+    Wait Until Page Contains Element
+    ...    css=#meal-toggle a[data-meal="${meal}"][aria-current="page"]    timeout=${TIMEOUT}
+
 Dimension Hidden Value Should Be
     [Arguments]    ${dimension}    ${expected}
     [Documentation]    Asserts the hidden input the emoji widget writes into.

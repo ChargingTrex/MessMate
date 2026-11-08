@@ -340,6 +340,40 @@ input, select, textarea { font: inherit; color: inherit; }
 .segmented-btn:hover:not([aria-pressed="true"]) { color: var(--text-2); background: var(--surface-hover); }
 .segmented-btn[aria-pressed="true"], .segmented-btn.active { background: var(--accent-strong); color: #fff; }
 
+/* Meal toggle (committee form): one link per meal, coloured by status —
+   green once reviewed, yellow while still to review. The state is also
+   spelled out in text, so colour is never the only signal. The current meal
+   is the one with the solid border and ring. */
+.meal-toggle {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-5);
+}
+.meal-toggle-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-height: 44px;
+    padding: var(--sp-2) var(--sp-3);
+    border: 1px solid transparent;
+    border-radius: var(--r-sm);
+    text-align: center;
+    transition: background var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.meal-toggle-name { font-weight: 700; }
+.meal-toggle-state { font-size: var(--fs-sm); font-weight: 600; }
+.meal-toggle-btn.is-reviewed { background: var(--ok-bg); color: var(--ok-text); border-color: var(--ok-border); }
+.meal-toggle-btn.is-pending  { background: var(--warn-bg); color: var(--warn-text); border-color: var(--warn-border); }
+.meal-toggle-btn.is-reviewed:hover { color: var(--ok-text-2); }
+.meal-toggle-btn.is-pending:hover  { color: var(--warn); }
+.meal-toggle-btn.is-reviewed[aria-current="page"] { border-color: var(--ok-text); box-shadow: 0 0 0 2px var(--ok-border); }
+.meal-toggle-btn.is-pending[aria-current="page"]  { border-color: var(--warn); box-shadow: 0 0 0 2px var(--warn-border); }
+
+.dish-section { margin-bottom: var(--sp-5); }
+.section-heading { margin-top: var(--sp-2); }
+
 /* ── Inputs ───────────────────────────────────────────────────────────────── */
 .suggestion-input, .dropdown, .menu-input, textarea, select, input[type="text"], input[type="email"], input[type="password"] {
     width: 100%;
@@ -1678,6 +1712,8 @@ body.home-body {
 .thanks-container p { color: var(--text-muted); line-height: 1.6; margin-bottom: var(--sp-6); }
 .thanks-container .submit-btn { width: auto; padding: 14px 32px; }
 .thanks-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.next-meal { margin: var(--sp-4) 0; color: var(--text-muted); }
+.next-meal a { font-weight: 600; }
 
 /* ══════════════════════════════════════════════════════════════════════════
  * 5. UTILITIES

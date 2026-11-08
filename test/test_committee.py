@@ -138,8 +138,14 @@ def phase_0():
     check("P0-2", "committee_reviews headers match the plan",
           sheets.REVIEW_HEADERS == ["Timestamp", "Date", "Member_Email",
                                     "Member_Name", "Taste", "Quality",
-                                    "Variety", "Hygiene", "Menu", "Review"],
+                                    "Variety", "Hygiene", "Menu", "Review",
+                                    "Meal"],
           str(sheets.REVIEW_HEADERS))
+
+    check("P0-2b", "committee_dish_ratings headers are one row per dish",
+          sheets.DISH_RATING_HEADERS == ["Timestamp", "Date", "Meal",
+                                         "Member_Email", "Dish", "Rating"],
+          str(sheets.DISH_RATING_HEADERS))
 
     check("P0-3", "Email is column A (row lookup depends on it)",
           sheets.MEMBER_HEADERS[0] == "Email")
@@ -454,7 +460,7 @@ def phase_3():
               f"dimensions={sheets.DIMENSIONS}")
 
         token = csrf_token(client, "/committee")
-        response = client.post("/committee/submit", data={
+        response = client.post("/committee/submit", data={"meal": "Lunch",
             "taste": "5", "quality": "4", "variety": "3",
             "hygiene": "2", "menu": "1", "review": "Rice & dal were <cold>",
             "csrf_token": token})
@@ -476,7 +482,7 @@ def phase_3():
 
         # Duplicate same day
         token = csrf_token(client, "/committee/thanks")
-        duplicate = client.post("/committee/submit", data={
+        duplicate = client.post("/committee/submit", data={"meal": "Lunch",
             "taste": "5", "quality": "5", "variety": "5",
             "hygiene": "5", "menu": "5", "csrf_token": token})
         check("P3-8", "second submission the same day is refused",
@@ -490,7 +496,7 @@ def phase_3():
     with app.test_client() as client:
         login_member(client, "rater@sai.edu", "goodpassword")
         token = csrf_token(client, "/committee")
-        missing = client.post("/committee/submit", data={
+        missing = client.post("/committee/submit", data={"meal": "Lunch",
             "taste": "5", "quality": "4", "variety": "3", "hygiene": "2",
             "csrf_token": token})
         check("P3-3", "a missing dimension is rejected and writes nothing",
@@ -500,7 +506,7 @@ def phase_3():
         rejected = []
         for bad in ["0", "6", "abc", "-1", "3.5"]:
             token = csrf_token(client, "/committee")
-            r = client.post("/committee/submit", data={
+            r = client.post("/committee/submit", data={"meal": "Lunch",
                 "taste": bad, "quality": "4", "variety": "3", "hygiene": "2",
                 "menu": "1", "csrf_token": token})
             rejected.append(r.status_code == 400)
@@ -509,7 +515,7 @@ def phase_3():
               f"results={rejected}")
 
         token = csrf_token(client, "/committee")
-        no_review = client.post("/committee/submit", data={
+        no_review = client.post("/committee/submit", data={"meal": "Lunch",
             "taste": "4", "quality": "4", "variety": "4", "hygiene": "4",
             "menu": "4", "csrf_token": token})
         check("P3-5", "review is optional",
@@ -521,7 +527,7 @@ def phase_3():
     with app.test_client() as client:
         login_member(client, "long@sai.edu", "goodpassword")
         token = csrf_token(client, "/committee")
-        client.post("/committee/submit", data={
+        client.post("/committee/submit", data={"meal": "Lunch",
             "taste": "3", "quality": "3", "variety": "3", "hygiene": "3",
             "menu": "3", "review": "x" * 900, "csrf_token": token})
         stored = BOOK.reviews().rows[0][9]
@@ -588,7 +594,7 @@ def phase_3():
             with app.test_client() as client:
                 login_member(client, email, "goodpassword")
                 token = csrf_token(client, "/committee")
-                r = client.post("/committee/submit", data={
+                r = client.post("/committee/submit", data={"meal": "Lunch",
                     "taste": "4", "quality": "4", "variety": "4",
                     "hygiene": "4", "menu": "4", "csrf_token": token})
                 submits.append(r.status_code)
@@ -599,6 +605,154 @@ def phase_3():
               f"student_second={student_second.status_code} committee={submits}")
     finally:
         LIMITER.enabled = False
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PHASE 3b — Per-meal reviews built from the menu tab
+# ══════════════════════════════════════════════════════════════════════════════
+
+def phase_3b():
+    section("PHASE 3b — Per-meal reviews from the menu")
+    from datetime import datetime
+    today = datetime.now().strftime("%Y-%m-%d")
+    areas = {"taste": "4", "quality": "4", "variety": "4",
+             "hygiene": "4", "menu": "4"}
+
+    BOOK.reset()
+    seed_member("meal@sai.edu", "Meal Rater", "goodpassword")
+    BOOK.seed_menu(today, breakfast="Idli, Sambar",
+                   lunch="Rice, Parotta / Chapati, Curd", dinner="")
+
+    with app.test_client() as client:
+        login_member(client, "meal@sai.edu", "goodpassword")
+
+        lunch = client.get("/committee?meal=lunch").get_data(as_text=True)
+        check("P3b-1", "the selected meal's dishes come from the menu tab",
+              all(f'data-dish-name="{d}"' in lunch
+                  for d in ["Rice", "Parotta / Chapati", "Curd"]) and
+              'data-dish-name="Idli"' not in lunch and
+              'name="meal" value="Lunch"' in lunch)
+
+        breakfast = client.get("/committee?meal=Breakfast").get_data(as_text=True)
+        check("P3b-2", "toggling the meal swaps the dish list",
+              'data-dish-name="Idli"' in breakfast and
+              'data-dish-name="Rice"' not in breakfast and
+              len(re.findall(r'data-dish="\d+"', breakfast)) == 2)
+
+        dinner = client.get("/committee?meal=Dinner").get_data(as_text=True)
+        check("P3b-3", "a meal with no published menu still shows the five areas",
+              'id="no-menu"' in dinner and not re.search(r'data-dish="\d+"', dinner) and
+              all(f'name="{d.lower()}"' in dinner for d in sheets.DIMENSIONS))
+
+        check("P3b-4", "every meal starts yellow (to review)",
+              lunch.count("meal-toggle-btn is-pending") == 3 and
+              "is-reviewed" not in lunch)
+
+        token = csrf_token(client, "/committee?meal=Lunch")
+        missing_dish = client.post("/committee/submit", data=dict(
+            areas, meal="Lunch", csrf_token=token,
+            dish_name_0="Rice", dish_0="5",
+            dish_name_1="Parotta / Chapati", dish_1="4",
+            dish_name_2="Curd"))
+        check("P3b-5", "an unrated dish is rejected and writes nothing",
+              missing_dish.status_code == 400 and
+              "Please rate Curd" in missing_dish.get_data(as_text=True) and
+              not BOOK.reviews().rows and not BOOK.dish_ratings().rows)
+
+        token = csrf_token(client, "/committee?meal=Lunch")
+        stale = client.post("/committee/submit", data=dict(
+            areas, meal="Lunch", csrf_token=token,
+            dish_name_0="Rice", dish_0="5",
+            dish_name_1="Poriyal", dish_1="4",
+            dish_name_2="Curd", dish_2="3"))
+        check("P3b-6", "dish names that no longer match the menu are refused",
+              stale.status_code == 409 and not BOOK.reviews().rows and
+              not BOOK.dish_ratings().rows)
+
+        token = csrf_token(client, "/committee?meal=Lunch")
+        ok = client.post("/committee/submit", data=dict(
+            areas, meal="Lunch", csrf_token=token,
+            dish_name_0="Rice", dish_0="5",
+            dish_name_1="Parotta / Chapati", dish_1="4",
+            dish_name_2="Curd", dish_2="3"))
+        dish_rows = BOOK.dish_ratings().rows
+        review_row = BOOK.reviews().rows[0] if BOOK.reviews().rows else []
+        check("P3b-7", "a valid lunch review writes one review row tagged Lunch",
+              ok.status_code == 302 and len(BOOK.reviews().rows) == 1 and
+              review_row[10] == "Lunch", f"row={review_row}")
+        check("P3b-8", "one dish row per dish, in menu order, keyed to the review",
+              [(r[2], r[3], r[4], r[5]) for r in dish_rows] == [
+                  ("Lunch", "meal@sai.edu", "Rice", 5),
+                  ("Lunch", "meal@sai.edu", "Parotta / Chapati", 4),
+                  ("Lunch", "meal@sai.edu", "Curd", 3)] and
+              all(r[0] == review_row[0] and r[1] == today for r in dish_rows),
+              f"dish_rows={dish_rows}")
+
+        after = client.get("/committee?meal=Lunch").get_data(as_text=True)
+        check("P3b-9", "the reviewed meal turns green and shows as done",
+              re.search(r'class="meal-toggle-btn is-reviewed"\s+data-meal="Lunch"', after) and
+              after.count("meal-toggle-btn is-pending") == 2 and 'id="meal-done"' in after and
+              'id="committeeForm"' not in after)
+
+        token = csrf_token(client, "/committee?meal=Breakfast")
+        again = client.post("/committee/submit", data=dict(
+            areas, meal="Lunch", csrf_token=token,
+            dish_name_0="Rice", dish_0="1",
+            dish_name_1="Parotta / Chapati", dish_1="1",
+            dish_name_2="Curd", dish_2="1"))
+        check("P3b-10", "a second lunch review the same day is refused",
+              len(BOOK.reviews().rows) == 1 and len(BOOK.dish_ratings().rows) == 3 and
+              "already reviewed lunch" in again.get_data(as_text=True).lower())
+
+        token = csrf_token(client, "/committee?meal=Breakfast")
+        bf = client.post("/committee/submit", data=dict(
+            areas, meal="Breakfast", csrf_token=token,
+            dish_name_0="Idli", dish_0="4", dish_name_1="Sambar", dish_1="2"))
+        check("P3b-11", "a different meal the same day is accepted",
+              bf.status_code == 302 and len(BOOK.reviews().rows) == 2 and
+              len(BOOK.dish_ratings().rows) == 5)
+
+        thanks = client.get("/committee/thanks?meal=Breakfast").get_data(as_text=True)
+        check("P3b-12", "the thanks page links on to the meal still to review",
+              "Review recorded" in thanks and "breakfast assessment" in thanks and
+              'id="next-meal"' in thanks and 'data-meal="Dinner"' in thanks and
+              'data-meal="Lunch"' not in thanks)
+
+        token = csrf_token(client, "/committee?meal=Dinner")
+        client.post("/committee/submit", data=dict(areas, meal="Dinner",
+                                                   csrf_token=token))
+        done = client.get("/committee").get_data(as_text=True)
+        check("P3b-13", "with all three meals reviewed the member sees the done page",
+              'id="already-heading"' in done and 'id="committeeForm"' not in done)
+
+        token = csrf_token(client, "/committee/thanks")
+        bad_meal = client.post("/committee/submit", data=dict(
+            areas, meal="Supper", csrf_token=token))
+        check("P3b-14", "an unknown meal is rejected", bad_meal.status_code == 400)
+
+    check("P3b-15", "dish ratings read back only when backed by a review row",
+          len(sheets.get_committee_dish_ratings(today)) == 5)
+    BOOK.dish_ratings().rows.append(
+        ["2026-01-01 08:00:00", today, "Dinner", "ghost@sai.edu", "Idli", 1])
+    check("P3b-16", "an orphan dish row from a half-failed write is ignored",
+          len(sheets.get_committee_dish_ratings(today)) == 5)
+
+    # Default meal follows the clock
+    from datetime import datetime as dt
+    at = lambda h, m=0: dt(2026, 11, 7, h, m)
+    check("P3b-17", "the page opens on the latest served, unreviewed meal",
+          app_module._default_committee_meal(set(), at(13)) == "Lunch" and
+          app_module._default_committee_meal({"Lunch"}, at(13)) == "Breakfast" and
+          app_module._default_committee_meal(set(), at(6)) == "Breakfast" and
+          app_module._default_committee_meal({"Breakfast", "Lunch"}, at(13)) == "Dinner")
+
+    # Legacy whole-day rows block nothing under the per-meal rule
+    BOOK.reset()
+    seed_member("old@sai.edu", "Old Row", "goodpassword")
+    BOOK.seed_review("old@sai.edu", "Old Row", today, [3] * 5, meal="")
+    check("P3b-18", "a legacy blank-Meal row counts for no meal but still as 'rated today'",
+          sheets.reviewed_meals("old@sai.edu") == set() and
+          sheets.has_submitted_today("old@sai.edu"))
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -713,5 +867,6 @@ if __name__ == "__main__":
     phase_1()
     phase_2()
     phase_3()
+    phase_3b()
     phase_4()
     sys.exit(report())
