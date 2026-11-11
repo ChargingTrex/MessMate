@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ilai design system</title>
+<meta name="description" content="Ilai, MessMate's design system: the colours, type, shape and components of a South Indian meal served on a banana leaf.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Arima:wght@600;700&family=Hind+Madurai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Primitives: what is on the leaf ─────────────────────────────────────── */
+:root {
+  --leaf-deep: #1d4620;  --leaf: #2f6b2a;  --leaf-pale: #e1e9c9;  --leaf-bud: #cdeab6;
+  --rice: #f6f2e4;  --curd: #fffcf2;
+  --turmeric: #e2a320;  --turmeric-pale: #fbedc4;  --turmeric-deep: #5c3f00;
+  --chilli: #b02a1c;    --chilli-pale: #fadcd5;    --chilli-deep: #7d1b10;
+  --beetroot: #8e2450;  --beetroot-pale: #f7dfe8;  --beetroot-deep: #6e1a3d;
+  --carrot: #e07a2c;    --carrot-pale: #fde4cf;    --carrot-deep: #7a3608;
+  --appalam: #d9b77c;
+  --ink: #211a12;  --ink-muted: #5c4834;  --rule: #cfc6a6;
+
+  /* Shape, on the Material 3 scale */
+  --shape-none: 0; --shape-xs: 4px; --shape-s: 8px; --shape-m: 12px; --shape-l: 16px; --shape-xl: 28px; --shape-full: 999px;
+  /* Space, on a 4px grid */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px; --space-24: 96px;
+  --font-display: Arima, Georgia, serif;
+  --font-text: "Hind Madurai", system-ui, sans-serif;
+  --font-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ── Roles: Material 3 colour roles, light scheme ─────────────────────────── */
+:root, [data-scheme="light"] {
+  --primary: var(--leaf);                 --on-primary: var(--rice);
+  --primary-container: var(--leaf-bud);   --on-primary-container: var(--leaf-deep);
+  --secondary: var(--beetroot);           --on-secondary: var(--rice);
+  --secondary-container: var(--beetroot-pale); --on-secondary-container: var(--beetroot-deep);
+  --tertiary: var(--turmeric);            --on-tertiary: var(--ink);
+  --tertiary-container: var(--turmeric-pale); --on-tertiary-container: var(--turmeric-deep);
+  --error: var(--chilli);                 --on-error: var(--rice);
+  --error-container: var(--chilli-pale);  --on-error-container: var(--chilli-deep);
+  --surface: var(--rice);
+  --surface-container-lowest: var(--curd);
+  --surface-container-low: #f1efdd;
+  --surface-container: #ebecd4;
+  --surface-container-high: var(--leaf-pale);
+  --surface-container-highest: #d6e0b8;
+  --on-surface: var(--ink);               --on-surface-variant: var(--ink-muted);
+  --outline: var(--ink-muted);            --outline-variant: var(--rule);
+  --inverse-surface: var(--leaf-deep);    --inverse-on-surface: var(--rice);  --inverse-primary: #9ed58c;
+  --focus: var(--ink);
+  color-scheme: light;
+}
+/* Dark scheme: the leaf at night, recomposed rather than inverted */
+[data-scheme="dark"] {
+  --primary: #9ed58c;               --on-primary: #0b3a0e;
+  --primary-container: var(--leaf-deep); --on-primary-container: #c9efb8;
+  --secondary: #ffb0cd;             --on-secondary: #5a1030;
+  --secondary-container: #73203f;   --on-secondary-container: #ffd9e6;
+  --tertiary: #f2c14e;              --on-tertiary: #3d2a00;
+  --tertiary-container: #5c4300;    --on-tertiary-container: #ffdf9e;
+  --error: #ffb4a6;                 --on-error: #690f05;
+  --error-container: #8c1d10;       --on-error-container: #ffdad3;
+  --surface: #0f1a10;
+  --surface-container-lowest: #0a130b;
+  --surface-container-low: #142215;
+  --surface-container: #18281a;
+  --surface-container-high: #223123;
+  --surface-container-highest: #2c3c2d;
+  --on-surface: #e8ead9;            --on-surface-variant: #bfc6ad;
+  --outline: #8a9479;               --outline-variant: #3d4a3c;
+  --inverse-surface: #e8ead9;       --inverse-on-surface: #1d2b1e;  --inverse-primary: var(--leaf);
+  --focus: #e8ead9;
+  color-scheme: dark;
+}
+
+/* ── Page ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+html, body { overflow-x: clip; }
+body { margin: 0; background: var(--surface); color: var(--on-surface); font: 400 17px/26px var(--font-text); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--turmeric); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+a { color: var(--primary); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+p, li, dd { text-wrap: pretty; }
+p { margin: 0; }
+code { font: 500 0.86em/1.5 var(--font-code); color: var(--on-primary-container); background: var(--primary-container); padding: 2px 6px; border-radius: var(--shape-xs); white-space: nowrap; }
+.wrap { max-width: 1184px; margin: 0 auto; padding: 0 var(--space-6); }
+.skip { position: absolute; left: var(--space-4); top: -60px; z-index: 30; background: var(--turmeric); color: var(--ink); padding: var(--space-3) var(--space-4); border-radius: var(--shape-s); font-weight: 600; text-decoration: none; }
+.skip:focus { top: var(--space-3); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Top bar: the leaf's midrib */
+.topbar { position: sticky; top: 0; z-index: 20; background: var(--leaf-deep); color: var(--rice); border-bottom: 4px solid var(--turmeric); }
+.topbar .wrap { display: flex; align-items: center; gap: var(--space-6); min-height: 60px; }
+.brand { display: inline-flex; align-items: center; gap: var(--space-3); font: 700 24px/1 var(--font-display); color: var(--rice); text-decoration: none; }
+.brand .mark { width: 40px; height: 25px; }
+.logo-row { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: end; margin-top: var(--space-4); }
+.logo-tile { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-4); border-radius: var(--shape-m); }
+.logo-tile small { font: 500 13px/16px var(--font-code); }
+.logo-tile .mark { display: block; }
+.toc { display: flex; gap: var(--space-1); overflow-x: auto; scrollbar-width: none; margin-left: auto; }
+.toc a { display: inline-flex; align-items: center; min-height: 48px; padding: 0 var(--space-3); color: var(--leaf-pale); font: 500 15px/20px var(--font-text); text-decoration: none; border-radius: var(--shape-full); white-space: nowrap; }
+.toc a:hover { background: rgb(246 242 228 / 0.1); color: var(--rice); }
+.toc a:focus-visible { outline-color: var(--turmeric); outline-offset: -4px; }
+
+/* Hero: the leaf, laid and served */
+.hero { background: var(--leaf-deep); color: var(--rice); position: relative; overflow: hidden; }
+.hero .wrap { position: relative; border-top: 1px solid rgb(225 233 201 / 0.12); display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-12); align-items: center; padding-top: var(--space-16); padding-bottom: var(--space-16); }
+.hero h1 { font-size: clamp(64px, 9vw, 112px); line-height: 0.95; font-weight: 700; color: var(--rice); letter-spacing: -0.01em; }
+.hero h1 span { display: block; font-size: 0.32em; line-height: 1.2; color: var(--turmeric); margin-top: var(--space-3); letter-spacing: 0; }
+.hero p { color: var(--leaf-pale); max-width: 44ch; margin-top: var(--space-6); font-size: 18px; line-height: 28px; }
+.hero p strong { color: var(--rice); font-weight: 600; }
+.leaf-art { width: 100%; height: auto; display: block; filter: drop-shadow(0 18px 24px rgb(10 30 12 / 0.35)); }
+
+/* Sections, each with its own serving colour */
+section.block { padding: var(--space-16) 0; }
+.band { padding: var(--space-12) 0 var(--space-8); }
+.band h2 { font-size: 45px; line-height: 52px; font-weight: 700; }
+.band .lede { max-width: 64ch; margin-top: var(--space-3); font-size: 18px; line-height: 28px; }
+.band--leaf { background: var(--leaf); color: var(--rice); } .band--leaf h2 { color: var(--rice); } .band--leaf .lede { color: var(--leaf-pale); }
+.band--beet { background: var(--beetroot-pale); } .band--beet h2 { color: var(--beetroot-deep); } .band--beet .lede { color: var(--beetroot-deep); }
+.band--sambar { background: var(--turmeric-pale); } .band--sambar h2 { color: var(--turmeric-deep); } .band--sambar .lede { color: var(--turmeric-deep); }
+.band--carrot { background: var(--carrot-pale); } .band--carrot h2 { color: var(--carrot-deep); } .band--carrot .lede { color: var(--carrot-deep); }
+.band--rasam { background: var(--chilli-pale); } .band--rasam h2 { color: var(--chilli-deep); } .band--rasam .lede { color: var(--chilli-deep); }
+.band--rice { background: var(--surface-container-low); } .band--rice h2 { color: var(--leaf-deep); } .band--rice .lede { color: var(--ink-muted); }
+.band + .wrap, .band + section.block { padding-top: var(--space-12); }
+h3 { font-size: 24px; line-height: 32px; font-weight: 600; color: var(--leaf-deep); }
+.sub { margin: var(--space-12) 0 var(--space-6); }
+.sub:first-child { margin-top: 0; }
+.sub p { color: var(--on-surface-variant); margin-top: var(--space-2); max-width: 64ch; }
+
+/* ── Colour: servings ───────────────────────────────────────────────────── */
+.servings { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-6); grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
+@media (max-width: 560px) { .servings { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); } .serving { padding: var(--space-3); } .plate { height: 88px; } .serving .hex { font-size: 12px; overflow-wrap: anywhere; } }
+.serving { background: var(--surface-container-lowest); border: 1px solid var(--outline-variant); border-radius: var(--shape-l); padding: var(--space-4); display: grid; gap: var(--space-1); }
+.plate { height: 112px; border-radius: var(--shape-m); display: flex; align-items: flex-end; justify-content: space-between; padding: var(--space-3); margin-bottom: var(--space-3); font: 600 15px/20px var(--font-text); box-shadow: inset 0 0 0 1px rgb(33 26 18 / 0.08); }
+.plate b { font: 700 28px/1 var(--font-display); }
+.serving h4 { margin: 0; font: 600 17px/24px var(--font-text); color: var(--on-surface); }
+.serving .dish { font-size: 14px; line-height: 20px; color: var(--on-surface-variant); }
+.serving .hex { font: 500 13px/20px var(--font-code); color: var(--on-surface-variant); }
+.serving .use { font-size: 14px; line-height: 20px; color: var(--on-surface); margin-top: var(--space-2); }
+
+/* ── Roles table ────────────────────────────────────────────────────────── */
+.roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: var(--space-6); }
+.scheme { border-radius: var(--shape-l); padding: var(--space-6); background: var(--surface); color: var(--on-surface); border: 1px solid var(--outline-variant); }
+.scheme h3 { color: var(--on-surface); margin-bottom: var(--space-4); }
+.pairs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.pair { display: flex; flex-direction: column; justify-content: space-between; min-height: 72px; border-radius: var(--shape-m); padding: var(--space-3); font: 600 14px/20px var(--font-text); }
+.pair small { font: 500 12px/16px var(--font-code); opacity: 0.85; }
+.pair--wide { grid-column: 1 / -1; min-height: 56px; }
+.ladder { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; margin-top: var(--space-2); border-radius: var(--shape-m); overflow: hidden; border: 1px solid var(--outline-variant); }
+.ladder div { min-height: 72px; padding: var(--space-2); font: 600 12px/16px var(--font-text); color: var(--on-surface); display: flex; align-items: flex-end; }
+
+/* ── Type ───────────────────────────────────────────────────────────────── */
+.type-rows { list-style: none; margin: 0; padding: 0; }
+.type-row { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: var(--space-6); padding: var(--space-4) 0; border-bottom: 1px solid var(--outline-variant); align-items: baseline; }
+.type-row:last-child { border-bottom: 0; }
+.tmeta b { display: block; font: 600 15px/20px var(--font-text); color: var(--on-surface); }
+.tmeta span { font: 500 13px/20px var(--font-code); color: var(--on-surface-variant); }
+.specimen { margin: 0; min-width: 0; overflow-wrap: break-word; color: var(--on-surface); }
+.type-group { font: 600 13px/20px var(--font-text); color: var(--carrot-deep); background: var(--carrot-pale); display: inline-block; padding: 2px var(--space-3); border-radius: var(--shape-full); margin: var(--space-8) 0 var(--space-2); }
+.type-group:first-child { margin-top: 0; }
+
+/* ── Shape and space ────────────────────────────────────────────────────── */
+.shapes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-6); grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); }
+.shapes .s { height: 88px; background: var(--beetroot-pale); border: 2px solid var(--beetroot); margin-bottom: var(--space-3); }
+.shapes b { display: block; font: 600 15px/20px var(--font-text); }
+.shapes span { font-size: 14px; line-height: 20px; color: var(--on-surface-variant); }
+.space-rows { list-style: none; margin: 0; padding: 0; }
+.space-row { display: grid; grid-template-columns: 112px 148px minmax(0, 1fr); gap: var(--space-4); align-items: center; padding: var(--space-2) 0; border-bottom: 1px solid var(--outline-variant); }
+.space-row:last-child { border-bottom: 0; }
+.space-row .bar { height: 20px; background: var(--carrot); border-radius: var(--shape-xs); }
+.space-row b { font: 500 14px/20px var(--font-code); }
+.space-row span { font-size: 15px; color: var(--on-surface-variant); }
+
+/* ── Components ─────────────────────────────────────────────────────────── */
+/* State layers: one overlay in the content colour, at the M3 opacities */
+.btn, .chip, .seg button { position: relative; isolation: isolate; overflow: hidden; }
+.btn::after, .chip::after, .seg button::after { content: ""; position: absolute; inset: 0; background: currentColor; opacity: 0; transition: opacity 150ms var(--ease); z-index: -1; pointer-events: none; }
+.btn:hover::after, .chip:hover::after, .seg button:hover::after, .is-hover::after { opacity: 0.08; }
+.btn:focus-visible::after, .chip:focus-visible::after, .seg button:focus-visible::after, .is-focus::after { opacity: 0.10; }
+.btn:active::after, .chip:active::after, .seg button:active::after, .is-pressed::after { opacity: 0.10; }
+.is-focus { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: 48px; padding: 0 var(--space-6); border-radius: var(--shape-full); font: 600 16px/20px var(--font-text); border: 0; cursor: pointer; text-decoration: none; }
+.btn--filled { background: var(--primary); color: var(--on-primary); }
+.btn--tonal { background: var(--primary-container); color: var(--on-primary-container); }
+.btn--outlined { background: transparent; color: var(--primary); box-shadow: inset 0 0 0 1px var(--outline); }
+.btn--text { background: transparent; color: var(--primary); padding: 0 var(--space-3); }
+.btn--danger { background: var(--error); color: var(--on-error); }
+.btn:disabled { background: color-mix(in srgb, var(--on-surface) 12%, transparent); color: color-mix(in srgb, var(--on-surface) 50%, transparent); box-shadow: none; cursor: not-allowed; }
+.btn:disabled::after { display: none; }
+.btn svg, .chip svg { width: 18px; height: 18px; flex: none; }
+
+.chip { display: inline-flex; align-items: center; gap: var(--space-2); height: 40px; padding: 0 var(--space-4); border-radius: var(--shape-s); border: 1px solid var(--outline); background: transparent; color: var(--on-surface); font: 500 15px/20px var(--font-text); cursor: pointer; margin-block: 4px; }
+.chip::before { content: ""; position: absolute; inset: -4px 0; }
+.chip svg { display: none; }
+.chip[aria-pressed="true"] { background: var(--secondary-container); color: var(--on-secondary-container); border-color: var(--secondary-container); padding-left: var(--space-3); }
+.chip[aria-pressed="true"] svg { display: block; }
+
+.field { display: grid; gap: var(--space-1); }
+.field label { font: 500 15px/20px var(--font-text); color: var(--on-surface); }
+.field input { font: 400 17px/24px var(--font-text); min-height: 56px; padding: var(--space-4); border-radius: var(--shape-xs); border: 1px solid var(--outline); background: var(--surface-container-lowest); color: var(--on-surface); width: 100%; }
+.field input:hover { border-color: var(--on-surface); }
+.field input:focus-visible { outline: 0; border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+.field .help { font-size: 14px; line-height: 20px; color: var(--on-surface-variant); }
+.field.has-error input { border-color: var(--error); box-shadow: inset 0 0 0 1px var(--error); }
+.field.has-error label, .field.has-error .help { color: var(--error); }
+
+.badge { display: inline-flex; align-items: center; gap: var(--space-1); font: 600 13px/20px var(--font-text); border-radius: var(--shape-xs); padding: 2px var(--space-2); }
+.badge--sambar { background: var(--tertiary-container); color: var(--on-tertiary-container); }
+.badge--rasam { background: var(--error-container); color: var(--on-error-container); }
+.alert { display: flex; gap: var(--space-3); align-items: flex-start; border-radius: var(--shape-m); padding: var(--space-4); background: var(--error-container); color: var(--on-error-container); font-weight: 500; }
+.alert svg { width: 20px; height: 20px; flex: none; margin-top: 3px; }
+.notice { display: flex; gap: var(--space-3); align-items: flex-start; border-radius: var(--shape-m); padding: var(--space-4); background: var(--primary-container); color: var(--on-primary-container); font-weight: 500; }
+
+/* Demo stage */
+.stage { border-radius: var(--shape-xl); padding: var(--space-8); background: var(--surface); color: var(--on-surface); border: 1px solid var(--outline-variant); transition: background-color 250ms var(--ease), color 250ms var(--ease); }
+.stage-head { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; justify-content: space-between; margin-bottom: var(--space-6); }
+.stage-head h3 { color: var(--on-surface); }
+.seg { display: inline-flex; border: 1px solid var(--outline); border-radius: var(--shape-full); overflow: hidden; }
+.seg button { min-height: 48px; padding: 0 var(--space-4); border: 0; background: transparent; color: var(--on-surface); font: 500 15px/20px var(--font-text); cursor: pointer; display: inline-flex; align-items: center; gap: var(--space-2); }
+.seg button + button { border-left: 1px solid var(--outline); }
+.seg button svg { width: 18px; height: 18px; display: none; }
+.seg button[aria-pressed="true"] { background: var(--secondary-container); color: var(--on-secondary-container); }
+.seg button[aria-pressed="true"] svg { display: block; }
+.demo { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: var(--space-6); }
+.card { background: var(--surface-container-high); border: 1px solid var(--outline-variant); border-radius: var(--shape-l); padding: var(--space-6); display: grid; gap: var(--space-4); align-content: start; }
+.card h4 { margin: 0; font: 600 24px/32px var(--font-display); color: var(--on-surface); }
+.card .time { font-size: 14px; line-height: 20px; color: var(--on-surface-variant); }
+.card .dishes { display: flex; flex-wrap: wrap; gap: var(--space-2); list-style: none; margin: 0; padding: 0; }
+.card .dishes li { font-size: 14px; line-height: 20px; padding: var(--space-1) var(--space-3); background: var(--surface-container-lowest); border: 1px solid var(--outline-variant); border-radius: var(--shape-full); }
+.row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: var(--space-4); }
+.state-grid figure { margin: 0; display: grid; gap: var(--space-2); justify-items: start; }
+.state-grid figcaption { font-size: 14px; line-height: 20px; color: var(--on-surface-variant); }
+
+/* ── M3 conformance and rules ───────────────────────────────────────────── */
+.m3 { width: 100%; border-collapse: collapse; font-size: 15px; line-height: 22px; }
+.m3 th { text-align: left; font: 600 14px/20px var(--font-text); color: var(--on-surface-variant); padding: var(--space-2) var(--space-4) var(--space-2) 0; border-bottom: 2px solid var(--leaf-deep); }
+.m3 td { padding: var(--space-3) var(--space-4) var(--space-3) 0; border-bottom: 1px solid var(--outline-variant); vertical-align: top; }
+.m3 td:first-child { font-weight: 600; white-space: nowrap; }
+.status { display: inline-flex; align-items: center; gap: var(--space-1); font: 600 13px/20px var(--font-text); padding: 2px var(--space-2); border-radius: var(--shape-xs); white-space: nowrap; }
+.status--yes { background: var(--primary-container); color: var(--on-primary-container); }
+.status--own { background: var(--tertiary-container); color: var(--on-tertiary-container); }
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: var(--space-6); }
+.rule-block { background: var(--surface-container-lowest); border: 1px solid var(--outline-variant); border-radius: var(--shape-l); padding: var(--space-6); }
+.rule-block h3 { font-size: 22px; line-height: 28px; display: flex; align-items: center; gap: var(--space-3); }
+.rule-block h3 i { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+.rule-block ul { padding-left: 1.1em; margin: var(--space-3) 0 0; }
+.rule-block li { margin-bottom: var(--space-2); }
+.rule-block li::marker { color: var(--leaf); }
+.rule-block p { margin-top: var(--space-3); }
+
+/* Tokens */
+.tokens { position: relative; background: var(--leaf-deep); color: var(--leaf-pale); border-radius: var(--shape-l); padding: var(--space-6); }
+.tokens pre { margin: 0; overflow: auto; max-height: 440px; font: 400 14px/22px var(--font-code); }
+.tokens .btn { position: absolute; top: var(--space-4); right: var(--space-4); background: var(--turmeric); color: var(--ink); }
+.tokens .status-msg { position: absolute; top: var(--space-8); right: 160px; font-size: 14px; color: var(--turmeric); }
+
+footer { background: var(--leaf-deep); color: var(--leaf-pale); padding: var(--space-8) 0; font-size: 15px; border-top: 4px solid var(--turmeric); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-4); }
+footer a { color: var(--rice); }
+
+@media (max-width: 900px) {
+  .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: var(--space-8); padding-top: var(--space-12); padding-bottom: var(--space-12); }
+  .band h2 { font-size: 36px; line-height: 44px; }
+  .type-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+  .space-row { grid-template-columns: 64px 132px minmax(0, 1fr); }
+  .topbar .wrap { flex-wrap: wrap; gap: 0; padding-top: var(--space-1); }
+  .toc { margin-left: calc(-1 * var(--space-3)); width: calc(100% + var(--space-6)); }
+  .m3 td:first-child { white-space: normal; }
+  .tokens .status-msg { position: static; display: block; margin-bottom: var(--space-2); }
+}
+@media (max-width: 560px) {
+  .wrap { padding: 0 var(--space-4); }
+  .ladder { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stage { padding: var(--space-4); border-radius: var(--shape-l); }
+  .m3, .m3 tbody, .m3 tr, .m3 td { display: block; }
+  .m3 thead { display: none; }
+  .m3 tr { padding: var(--space-3) 0; border-bottom: 1px solid var(--outline-variant); }
+  .m3 td { border: 0; padding: 2px 0; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#top"><svg class="mark" viewBox="0 0 64 40" aria-hidden="true" focusable="false"><path d="M2 8C2 5.2 3.6 4 6.4 4H50c5.6.7 11 7.6 12 16-1 8.4-6.4 15.3-12 16H6.4C3.6 36 2 34.8 2 32Z" fill="#3d8a35"/><path d="M8 10 14 36M18 10l6 26M28 10l6 26M38 10l6 26M48 10l5 22" stroke="#2a5f25" stroke-width="1.6" fill="none"/><rect x="2" y="7.5" width="58" height="3" rx="1.5" fill="#1d4620"/><ellipse cx="31" cy="25" rx="14" ry="6.5" fill="#fffcf2"/><ellipse cx="31" cy="24" rx="6.5" ry="3" fill="#e2a320"/><circle cx="51" cy="24" r="5" fill="#d9b77c"/></svg>Ilai</a>
+    <nav class="toc" aria-label="Sections">
+      <a href="#colour">Colour</a><a href="#roles">Roles</a><a href="#type">Type</a><a href="#shape">Shape and space</a><a href="#components">Components</a><a href="#m3">Material 3</a><a href="#rules">Rules</a><a href="#tokens">Tokens</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section class="hero" id="top" aria-labelledby="title">
+  <div class="wrap">
+    <div>
+      <h1 id="title">Ilai<span>MessMate's design system</span></h1>
+      <p>Ilai is Tamil and Malayalam for <strong>leaf</strong>. The system takes its look from a South Indian meal served on a banana leaf: the <strong>leaf</strong> is the brand, <strong>rice</strong> is the ground, and every side dish brings its own colour, from turmeric sambar and chilli rasam to beetroot poriyal and carrot pickle.</p>
+    </div>
+    <svg class="leaf-art" viewBox="0 0 640 380" role="img" aria-labelledby="art-title">
+      <title id="art-title">A banana leaf laid with rice, sambar, rasam, curd, payasam, beetroot and carrot poriyal, pickle and an appalam</title>
+      <defs>
+        <clipPath id="leaf-cut"><path d="M18 64 C18 40 34 28 60 28 L548 28 C600 34 630 110 632 190 C630 270 600 346 548 352 L60 352 C34 352 18 340 18 316 Z"/></clipPath>
+      </defs>
+      <path d="M18 64 C18 40 34 28 60 28 L548 28 C600 34 630 110 632 190 C630 270 600 346 548 352 L60 352 C34 352 18 340 18 316 Z" fill="#3d8a35"/>
+      <g clip-path="url(#leaf-cut)" stroke="#2a5f25" stroke-width="2.5" opacity="0.8">
+        <path d="M30 72 L120 352 M90 72 L180 352 M150 72 L240 352 M210 72 L300 352 M270 72 L360 352 M330 72 L420 352 M390 72 L480 352 M450 72 L540 352 M510 72 L600 352 M570 72 L640 300"/>
+      </g>
+      <rect x="0" y="62" width="640" height="12" fill="#1d4620" clip-path="url(#leaf-cut)"/>
+      <!-- top row: pickle, salt, payasam, curd -->
+      <path d="M66 104 c10 -10 30 -8 34 4 c4 12 -10 22 -24 18 c-12 -4 -18 -14 -10 -22 z" fill="#b02a1c"/>
+      <circle cx="132" cy="112" r="10" fill="#fffcf2"/>
+      <circle cx="430" cy="118" r="28" fill="#7a3608"/><circle cx="430" cy="118" r="21" fill="#e8c79a"/>
+      <circle cx="504" cy="122" r="28" fill="#7a3608"/><circle cx="504" cy="122" r="21" fill="#fffcf2"/>
+      <!-- poriyals along the top -->
+      <ellipse cx="196" cy="118" rx="38" ry="18" fill="#8e2450"/>
+      <ellipse cx="292" cy="116" rx="40" ry="18" fill="#e07a2c"/>
+      <ellipse cx="362" cy="112" rx="22" ry="14" fill="#cdeab6"/>
+      <!-- appalam -->
+      <circle cx="546" cy="232" r="56" fill="#d9b77c"/><circle cx="546" cy="232" r="56" fill="none" stroke="#b9945a" stroke-width="3" stroke-dasharray="2 9"/>
+      <!-- rice mound with sambar and rasam -->
+      <ellipse cx="300" cy="258" rx="150" ry="62" fill="#f6f2e4"/>
+      <ellipse cx="300" cy="250" rx="118" ry="44" fill="#fffcf2"/>
+      <path d="M232 250 c22 -26 92 -30 120 -4 c10 14 -6 26 -40 28 c-38 2 -92 -6 -80 -24 z" fill="#e2a320"/>
+      <circle cx="132" cy="250" r="34" fill="#7a3608"/><circle cx="132" cy="250" r="26" fill="#b02a1c"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ── Colour ── -->
+<section id="colour" aria-labelledby="colour-title">
+  <div class="band band--leaf"><div class="wrap">
+    <h2 id="colour-title">Colour, served</h2>
+    <p class="lede">Sixteen colours from the leaf, the rice and the side dishes. Each plate shows the text colour that sits on it and the contrast it reaches.</p>
+  </div></div>
+  <div class="wrap block" style="padding-top:48px;padding-bottom:64px">
+    <div class="sub"><h3>The leaf</h3><p>The brand. Primary actions, the top bar, headings.</p></div>
+    <ul class="servings">
+      <li class="serving"><div class="plate" style="background:var(--leaf-deep);color:var(--rice)"><b>Aa</b>9.6:1</div><h4>leaf-deep</h4><p class="hex">#1d4620</p><p class="dish">The midrib</p><p class="use">Top bar, headings, inverse surface.</p></li>
+      <li class="serving"><div class="plate" style="background:var(--leaf);color:var(--rice)"><b>Aa</b>5.8:1</div><h4>leaf</h4><p class="hex">#2f6b2a</p><p class="dish">Banana leaf</p><p class="use">Primary: filled buttons, links, selection.</p></li>
+      <li class="serving"><div class="plate" style="background:var(--leaf-bud);color:var(--leaf-deep)"><b>Aa</b>8.2:1</div><h4>leaf-bud</h4><p class="hex">#cdeab6</p><p class="dish">The tender inner leaf</p><p class="use">Primary container: tonal buttons, notices.</p></li>
+      <li class="serving"><div class="plate" style="background:var(--leaf-pale);color:var(--ink)"><b>Aa</b>13.7:1</div><h4>leaf-pale</h4><p class="hex">#e1e9c9</p><p class="dish">Leaf, washed</p><p class="use">Raised surfaces: cards and panels.</p></li>
+    </ul>
+
+    <div class="sub"><h3>Rice and curd</h3><p>The ground everything is served on.</p></div>
+    <ul class="servings">
+      <li class="serving"><div class="plate" style="background:var(--rice);color:var(--ink)"><b>Aa</b>15.3:1</div><h4>rice</h4><p class="hex">#f6f2e4</p><p class="dish">Cooked rice</p><p class="use">Page surface; text on leaf, beetroot and chilli.</p></li>
+      <li class="serving"><div class="plate" style="background:var(--curd);color:var(--ink)"><b>Aa</b>16.8:1</div><h4>curd</h4><p class="hex">#fffcf2</p><p class="dish">Thayir</p><p class="use">Lowest surface: inputs, tiles on rice.</p></li>
+    </ul>
+
+    <div class="sub"><h3>The side dishes</h3><p>The accents. Each has a strong serving and a pale container with its own dark text.</p></div>
+    <ul class="servings">
+      <li class="serving"><div class="plate" style="background:var(--turmeric);color:var(--ink)"><b>Aa</b>7.8:1</div><h4>turmeric</h4><p class="hex">#e2a320 · pale #fbedc4</p><p class="dish">Sambar</p><p class="use">Tertiary: highlights, badges, the selection colour. A fill, never text on rice (2:1).</p></li>
+      <li class="serving"><div class="plate" style="background:var(--chilli);color:var(--rice)"><b>Aa</b>5.9:1</div><h4>chilli</h4><p class="hex">#b02a1c · pale #fadcd5</p><p class="dish">Rasam, pickle</p><p class="use">Error: warnings and destructive actions, always with a word.</p></li>
+      <li class="serving"><div class="plate" style="background:var(--beetroot);color:var(--rice)"><b>Aa</b>7.4:1</div><h4>beetroot</h4><p class="hex">#8e2450 · pale #f7dfe8</p><p class="dish">Beetroot poriyal</p><p class="use">Secondary: selected chips and segments, shape specimens.</p></li>
+      <li class="serving"><div class="plate" style="background:var(--carrot);color:var(--ink)"><b>Aa</b>5.7:1</div><h4>carrot</h4><p class="hex">#e07a2c · pale #fde4cf</p><p class="dish">Carrot poriyal</p><p class="use">Data and wayfinding fills. Ink text only; never text on rice (2.7:1).</p></li>
+      <li class="serving"><div class="plate" style="background:var(--appalam);color:var(--ink)"><b>Aa</b>9.0:1</div><h4>appalam</h4><p class="hex">#d9b77c</p><p class="dish">Appalam</p><p class="use">Illustration and empty-state fills.</p></li>
+    </ul>
+
+    <div class="sub"><h3>Ink</h3><p>Text and lines.</p></div>
+    <ul class="servings">
+      <li class="serving"><div class="plate" style="background:var(--ink);color:var(--rice)"><b>Aa</b>15.3:1</div><h4>ink</h4><p class="hex">#211a12</p><p class="dish">Mustard seed</p><p class="use">Body text and the focus ring.</p></li>
+      <li class="serving"><div class="plate" style="background:var(--ink-muted);color:var(--rice)"><b>Aa</b>7.7:1</div><h4>ink-muted</h4><p class="hex">#5c4834</p><p class="dish">Tamarind</p><p class="use">Secondary text and control outlines.</p></li>
+      <li class="serving"><div class="plate" style="background:var(--rule);color:var(--ink)"><b>Aa</b>10.1:1</div><h4>rule</h4><p class="hex">#cfc6a6</p><p class="dish">Dried leaf edge</p><p class="use">Dividers only, never control borders.</p></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ── Roles ── -->
+<section id="roles" aria-labelledby="roles-title">
+  <div class="band band--beet"><div class="wrap">
+    <h2 id="roles-title">Colour roles</h2>
+    <p class="lede">Components never name a dish. They use a role, and each scheme fills the role with its own colour, so the dark leaf is designed, not inverted.</p>
+  </div></div>
+  <div class="wrap" style="padding-top:48px;padding-bottom:64px">
+    <div class="roles">
+      <div class="scheme" data-scheme="light">
+        <h3>Light: the leaf at lunch</h3>
+        <div class="pairs">
+          <div class="pair" style="background:var(--primary);color:var(--on-primary)">primary<small>leaf / rice</small></div>
+          <div class="pair" style="background:var(--primary-container);color:var(--on-primary-container)">primary-container<small>leaf-bud / leaf-deep</small></div>
+          <div class="pair" style="background:var(--secondary);color:var(--on-secondary)">secondary<small>beetroot / rice</small></div>
+          <div class="pair" style="background:var(--secondary-container);color:var(--on-secondary-container)">secondary-container<small>beetroot pale / deep</small></div>
+          <div class="pair" style="background:var(--tertiary);color:var(--on-tertiary)">tertiary<small>turmeric / ink</small></div>
+          <div class="pair" style="background:var(--tertiary-container);color:var(--on-tertiary-container)">tertiary-container<small>turmeric pale / deep</small></div>
+          <div class="pair" style="background:var(--error);color:var(--on-error)">error<small>chilli / rice</small></div>
+          <div class="pair" style="background:var(--error-container);color:var(--on-error-container)">error-container<small>chilli pale / deep</small></div>
+          <div class="pair pair--wide" style="background:var(--inverse-surface);color:var(--inverse-on-surface)">inverse-surface<small>leaf-deep / rice · inverse-primary #9ed58c</small></div>
+        </div>
+        <div class="ladder" aria-label="Surface ladder, lowest to highest">
+          <div style="background:var(--surface-container-lowest)">lowest</div><div style="background:var(--surface-container-low)">low</div><div style="background:var(--surface-container)">container</div><div style="background:var(--surface-container-high)">high</div><div style="background:var(--surface-container-highest)">highest</div>
+        </div>
+      </div>
+      <div class="scheme" data-scheme="dark">
+        <h3>Dark: the leaf at night</h3>
+        <div class="pairs">
+          <div class="pair" style="background:var(--primary);color:var(--on-primary)">primary<small>#9ed58c / #0b3a0e</small></div>
+          <div class="pair" style="background:var(--primary-container);color:var(--on-primary-container)">primary-container<small>leaf-deep / #c9efb8</small></div>
+          <div class="pair" style="background:var(--secondary);color:var(--on-secondary)">secondary<small>#ffb0cd / #5a1030</small></div>
+          <div class="pair" style="background:var(--secondary-container);color:var(--on-secondary-container)">secondary-container<small>#73203f / #ffd9e6</small></div>
+          <div class="pair" style="background:var(--tertiary);color:var(--on-tertiary)">tertiary<small>#f2c14e / #3d2a00</small></div>
+          <div class="pair" style="background:var(--tertiary-container);color:var(--on-tertiary-container)">tertiary-container<small>#5c4300 / #ffdf9e</small></div>
+          <div class="pair" style="background:var(--error);color:var(--on-error)">error<small>#ffb4a6 / #690f05</small></div>
+          <div class="pair" style="background:var(--error-container);color:var(--on-error-container)">error-container<small>#8c1d10 / #ffdad3</small></div>
+          <div class="pair pair--wide" style="background:var(--inverse-surface);color:var(--inverse-on-surface)">inverse-surface<small>#e8ead9 / #1d2b1e · inverse-primary leaf</small></div>
+        </div>
+        <div class="ladder" aria-label="Surface ladder, lowest to highest">
+          <div style="background:var(--surface-container-lowest)">lowest</div><div style="background:var(--surface-container-low)">low</div><div style="background:var(--surface-container)">container</div><div style="background:var(--surface-container-high)">high</div><div style="background:var(--surface-container-highest)">highest</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Type ── -->
+<section id="type" aria-labelledby="type-title">
+  <div class="band band--sambar"><div class="wrap">
+    <h2 id="type-title">Type</h2>
+    <p class="lede">Arima for display and headlines, Hind Madurai for everything you read or press. Both come from Google Fonts and both cover Tamil and Malayalam. Fifteen roles, on the Material 3 scale.</p>
+  </div></div>
+  <div class="wrap" style="padding-top:48px;padding-bottom:64px">
+    <ul class="type-rows">
+      <li><span class="type-group">Display · Arima 700</span></li>
+      <li class="type-row"><div class="tmeta"><b>display-large</b><span>57 / 64</span></div><p class="specimen" style="font:700 57px/64px var(--font-display)">Served on the leaf</p></li>
+      <li class="type-row"><div class="tmeta"><b>display-medium</b><span>45 / 52</span></div><p class="specimen" style="font:700 45px/52px var(--font-display)">Today at the mess</p></li>
+      <li class="type-row"><div class="tmeta"><b>display-small</b><span>36 / 44</span></div><p class="specimen" style="font:700 36px/44px var(--font-display)">Lunch is ready</p></li>
+      <li><span class="type-group">Headline · Arima 600</span></li>
+      <li class="type-row"><div class="tmeta"><b>headline-large</b><span>32 / 40</span></div><p class="specimen" style="font:600 32px/40px var(--font-display)">Weekly menu</p></li>
+      <li class="type-row"><div class="tmeta"><b>headline-medium</b><span>28 / 36</span></div><p class="specimen" style="font:600 28px/36px var(--font-display)">Today's lunch review</p></li>
+      <li class="type-row"><div class="tmeta"><b>headline-small</b><span>24 / 32</span></div><p class="specimen" style="font:600 24px/32px var(--font-display)">Sambar, rasam, poriyal</p></li>
+      <li><span class="type-group">Title · Hind Madurai 600</span></li>
+      <li class="type-row"><div class="tmeta"><b>title-large</b><span>22 / 28</span></div><p class="specimen" style="font:600 22px/28px var(--font-text)">Needs attention</p></li>
+      <li class="type-row"><div class="tmeta"><b>title-medium</b><span>17 / 24</span></div><p class="specimen" style="font:600 17px/24px var(--font-text)">Committee today</p></li>
+      <li class="type-row"><div class="tmeta"><b>title-small</b><span>15 / 20</span></div><p class="specimen" style="font:600 15px/20px var(--font-text)">Steamed rice</p></li>
+      <li><span class="type-group">Body · Hind Madurai 400</span></li>
+      <li class="type-row"><div class="tmeta"><b>body-large</b><span>17 / 26</span></div><p class="specimen" style="font:400 17px/26px var(--font-text)">Lunch is served from 12:00 to 2:30 pm. Tap once after you eat.</p></li>
+      <li class="type-row"><div class="tmeta"><b>body-medium</b><span>15 / 22</span></div><p class="specimen" style="font:400 15px/22px var(--font-text)">One tap per meal, per day, from each phone.</p></li>
+      <li class="type-row"><div class="tmeta"><b>body-small</b><span>13 / 18</span></div><p class="specimen" style="font:400 13px/18px var(--font-text)">Updated 5 minutes ago</p></li>
+      <li><span class="type-group">Label · Hind Madurai 500</span></li>
+      <li class="type-row"><div class="tmeta"><b>label-large</b><span>16 / 20 · 600</span></div><p class="specimen" style="font:600 16px/20px var(--font-text)">Rate this meal</p></li>
+      <li class="type-row"><div class="tmeta"><b>label-medium</b><span>14 / 20</span></div><p class="specimen" style="font:500 14px/20px var(--font-text)">Spice level</p></li>
+      <li class="type-row"><div class="tmeta"><b>label-small</b><span>12 / 16</span></div><p class="specimen" style="font:500 12px/16px var(--font-text)">2 of 3 published</p></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ── Shape and space ── -->
+<section id="shape" aria-labelledby="shape-title">
+  <div class="band band--carrot"><div class="wrap">
+    <h2 id="shape-title">Shape and space</h2>
+    <p class="lede">Corners follow the Material 3 shape scale and spacing follows a 4px grid. The leaf is soft-cornered; nothing on it is sharp.</p>
+  </div></div>
+  <div class="wrap" style="padding-top:48px;padding-bottom:64px">
+    <div class="sub"><h3>Corners</h3></div>
+    <ul class="shapes">
+      <li><div class="s" style="border-radius:var(--shape-xs)"></div><b>shape-xs · 4px</b><span>Badges, text fields</span></li>
+      <li><div class="s" style="border-radius:var(--shape-s)"></div><b>shape-s · 8px</b><span>Filter chips, menus</span></li>
+      <li><div class="s" style="border-radius:var(--shape-m)"></div><b>shape-m · 12px</b><span>Plates, alerts, tiles</span></li>
+      <li><div class="s" style="border-radius:var(--shape-l)"></div><b>shape-l · 16px</b><span>Cards and panels</span></li>
+      <li><div class="s" style="border-radius:var(--shape-xl)"></div><b>shape-xl · 28px</b><span>Sheets, dialogs, stages</span></li>
+      <li><div class="s" style="border-radius:var(--shape-full)"></div><b>shape-full</b><span>Buttons, segments, katori</span></li>
+    </ul>
+    <div class="sub"><h3>Space</h3></div>
+    <ul class="space-rows">
+      <li class="space-row"><span class="bar" style="width:4px"></span><b>space-1 · 4</b><span>Icon to label inside small controls</span></li>
+      <li class="space-row"><span class="bar" style="width:8px"></span><b>space-2 · 8</b><span>Chip to chip, button to button</span></li>
+      <li class="space-row"><span class="bar" style="width:12px"></span><b>space-3 · 12</b><span>Inside badges and list rows</span></li>
+      <li class="space-row"><span class="bar" style="width:16px"></span><b>space-4 · 16</b><span>Field padding, stacked fields</span></li>
+      <li class="space-row"><span class="bar" style="width:24px"></span><b>space-6 · 24</b><span>Card padding, gap between cards</span></li>
+      <li class="space-row"><span class="bar" style="width:32px"></span><b>space-8 · 32</b><span>Inside a stage or dialog</span></li>
+      <li class="space-row"><span class="bar" style="width:48px"></span><b>space-12 · 48</b><span>Between groups in a section</span></li>
+      <li class="space-row"><span class="bar" style="width:64px"></span><b>space-16 · 64</b><span>Between page sections</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ── Components ── -->
+<section id="components" aria-labelledby="components-title">
+  <div class="band band--rasam"><div class="wrap">
+    <h2 id="components-title">Components</h2>
+    <p class="lede">The roles put together. Switch the scheme to see the same components at night. Every control is at least 48px tall, and every state is a layer of the content colour.</p>
+  </div></div>
+  <div class="wrap" style="padding-top:48px;padding-bottom:64px">
+    <div class="stage" id="stage" data-scheme="light">
+      <div class="stage-head">
+        <h3>A lunch card and a menu form</h3>
+        <div class="seg" role="group" aria-label="Colour scheme">
+          <button type="button" aria-pressed="true" data-set-scheme="light"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" fill="currentColor"/></svg>Light</button>
+          <button type="button" aria-pressed="false" data-set-scheme="dark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" fill="currentColor"/></svg>Dark</button>
+        </div>
+      </div>
+      <div class="demo">
+        <div class="card">
+          <div>
+            <p class="time">Lunch · 12:00 to 2:30 pm</p>
+            <h4>Sambar rice, beans poriyal, rasam</h4>
+          </div>
+          <ul class="dishes"><li>Steamed rice</li><li>Sambar</li><li>Beans poriyal</li><li>Rasam</li><li>Appalam</li></ul>
+          <p><span class="badge badge--sambar">Today's special</span></p>
+          <div class="row" role="group" aria-label="How was lunch?">
+            <button class="chip" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" fill="currentColor"/></svg>Good</button>
+            <button class="chip" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" fill="currentColor"/></svg>Bad</button>
+            <button class="chip" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" fill="currentColor"/></svg>Skipped</button>
+          </div>
+          <p class="notice" role="status" id="tap-note"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" fill="currentColor"/></svg><span>You said Good for lunch today.</span></p>
+        </div>
+        <div class="card">
+          <div class="field">
+            <label for="dish">Dish name</label>
+            <input id="dish" value="Curd rice" aria-describedby="dish-help">
+            <p class="help" id="dish-help">As it should appear on the menu.</p>
+          </div>
+          <div class="field has-error">
+            <label for="date">Date</label>
+            <input id="date" value="15-11-2026" aria-invalid="true" aria-describedby="date-help">
+            <p class="help" id="date-help">Use YYYY-MM-DD, for example 2026-11-15.</p>
+          </div>
+          <div class="row">
+            <button class="btn btn--filled" type="button">Save dish</button>
+            <button class="btn btn--tonal" type="button">Use template</button>
+            <button class="btn btn--text" type="button">Cancel</button>
+          </div>
+          <p class="alert" role="alert"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z" fill="currentColor"/></svg>Couldn't save. Check your connection and try again.</p>
+        </div>
+      </div>
+
+      <div class="sub" style="margin-top:48px"><h3 style="color:var(--on-surface)">Buttons and their states</h3></div>
+      <div class="state-grid">
+        <figure><button class="btn btn--filled" type="button" tabindex="-1">Save</button><figcaption>Filled · enabled</figcaption></figure>
+        <figure><button class="btn btn--filled is-hover" type="button" tabindex="-1">Save</button><figcaption>Hovered · 8% layer</figcaption></figure>
+        <figure><button class="btn btn--filled is-focus" type="button" tabindex="-1">Save</button><figcaption>Focused · ring + 10%</figcaption></figure>
+        <figure><button class="btn btn--filled is-pressed" type="button" tabindex="-1">Save</button><figcaption>Pressed · 10% layer</figcaption></figure>
+        <figure><button class="btn btn--filled" type="button" disabled>Saved</button><figcaption>Disabled</figcaption></figure>
+        <figure><button class="btn btn--tonal" type="button" tabindex="-1">Copy last week</button><figcaption>Tonal</figcaption></figure>
+        <figure><button class="btn btn--outlined" type="button" tabindex="-1">Student view</button><figcaption>Outlined</figcaption></figure>
+        <figure><button class="btn btn--danger" type="button" tabindex="-1">Deactivate</button><figcaption>Destructive</figcaption></figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Material 3 ── -->
+<section id="m3" aria-labelledby="m3-title">
+  <div class="band band--rice"><div class="wrap">
+    <h2 id="m3-title">Against Material 3</h2>
+    <p class="lede">Ilai follows the Material 3 structure (roles, scales, states and targets) and keeps its own look where the meal needs it. Each departure below is deliberate.</p>
+  </div></div>
+  <div class="wrap" style="padding-top:48px;padding-bottom:64px">
+    <table class="m3">
+      <thead><tr><th>Material 3</th><th>Ilai</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Colour roles</td><td>Primary, secondary, tertiary and error, each with an on-colour, a container and an on-container colour; inverse roles; outline and outline-variant.</td><td><span class="status status--yes">Follows</span></td></tr>
+        <tr><td>Surface containers</td><td>Five levels from curd (lowest) to a deep leaf tint (highest), in both schemes.</td><td><span class="status status--yes">Follows</span></td></tr>
+        <tr><td>Dark scheme</td><td>A designed night-leaf scheme with lighter primary and container roles.</td><td><span class="status status--yes">Follows</span></td></tr>
+        <tr><td>Tonal palettes</td><td>Hand-picked from the meal rather than generated from one seed, so turmeric stays turmeric. Every on-pair is checked to 4.5:1 or better.</td><td><span class="status status--own">Own choice</span></td></tr>
+        <tr><td>Type scale</td><td>All fifteen roles. Body-large is 17px rather than 16px, because Hind Madurai has a small x-height. Label-small is 12px rather than 11px.</td><td><span class="status status--own">Adjusted</span></td></tr>
+        <tr><td>Shape scale</td><td>xs 4, s 8, m 12, l 16, xl 28 and full, exactly as Material 3.</td><td><span class="status status--yes">Follows</span></td></tr>
+        <tr><td>Elevation</td><td>Tonal elevation through the surface ladder plus a 1px outline-variant edge. No shadows on controls, because a laid leaf is flat.</td><td><span class="status status--own">Own choice</span></td></tr>
+        <tr><td>State layers</td><td>Hover 8%, focus 10% and pressed 10%, in the content colour, plus a 2px focus ring.</td><td><span class="status status--yes">Follows</span></td></tr>
+        <tr><td>Touch targets</td><td>Buttons and segments are 48px tall; chips are 40px with a 48px target.</td><td><span class="status status--yes">Follows</span></td></tr>
+        <tr><td>Spacing</td><td>A 4px grid: 4, 8, 12, 16, 24, 32, 48 and 64.</td><td><span class="status status--yes">Follows</span></td></tr>
+        <tr><td>Text fields</td><td>Outlined, 56px tall, with supporting and error text. The label sits above the field instead of floating, so it never hides a Tamil or Malayalam word.</td><td><span class="status status--own">Adjusted</span></td></tr>
+        <tr><td>Selection</td><td>Selected chips and segments show a check mark as well as the secondary container, so state never relies on colour alone.</td><td><span class="status status--yes">Follows</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── Rules ── -->
+<section id="rules" aria-labelledby="rules-title">
+  <div class="band band--leaf"><div class="wrap">
+    <h2 id="rules-title">Rules</h2>
+    <p class="lede">How to lay the leaf so it stays easy to read.</p>
+  </div></div>
+  <div class="wrap" style="padding-top:48px;padding-bottom:64px">
+    <div class="rules">
+      <section class="rule-block"><h3><i style="background:var(--leaf)"></i>Colour</h3><ul>
+        <li>Build with roles, not dish names. A card is <code>surface-container-high</code>, not leaf-pale.</li>
+        <li><code>primary</code> is the one main action per view. Tonal and outlined buttons carry the rest.</li>
+        <li>Let colour own whole regions: section bands, plates and containers. Don't sprinkle it in small accents.</li>
+        <li>One side dish per component. A turmeric badge and a chilli alert never share a card.</li>
+        <li>Turmeric and carrot are fills with ink text. Never use them as text or lines on rice.</li>
+        <li>Chilli and leaf have nearly the same lightness, so every status also carries a word or an icon.</li>
+      </ul></section>
+      <section class="rule-block"><h3><i style="background:var(--turmeric)"></i>Type</h3><ul>
+        <li>Arima for display and headlines only. Hind Madurai for titles, body and labels.</li>
+        <li>One display-large per page. Body text stays between 45 and 75 characters per line.</li>
+        <li>Sentence case everywhere. No tracked capitals.</li>
+      </ul></section>
+      <section class="rule-block"><h3><i style="background:var(--beetroot)"></i>Shape and space</h3><ul>
+        <li>Buttons and segments are <code>shape-full</code>, chips <code>shape-s</code>, cards <code>shape-l</code>, sheets <code>shape-xl</code>.</li>
+        <li>Spacing comes only from the 4px grid.</li>
+        <li>Separate surfaces with a tonal step and a 1px edge, not a shadow.</li>
+      </ul></section>
+      <section class="rule-block"><h3><i style="background:var(--chilli)"></i>Focus and states</h3><ul>
+        <li>The focus ring is a solid 2px <code>focus</code> outline with a 2px offset: ink by day, curd-white by night.</li>
+        <li>Hover, focus and press are layers of the content colour: 8%, 10% and 10%.</li>
+        <li>Disabled controls drop to 12% fill and 50% text, and lose their state layer.</li>
+      </ul></section>
+      <section class="rule-block"><h3><i style="background:var(--carrot)"></i>Voice</h3><p>Plain and warm, like the person serving: "Lunch is ready", "Rate this meal", "Thanks, noted". Second person and sentence case.</p></section>
+      <section class="rule-block"><h3><i style="background:var(--appalam)"></i>Logo and icons</h3><p>The logo is the hero's banana leaf, reduced: the leaf, its midrib and veins, a mound of rice with sambar, and an appalam. It sits left of the wordmark, on leaf-deep or rice, and never below 24px wide. Icons are drawn in a single 24px solid set, never emoji.</p>
+        <div class="logo-row">
+          <div class="logo-tile" style="background:var(--leaf-deep);color:var(--leaf-pale)"><svg class="mark" width="96" height="60" viewBox="0 0 64 40" aria-hidden="true" focusable="false"><path d="M2 8C2 5.2 3.6 4 6.4 4H50c5.6.7 11 7.6 12 16-1 8.4-6.4 15.3-12 16H6.4C3.6 36 2 34.8 2 32Z" fill="#3d8a35"/><path d="M8 10 14 36M18 10l6 26M28 10l6 26M38 10l6 26M48 10l5 22" stroke="#2a5f25" stroke-width="1.6" fill="none"/><rect x="2" y="7.5" width="58" height="3" rx="1.5" fill="#1d4620"/><ellipse cx="31" cy="25" rx="14" ry="6.5" fill="#fffcf2"/><ellipse cx="31" cy="24" rx="6.5" ry="3" fill="#e2a320"/><circle cx="51" cy="24" r="5" fill="#d9b77c"/></svg><small>96px</small></div>
+          <div class="logo-tile" style="background:var(--rice);border:1px solid var(--rule);color:var(--ink-muted)"><svg class="mark" width="48" height="30" viewBox="0 0 64 40" aria-hidden="true" focusable="false"><path d="M2 8C2 5.2 3.6 4 6.4 4H50c5.6.7 11 7.6 12 16-1 8.4-6.4 15.3-12 16H6.4C3.6 36 2 34.8 2 32Z" fill="#3d8a35"/><path d="M8 10 14 36M18 10l6 26M28 10l6 26M38 10l6 26M48 10l5 22" stroke="#2a5f25" stroke-width="1.6" fill="none"/><rect x="2" y="7.5" width="58" height="3" rx="1.5" fill="#1d4620"/><ellipse cx="31" cy="25" rx="14" ry="6.5" fill="#fffcf2"/><ellipse cx="31" cy="24" rx="6.5" ry="3" fill="#e2a320"/><circle cx="51" cy="24" r="5" fill="#d9b77c"/></svg><small>48px</small></div>
+          <div class="logo-tile" style="background:var(--rice);border:1px solid var(--rule);color:var(--ink-muted)"><svg class="mark" width="28" height="18" viewBox="0 0 64 40" aria-hidden="true" focusable="false"><path d="M2 8C2 5.2 3.6 4 6.4 4H50c5.6.7 11 7.6 12 16-1 8.4-6.4 15.3-12 16H6.4C3.6 36 2 34.8 2 32Z" fill="#3d8a35"/><path d="M8 10 14 36M18 10l6 26M28 10l6 26M38 10l6 26M48 10l5 22" stroke="#2a5f25" stroke-width="1.6" fill="none"/><rect x="2" y="7.5" width="58" height="3" rx="1.5" fill="#1d4620"/><ellipse cx="31" cy="25" rx="14" ry="6.5" fill="#fffcf2"/><ellipse cx="31" cy="24" rx="6.5" ry="3" fill="#e2a320"/><circle cx="51" cy="24" r="5" fill="#d9b77c"/></svg><small>28px</small></div>
+        </div></section>
+    </div>
+  </div>
+</section>
+
+<!-- ── Tokens ── -->
+<section id="tokens" aria-labelledby="tokens-title">
+  <div class="band band--sambar"><div class="wrap">
+    <h2 id="tokens-title">Tokens</h2>
+    <p class="lede">Copy these into a stylesheet. The roles are the light scheme; the dark scheme overrides the same names under <code>[data-scheme="dark"]</code>.</p>
+  </div></div>
+  <div class="wrap" style="padding-top:48px;padding-bottom:64px">
+    <div class="tokens">
+      <p class="status-msg" id="copy-status" role="status" aria-live="polite"></p>
+      <button class="btn" type="button" id="copy-tokens">Copy tokens</button>
+<pre id="token-css">:root {
+  /* Colour roles: light */
+  --primary: #2f6b2a;               --on-primary: #f6f2e4;
+  --primary-container: #cdeab6;     --on-primary-container: #1d4620;
+  --secondary: #8e2450;             --on-secondary: #f6f2e4;
+  --secondary-container: #f7dfe8;   --on-secondary-container: #6e1a3d;
+  --tertiary: #e2a320;              --on-tertiary: #211a12;
+  --tertiary-container: #fbedc4;    --on-tertiary-container: #5c3f00;
+  --error: #b02a1c;                 --on-error: #f6f2e4;
+  --error-container: #fadcd5;       --on-error-container: #7d1b10;
+  --surface: #f6f2e4;               --on-surface: #211a12;
+  --surface-container-lowest: #fffcf2;
+  --surface-container-low: #f1efdd;
+  --surface-container: #ebecd4;
+  --surface-container-high: #e1e9c9;
+  --surface-container-highest: #d6e0b8;
+  --on-surface-variant: #5c4834;
+  --outline: #5c4834;               --outline-variant: #cfc6a6;
+  --inverse-surface: #1d4620;       --inverse-on-surface: #f6f2e4;
+  --inverse-primary: #9ed58c;
+
+  /* Shape */
+  --shape-xs: 4px; --shape-s: 8px; --shape-m: 12px;
+  --shape-l: 16px; --shape-xl: 28px; --shape-full: 999px;
+
+  /* Space: 4px grid */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
+
+  /* Type */
+  --font-display: Arima, Georgia, serif;
+  --font-text: "Hind Madurai", system-ui, sans-serif;
+}</pre>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Ilai design system, version 2. Built for MessMate at Sai University.</span>
+    <a href="guide/">MessMate user guide</a>
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('.chip').forEach(function (b) {
+  b.addEventListener('click', function () {
+    b.parentElement.querySelectorAll('.chip').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+    var word = b.textContent.trim();
+    document.querySelector('#tap-note span').textContent = word === 'Skipped' ? 'You skipped lunch today.' : 'You said ' + word + ' for lunch today.';
+  });
+});
+document.querySelectorAll('[data-set-scheme]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.getElementById('stage').setAttribute('data-scheme', b.dataset.setScheme);
+    document.querySelectorAll('[data-set-scheme]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+  });
+});
+document.getElementById('copy-tokens').addEventListener('click', function () {
+  var status = document.getElementById('copy-status');
+  navigator.clipboard.writeText(document.getElementById('token-css').textContent).then(
+    function () { status.textContent = 'Copied'; },
+    function () { status.textContent = 'Couldn’t copy. Select the text and copy it instead.'; }
+  );
+});
+</script>
+</body>
+</html>

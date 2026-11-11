@@ -8,9 +8,13 @@ page is assembled, and the rules that keep it coherent.
 
 ## 1. Principles
 
-1. **One theme.** Every surface — student home, dish form, committee pages,
-   admin console, dashboards — is the same dark glass shell. There is no light
-   variant; a page that looks different is a bug.
+1. **Two themes, one system.** Every surface — student home, dish form,
+   committee pages, admin console, dashboards — comes in two themes that
+   share every token name: **dark**, the original glass shell, and **light**,
+   *Ilai* (banana leaf, rice and the spice tin; reference sheet:
+   `docs/ilai-design-system.html`). A component never asks which theme it is
+   in; it reads tokens. A page that looks different from its neighbours in
+   the same theme is a bug.
 2. **Tokens, not values.** No hex colour, pixel size or easing appears below
    the token layer of the stylesheet. New needs get a new token.
 3. **Components are page-agnostic.** A `.card` is a `.card` everywhere.
@@ -32,7 +36,10 @@ Everything configurable about the UI is in one file, `ui_config.py`:
 
 | What | Where it is read |
 |---|---|
-| `DESIGN_TOKENS` — every CSS custom property | served as `/ui/tokens.css`, loaded by every page before `style.css`; `charts.js` reads chart colours from the computed style |
+| `SHARED_TOKENS` — tokens both themes share (type sizes, space, radius, motion, rails) | served as `/ui/tokens.css`, loaded by every page before `style.css` |
+| `THEMES` — the dark and light colour, font, shadow and chart values, one row per token with both values | same sheet: the starting theme on `:root`, the other under `:root[data-theme]`; `charts.js` reads chart colours from the computed style |
+| `DEFAULT_THEME` — `"system"` (follow the device), `"dark"` or `"light"` | `tokens_css()` and `static/theme.js` |
+| `FONTS_URL` — every web font either theme loads | `_theme_head.html` |
 | `SCORE_BANDS` — where 1–5 turns red / amber / green | templates via `ui.score_class()`, `app.py` alerts via `ui_config.score_band()`, charts via `window.MESSMATE_UI.scoreBands` |
 | `TAP_BANDS` — where "% liked" turns poor / mixed / good | templates via `ui.tap_band()` / `ui.tap_class()`, `app.py` alerts |
 | `APP` — name, wordmark, tagline, institution | templates via `ui.app`, scripts via `window.MESSMATE_UI.app` |
@@ -40,7 +47,21 @@ Everything configurable about the UI is in one file, `ui_config.py`:
 Change a value there and it changes everywhere. `style.css` declares no
 `:root` of its own.
 
-## 2a. Tokens (`DESIGN_TOKENS`)
+**Switching themes.** `_theme_head.html` (in every `<head>`) loads the fonts
+and the token sheet, and restores a saved choice before the page paints.
+`_theme_toggle.html` is the switch in both headers; `static/theme.js` runs
+it and saves the choice in `localStorage` (`THEME_STORAGE_KEY`). With no
+saved choice and `DEFAULT_THEME = "system"`, the device's light / dark
+setting decides. Dashboards reload on a switch so their charts redraw in the
+new colours.
+
+## 2a. Tokens (`SHARED_TOKENS` + `THEMES`)
+
+The notes below describe the dark values. In light, surfaces are a leaf
+tint over rice, text is mustard-seed ink and tamarind, the accent is banana
+leaf, warnings are turmeric (darkened to read as text) and danger is
+Kashmiri chilli. Headings use `--font-display` (Arima in light, the body
+face in dark). Text on an accent fill is always `--on-accent`.
 
 | Group | Tokens | Notes |
 |---|---|---|

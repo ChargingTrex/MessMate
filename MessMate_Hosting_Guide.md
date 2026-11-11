@@ -1,4 +1,5 @@
 # MessMate — Hosting Guide
+
 **Deploy to Render.com · Flask + Google Sheets · Free Tier**
 
 > This guide takes you from a working local app to a live public URL with a QR code — ready for the VC demo.
@@ -42,6 +43,7 @@ Pillow
 ```
 
 Add any that are missing, then test locally:
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -60,6 +62,7 @@ venv/
 ### 1.4 Confirm `app.py` reads credentials from environment, not file
 
 In `sheets.py`, the `get_client()` function should already handle both cases:
+
 ```python
 creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
 if creds_json:
@@ -103,7 +106,7 @@ git push -u origin main
 4. Configure:
 
 | Setting | Value |
-|---|---|
+| --- | --- |
 | Name | `messmate` |
 | Region | Singapore (closest to Chennai) |
 | Branch | `main` |
@@ -112,31 +115,35 @@ git push -u origin main
 | Start Command | `gunicorn app:app` |
 | Instance Type | `Free` |
 
-5. Click **Create Web Service**
+1. Click **Create Web Service**
 
 ### 3.2 Set Environment Variables
 
 In Render → your service → **Environment** tab, add these 3 variables:
 
 **Variable 1:**
+
 ```
 Key:   FLASK_SECRET_KEY
 Value: (any long random string — e.g. messmate-secret-2026-vcready)
 ```
 
 **Variable 2:**
+
 ```
 Key:   SPREADSHEET_ID
 Value: 1OSRGmdOALh1CA7OzoKtFc1tg01amrokqqmho4icFUNw
 ```
 
 **Variable 3:**
+
 ```
 Key:   GOOGLE_CREDENTIALS_JSON
 Value: (paste the entire contents of your credentials.json as one line)
 ```
 
 To get the credentials as a single line, run this in your terminal:
+
 ```bash
 cat credentials.json | python3 -c "import sys,json; print(json.dumps(json.load(sys.stdin)))"
 ```
@@ -146,11 +153,13 @@ Copy the output and paste it as the value for `GOOGLE_CREDENTIALS_JSON`.
 ### 3.3 Trigger Deploy
 
 Click **Deploy Latest Commit** — Render will:
+
 1. Pull your code from GitHub
 2. Run `pip install -r requirements.txt`
 3. Start the app with `gunicorn app:app`
 
 Watch the logs. A successful deploy ends with:
+
 ```
 ==> Your service is live 🎉
 ```
@@ -160,6 +169,7 @@ Watch the logs. A successful deploy ends with:
 ## Step 4 — Verify the Live App
 
 Your live URL will be:
+
 ```
 https://messmate.onrender.com
 ```
@@ -167,7 +177,7 @@ https://messmate.onrender.com
 Check all three routes:
 
 | Route | Expected |
-|---|---|
+| --- | --- |
 | `https://messmate.onrender.com/` | Student feedback form loads |
 | `https://messmate.onrender.com/dashboard` | Dashboard with charts |
 | `https://messmate.onrender.com/health` | `{"status": "ok"}` |
@@ -187,6 +197,7 @@ python generate_qr.py
 This creates `messmate_qr.png` in your project folder.
 
 **Print tips for the demo:**
+
 - Print at A5 size minimum — bigger is easier to scan from a distance
 - Test scanning from 30cm away on a real phone before the demo
 - Stick it on the mess notice board at least 30 minutes before the VC visit
@@ -210,7 +221,7 @@ Run through this the day before the VC meeting:
 ## Troubleshooting
 
 | Problem | Fix |
-|---|---|
+| --- | --- |
 | Build fails on Render | Check `requirements.txt` includes `gunicorn` |
 | `Application error` on load | Check Render logs — usually a missing env variable |
 | `GOOGLE_CREDENTIALS_JSON` parse error | Re-run the `cat credentials.json` command and repaste — no line breaks |

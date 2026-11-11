@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MessMate user guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+
+<!-- ───────────── Cover ───────────── -->
+<div class="cover">
+  <div class="wordmark">MESSMATE</div>
+  <div>
+    <h1>How to use MessMate</h1>
+    <p class="sub">A step-by-step picture guide for <strong>management, deans and the Food Committee</strong>. Every screen, and every button you need to click.</p>
+    <div class="cover-shot"><img src="img/overview-top.png" alt="The MessMate overview page with numbered markers on the parts this guide explains"></div>
+  </div>
+  <div class="cover-foot"><span>College mess food review · Sai University</span><span>Screens show sample data</span></div>
+</div>
+
+<!-- ───────────── Front matter ───────────── -->
+<section class="section pg-front" id="start">
+  <header>
+    <h2>Before you start</h2>
+    <p class="lead">MessMate collects feedback on the mess food in three separate ways and shows it to the people who can act on it. The three are <strong>never averaged together</strong>.</p>
+  </header>
+
+  <div class="front">
+    <div>
+      <h3>How to read this guide</h3>
+      <div class="legend">
+        <div><span class="disc">1</span><span>A <strong>red number</strong> on a screenshot matches the same red number in the text beside or above it.</span></div>
+        <div><span class="ring"></span><span>A <strong>red outline</strong> shows the button or box you click or type in.</span></div>
+        <div><span class="boldkey">Bold</span><span><strong>Bold text</strong> is the part you must not miss, or the exact name of a button.</span></div>
+      </div>
+      <p class="note"><b>The screenshots use sample data.</b> The names, scores and menus are examples. Your screens will show your own mess.</p>
+    </div>
+    <div>
+      <h3>The three kinds of feedback</h3>
+      <dl class="kinds">
+        <div><dt>Quick taps</dt><dd>Students tap <strong>Good, Bad or Skipped</strong> once per meal. No sign-in. Shown as the <strong>% who liked</strong> the meal.</dd></div>
+        <div><dt>Dish form</dt><dd>Students score lunch and each dish from <strong>1 to 5</strong>. No sign-in. Shown as an <strong>average out of 5</strong>.</dd></div>
+        <div><dt>Committee review</dt><dd>Food Committee members, <strong>signed in and named</strong>, score every dish and five areas for each meal. Shown as an <strong>average out of 5</strong>.</dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <div class="step" style="margin-top:7mm">
+    <h3>Find your task</h3>
+    <table class="tasks">
+      <thead><tr><th>I want to…</th><th style="width:38%">Go to section</th><th class="c" style="width:9%">Page</th></tr></thead>
+      <tbody>
+        <tr><td>Sign in for the first time, or set my password</td><td>1 · Sign in and set your password</td><td class="c"><a href="#signin" data-p=""></a></td></tr>
+        <tr><td>See what needs a decision today</td><td>3 · Overview</td><td class="c"><a href="#overview" data-p=""></a></td></tr>
+        <tr><td>Publish or change the menu</td><td>4 · Publish the weekly menu</td><td class="c"><a href="#menu" data-p=""></a></td></tr>
+        <tr><td>Add a committee member, or reset a password</td><td>5 · Committee members</td><td class="c"><a href="#members" data-p=""></a></td></tr>
+        <tr><td>Review today's breakfast, lunch or dinner</td><td>6 · Review a meal</td><td class="c"><a href="#review" data-p=""></a></td></tr>
+        <tr><td>See how students rated the food</td><td>8 · Student feedback dashboard</td><td class="c"><a href="#students" data-p=""></a></td></tr>
+        <tr><td>See how the committee scored the mess</td><td>9 · Committee dashboard</td><td class="c"><a href="#committee" data-p=""></a></td></tr>
+        <tr><td>Understand a colour, a <span class="nw">“--”</span> or an error message</td><td>11 · Colours and quick answers</td><td class="c"><a href="#help" data-p=""></a></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="step">
+    <h3>Contents, and who can open each page</h3>
+    <table class="toc">
+      <thead><tr><th colspan="2">Section</th><th class="c" style="width:8%">Page</th><th class="c" style="width:14%">Admin (mess office)</th><th class="c" style="width:14%">Dean or viewer</th><th class="c" style="width:14%">Committee member</th></tr></thead>
+      <tbody>
+        <tr class="part"><td colspan="6">Part 1 · Get started</td></tr>
+        <tr><td class="n">1</td><td>Sign in and set your password</td><td class="c"><a href="#signin" data-p=""></a></td><td class="c yes">Yes</td><td class="c yes">Yes</td><td class="c yes">Yes</td></tr>
+        <tr><td class="n">2</td><td>The top bar</td><td class="c"><a href="#topbar" data-p=""></a></td><td class="c yes">Yes</td><td class="c yes">Yes</td><td class="c yes">Yes</td></tr>
+        <tr class="part"><td colspan="6">Part 2 · Run the mess office</td></tr>
+        <tr><td class="n">3</td><td>Overview: today at the mess</td><td class="c"><a href="#overview" data-p=""></a></td><td class="c yes">Yes</td><td class="c no">No</td><td class="c no">No</td></tr>
+        <tr><td class="n">4</td><td>Publish the weekly menu</td><td class="c"><a href="#menu" data-p=""></a></td><td class="c yes">Yes</td><td class="c no">No</td><td class="c no">No</td></tr>
+        <tr><td class="n">5</td><td>Committee members</td><td class="c"><a href="#members" data-p=""></a></td><td class="c yes">Yes</td><td class="c no">No</td><td class="c no">No</td></tr>
+        <tr class="part"><td colspan="6">Part 3 · Review the food</td></tr>
+        <tr><td class="n">6</td><td>Review a meal</td><td class="c"><a href="#review" data-p=""></a></td><td class="c no">No</td><td class="c no">No</td><td class="c yes">Yes</td></tr>
+        <tr><td class="n">7</td><td>Committee member dashboard</td><td class="c"><a href="#mydash" data-p=""></a></td><td class="c no">No</td><td class="c no">No</td><td class="c yes">Yes</td></tr>
+        <tr class="part"><td colspan="6">Part 4 · Read the results</td></tr>
+        <tr><td class="n">8</td><td>Student feedback dashboard</td><td class="c"><a href="#students" data-p=""></a></td><td class="c yes">Yes</td><td class="c yes">Read only</td><td class="c no">No</td></tr>
+        <tr><td class="n">9</td><td>Committee dashboard</td><td class="c"><a href="#committee" data-p=""></a></td><td class="c yes">Yes</td><td class="c yes">Read only</td><td class="c no">No</td></tr>
+        <tr><td class="n">10</td><td>What students see</td><td class="c"><a href="#home" data-p=""></a></td><td class="c" colspan="3">Open to everyone, no sign-in</td></tr>
+        <tr class="part"><td colspan="6">Part 5 · Reference</td></tr>
+        <tr><td class="n">11</td><td>Colours and quick answers</td><td class="c"><a href="#help" data-p=""></a></td><td class="c" colspan="3">For all readers</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ───────────── Sign in ───────────── -->
+<section class="section num part-1" id="signin">
+  <header>
+    <h2>Sign in and set your password</h2>
+    <p class="lead">Everyone signs in on the same page. <strong>Your email decides which pages you get</strong>; you do not choose a role. Students never sign in.</p>
+    <p class="where"><span><b>Address:</b> your MessMate link followed by <code>/signin</code></span><span><b>Used by:</b> admin, dean, committee members</span></p>
+  </header>
+
+  <div class="step side">
+    <div class="txt">
+      <h3>Sign in</h3>
+      <p>Use the account you were given.</p>
+      <ol class="keys">
+        <li>Type your <strong>email</strong>.</li>
+        <li>Type your <strong>password</strong>. A new committee member types the <strong>one-time password</strong> the admin sent.</li>
+        <li>Click <strong>Sign in</strong>.</li>
+      </ol>
+      <p class="note"><b>Where you land.</b> Admin opens the <strong>Overview</strong>. A dean opens the <strong>Student feedback dashboard</strong>. A committee member opens the <strong>committee dashboard</strong>.</p>
+    </div>
+    <figure><img src="img/signin.png" alt="The sign-in card with email, password and the Sign in button outlined"><figcaption><b>Sign in page.</b> The same card for every role.</figcaption></figure>
+  </div>
+
+  <div class="step side">
+    <div class="txt">
+      <h3>First time only: choose your own password</h3>
+      <p>Committee members see this page the first time they sign in, and again after the admin resets their password.</p>
+      <ol class="keys">
+        <li>Type a <strong>new password</strong> of <strong>at least 8 characters</strong>.</li>
+        <li>Type the same password again.</li>
+        <li>Click <strong>Save and continue</strong>.</li>
+      </ol>
+      <p class="note warn"><b>You cannot review a meal until you do this.</b> If you forget your password later, ask the admin to reset it.</p>
+    </div>
+    <figure><img src="img/password.png" alt="The Choose your password page with both password boxes and the Save and continue button outlined"><figcaption><b>Choose your password page.</b></figcaption></figure>
+  </div>
+</section>
+
+<!-- ───────────── Top bar ───────────── -->
+<section class="section num part-1" id="topbar">
+  <header>
+    <h2>The top bar</h2>
+    <p class="lead">The bar at the top of every page is how you move around. It shows different links depending on who is signed in.</p>
+  </header>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Signed in as admin</h3>
+      <ol class="keys cols">
+        <li><strong>Overview</strong>: today on one screen.</li>
+        <li><strong>Menu</strong>: publish the weekly menu.</li>
+        <li><strong>Members</strong>: add and manage committee members.</li>
+        <li><strong>Students</strong>: the student feedback dashboard.</li>
+        <li><strong>Committee</strong>: the committee dashboard.</li>
+        <li><strong>Sign out</strong>: always sign out on a shared computer.</li>
+        <li><strong>Light / Dark</strong>: switches the screen colours. This guide shows the <strong>dark</strong> screen; the light one works the same way.</li>
+      </ol>
+    </div>
+    <figure class="strip"><img src="img/topbar-admin.png" alt="The admin top bar with each link numbered"><figcaption><b>Admin top bar.</b> The link for the page you are on is shaded.</figcaption></figure>
+  </div>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Signed in as a dean or viewer</h3>
+      <ol class="keys cols">
+        <li><strong>Students</strong>: the student feedback dashboard.</li>
+        <li><strong>Committee</strong>: the committee dashboard.</li>
+        <li><strong>Sign out</strong>.</li>
+      </ol>
+    </div>
+    <figure class="strip"><img src="img/topbar-viewer.png" alt="The read-only top bar with Students, Committee and Sign out numbered"><figcaption><b>Read-only top bar.</b> A dean can read both dashboards but cannot change the menu or the committee.</figcaption></figure>
+    <p class="note warn"><b>Were you sent a dashboard link instead?</b> A link that contains <code>?token=</code> opens the same two dashboards without signing in. <strong>Do not forward it</strong>: anyone with the link can read the dashboards.</p>
+  </div>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Signed in as a committee member</h3>
+      <ol class="keys cols">
+        <li><strong>Menu</strong>: today's menu, the page students see.</li>
+        <li><strong>Rate dish</strong>: the students' dish form.</li>
+        <li><strong>Dashboard</strong>: your committee dashboard.</li>
+        <li><strong>Committee</strong>: review a meal.</li>
+      </ol>
+    </div>
+    <figure class="strip"><img src="img/topbar-member.png" alt="The committee member top bar with four links numbered"><figcaption><b>Committee member top bar.</b> Sign out is on the page itself, top right.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ───────────── Overview ───────────── -->
+<section class="section num part-2" id="overview">
+  <header>
+    <h2>Overview: today at the mess</h2>
+    <p class="lead">The first page an admin sees. It puts today on one screen and tells you what needs a decision.</p>
+    <p class="where"><span><b>Top bar:</b> Overview</span><span><b>Address:</b> <code>/admin</code></span><span><b>Used by:</b> admin</span></p>
+  </header>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Start with Needs attention</h3>
+      <ol class="keys cols">
+        <li><strong>Needs attention</strong> lists everything that needs a decision today. If the list is empty, nothing is waiting.</li>
+        <li>Click the <strong>link at the end of a line</strong> to go straight to the page that fixes it.</li>
+        <li><strong>Today's numbers</strong> start here and run across the page. Each card is one kind of feedback. A grey <strong class="nw">--</strong> means <strong>no data yet, not zero</strong>.</li>
+        <li><strong>Edit this week's menu</strong> opens the menu editor.</li>
+      </ol>
+    </div>
+    <figure><img src="img/overview-top.png" alt="The top of the overview page: Needs attention list and the row of number cards"><figcaption><b>Overview, top of the page.</b> A sixth card, Menu · next 7 days, sits just below.</figcaption></figure>
+  </div>
+
+  <div class="step">
+    <h3>What puts a line in Needs attention</h3>
+    <ul class="plain two">
+      <li>A meal <strong>today or in the next six days</strong> is not published.</li>
+      <li>Students score lunch or a dish <strong>below 2.5 out of 5</strong>.</li>
+      <li><strong>Fewer than 40%</strong> liked a meal, once five students have rated it.</li>
+      <li>The committee scored an area <strong>below 2.5</strong>.</li>
+      <li>Members have not reviewed today. Shown <strong>from 3 pm</strong>.</li>
+      <li>A member has <strong>never signed in</strong> to set a password.</li>
+    </ul>
+  </div>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Today's menu and the week ahead</h3>
+      <ol class="keys cols">
+        <li><strong>Edit</strong> opens the menu editor for this week. The coloured bar under each meal shows students' quick taps.</li>
+        <li><strong>Publication</strong> shows the next seven days. A <strong>green dot</strong> is published. A <strong>dotted red ring</strong> is <strong>not published</strong>. B, L and D are breakfast, lunch and dinner.</li>
+        <li><strong>Open editor</strong> takes you to the menu editor to fill the gaps.</li>
+      </ol>
+    </div>
+    <figure><img src="img/overview-mid.png" alt="Today's menu with tap results beside a seven-day publication grid"><figcaption><b>Overview, middle of the page.</b></figcaption></figure>
+  </div>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Who has reviewed, and the latest feedback</h3>
+      <ol class="keys cols">
+        <li><strong>Dashboard</strong> opens the full committee dashboard. The list shows each member as <strong>Reviewed</strong> or <strong>Not yet</strong>.</li>
+        <li><strong>All suggestions</strong> opens the student dashboard. Each comment is labelled with where it came from.</li>
+      </ol>
+    </div>
+    <figure><img src="img/overview-low.png" alt="Committee today list beside the latest feedback list"><figcaption><b>Overview, bottom of the page.</b> The feedback list continues below.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ───────────── Menu ───────────── -->
+<section class="section num part-2" id="menu">
+  <header>
+    <h2>Publish the weekly menu</h2>
+    <p class="lead">Students only see a menu once it is published. A meal left blank shows them <strong>“Menu not published yet”</strong>.</p>
+    <p class="where"><span><b>Top bar:</b> Menu</span><span><b>Address:</b> <code>/admin/menu</code></span><span><b>Used by:</b> admin</span></p>
+  </header>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Pick the week and fill it quickly</h3>
+      <p>The page shows one card per day, Monday to Sunday. The line under the title counts how many meals are published.</p>
+      <ol class="keys cols">
+        <li><strong>Prev</strong>, <strong>This week</strong> and <strong>Next</strong> move between weeks.</li>
+        <li><strong>Fill blanks from template</strong> copies the standard weekly menu into every empty box.</li>
+        <li><strong>Copy last week</strong> copies last week's published menu into every empty box.</li>
+        <li><strong>Save all 7 days</strong> publishes the whole week in one click.</li>
+      </ol>
+      <p class="note"><b>Nothing you typed is overwritten.</b> Both fill buttons only touch empty boxes. <strong>Nothing is published until you click a Save button.</strong></p>
+    </div>
+    <figure><img src="img/menu-top.png" alt="The top of the menu editor with week buttons, fill buttons and Save all 7 days outlined"><figcaption><b>Menu editor, top of the page.</b></figcaption></figure>
+  </div>
+
+  <div class="step side narrow">
+    <div class="txt">
+      <h3>Publish one day</h3>
+      <ol class="keys">
+        <li>The badge shows the day's state: <strong>Published</strong>, <strong>2 of 3 published</strong> or <strong>Not published</strong>.</li>
+        <li>Type the dishes, <strong>separated by commas</strong>, for example <code>Idli, Sambar, Chutney</code>. <strong>Faint slanted text is only a hint</strong>: that meal is <strong>not published</strong>.</li>
+        <li><strong>Use template</strong> fills this day's empty boxes with the standard menu.</li>
+        <li>Click <strong>Save</strong> to publish this day.</li>
+      </ol>
+      <p class="note"><b>Students see it straight away.</b> A saved menu appears on the student page immediately.</p>
+    </div>
+    <figure><img src="img/menu-day.png" alt="Sunday's menu card with the unpublished dinner box and Save button outlined"><figcaption><b>One day card.</b> Dinner is not published yet.</figcaption></figure>
+  </div>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Or import the week from a spreadsheet file</h3>
+      <ol class="keys cols">
+        <li>Click <strong>Download blank template</strong>. You get a CSV file for the week on screen, with the columns <code>Date, Breakfast, Lunch, Dinner</code>.</li>
+        <li>Fill it in Excel or Google Sheets, save it as a <strong>CSV</strong>, then click <strong>Choose file</strong> and pick it.</li>
+        <li>Click <strong>Upload CSV</strong>.</li>
+      </ol>
+    </div>
+    <figure><img src="img/menu-csv.png" alt="The Import from CSV card with its three buttons outlined"><figcaption><b>Import from CSV card</b>, on the menu editor page.</figcaption></figure>
+    <p class="note"><b>Rules for the file.</b> Dates are written <code>YYYY-MM-DD</code>. Keep each meal's dishes <strong>in one cell</strong>, separated by commas. The file must be <strong>under 1 MB</strong>. A date that already has a menu is <strong>updated</strong>, not duplicated. A blank cell publishes nothing. Rows with a bad date are skipped and listed.</p>
+  </div>
+
+  <div class="step">
+    <h3>Three ways to publish, one result</h3>
+    <table>
+      <thead><tr><th style="width:26%">Way</th><th>Best for</th><th style="width:30%">Students see it</th></tr></thead>
+      <tbody>
+        <tr><td>Menu editor</td><td>Day-to-day changes, or filling a week from the template</td><td><strong>Immediately</strong> after Save</td></tr>
+        <tr><td>CSV import</td><td>A whole week planned in a spreadsheet</td><td><strong>Immediately</strong> after Upload CSV</td></tr>
+        <tr><td>The Google Sheet</td><td>Staff who prefer to type into the <code>menu</code> tab, one row per date</td><td>Within <strong>30 seconds</strong></td></tr>
+      </tbody>
+    </table>
+    <p class="note warn"><b>MessMate never shows students a made-up menu.</b> The standard weekly menu is only a typing aid for you. Until you save, students see “Menu not published yet”.</p>
+  </div>
+</section>
+
+<!-- ───────────── Members ───────────── -->
+<section class="section num part-2" id="members">
+  <header>
+    <h2>Committee members</h2>
+    <p class="lead">Add the people who review the food, hand them a one-time password, and retire them when they leave.</p>
+    <p class="where"><span><b>Top bar:</b> Members</span><span><b>Address:</b> <code>/admin/members</code></span><span><b>Used by:</b> admin</span></p>
+  </header>
+
+  <div class="step side">
+    <div class="txt">
+      <h3>Add one member</h3>
+      <ol class="keys">
+        <li>Type the member's <strong>name</strong>.</li>
+        <li>Type their <strong>email</strong>. This is what they sign in with.</li>
+        <li>Click <strong>Add member</strong>.</li>
+      </ol>
+    </div>
+    <figure><img src="img/members-add.png" alt="The Add a member card with name, email and the Add member button outlined"><figcaption><b>Add a member card</b>, bottom left of the Members page.</figcaption></figure>
+  </div>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Copy the one-time password straight away</h3>
+      <ol class="keys cols">
+        <li>The <strong>one-time password</strong> appears at the top of the page.</li>
+        <li><strong>Copy all</strong> copies every new password at once. Send each member theirs <strong>privately</strong>.</li>
+      </ol>
+      <p class="note warn"><b>It is shown only once.</b> If you leave the page without copying it, it <strong>cannot be shown again</strong>. Use <strong>Reset password</strong> to make a new one.</p>
+    </div>
+    <figure><img src="img/members-credential.png" alt="The one-time password box with the password and Copy all outlined"><figcaption><b>One-time password box.</b> Appears after you add a member or reset a password.</figcaption></figure>
+  </div>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Read and manage the list</h3>
+      <ol class="keys cols">
+        <li><strong>Password not set</strong> means the member has not signed in yet.</li>
+        <li><strong>Reset password</strong> gives a locked-out member a new one-time password.</li>
+        <li><strong>Deactivate</strong> a member who leaves the committee. <strong>Reactivate</strong> brings them back.</li>
+        <li>A <strong>tick</strong> means the member has reviewed today. A <strong>dot</strong> means not yet.</li>
+      </ol>
+    </div>
+    <figure><img src="img/members-table.png" alt="The members table with a status badge and the Deactivate and Reset password actions outlined"><figcaption><b>Members list.</b> One row per member.</figcaption></figure>
+    <p class="note"><b>There is no delete.</b> Deactivating keeps a member's past reviews. To change the committee, <strong>deactivate</strong> the outgoing members and <strong>add</strong> the new ones.</p>
+  </div>
+
+  <div class="step side">
+    <div class="txt">
+      <h3>Add many members at once</h3>
+      <p>Use this at the start of a new committee.</p>
+      <ol class="keys">
+        <li>Type or paste <strong>one member per line</strong>, as <code>Name, email</code>.</li>
+        <li>Click <strong>Add all</strong>.</li>
+      </ol>
+      <p class="note"><b>A bad line does not stop the rest.</b> Lines with a problem are listed separately and the others are still added.</p>
+    </div>
+    <figure><img src="img/members-bulk.png" alt="The Add many card with the text box and Add all button outlined"><figcaption><b>Add many card</b>, bottom right of the Members page.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ───────────── Review a meal ───────────── -->
+<section class="section num part-3" id="review">
+  <header>
+    <h2>Review a meal</h2>
+    <p class="lead">Five steps, done <strong>once for each meal</strong> every day. <strong>Reviews are not anonymous</strong>: your name is saved with every review.</p>
+    <p class="where"><span><b>Top bar:</b> Committee</span><span><b>Address:</b> <code>/committee</code></span><span><b>Used by:</b> committee members</span></p>
+  </header>
+
+  <div class="step side">
+    <div class="txt">
+      <h3>Pick a meal</h3>
+      <ol class="keys">
+        <li>A <strong>green</strong> meal marked <strong>✓ Reviewed</strong> is done.</li>
+        <li>An <strong>amber</strong> meal marked <strong>To review</strong> still needs you. Click it.</li>
+      </ol>
+      <p class="note"><b>The page chooses for you.</b> It opens on the latest meal served that you have not reviewed.</p>
+    </div>
+    <figure><img src="img/review-pick.png" alt="Breakfast, Lunch and Dinner tabs; Breakfast is green and reviewed, Lunch is yellow"><figcaption><b>Meal tabs</b>, at the top of the review page.</figcaption></figure>
+  </div>
+
+  <div class="step side">
+    <div class="txt">
+      <h3>Rate every dish</h3>
+      <p>Each dish on today's published menu has its own card. Click one face per dish, from <strong>1 (worst, left)</strong> to <strong>5 (best, right)</strong>.</p>
+      <ol class="keys">
+        <li>Clicking a face selects it. The selected face is <strong>highlighted</strong>.</li>
+        <li>Do the same for <strong>every dish</strong> in the list.</li>
+      </ol>
+      <p class="note"><b>No dishes listed?</b> The menu for that meal is not published. Rate only the five areas in the next step.</p>
+    </div>
+    <figure><img src="img/review-dishes.png" alt="Dish cards with one face selected on each"><figcaption><b>Dishes</b>, the first part of the review form.</figcaption></figure>
+  </div>
+
+  <div class="step side">
+    <div class="txt">
+      <h3>Rate the five areas</h3>
+      <ol class="keys">
+        <li>Click one face for each area, the same way as the dishes.</li>
+      </ol>
+      <table style="margin-top:3mm">
+        <tbody>
+          <tr><td>Taste</td><td>Flavour and seasoning</td></tr>
+          <tr><td>Quality</td><td>Freshness, temperature and cooking</td></tr>
+          <tr><td>Variety</td><td>Range and balance across the counters</td></tr>
+          <tr><td>Hygiene</td><td>Cleanliness of food, counters and utensils</td></tr>
+          <tr><td>Menu</td><td>Did the meal match the published menu?</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure><img src="img/review-areas.png" alt="Area cards for Taste, Quality and Variety, each with a face selected"><figcaption><b>Overall</b>, the second part of the review form. Hygiene and Menu follow below.</figcaption></figure>
+  </div>
+
+  <div class="step side">
+    <div class="txt">
+      <h3>Add a note and submit</h3>
+      <ol class="keys">
+        <li>Write a short review if it would help the kitchen act. It is <strong>optional</strong>, up to <strong>500 characters</strong>.</li>
+        <li>Click <strong>Submit review</strong>.</li>
+      </ol>
+      <p class="note warn"><b>Is the button faded and not clickable?</b> You have missed a dish or an area. The line under the button tells you how many are rated.</p>
+    </div>
+    <figure><img src="img/review-submit.png" alt="The written review box and the Submit review button outlined"><figcaption><b>Written review and Submit</b>, at the bottom of the form.</figcaption></figure>
+  </div>
+
+  <div class="step side">
+    <div class="txt">
+      <h3>Review the next meal</h3>
+      <ol class="keys">
+        <li>Click a meal name to review a meal you <strong>still have to do today</strong>.</li>
+        <li><strong>Committee dashboard</strong> shows how the committee scored today.</li>
+      </ol>
+      <p class="note"><b>Asked to rate again?</b> If the mess office changes that meal's menu while you are rating, your review is not saved. The page shows the new dishes so no score is filed under the wrong dish.</p>
+    </div>
+    <figure><img src="img/review-thanks.png" alt="The Review recorded page with links to the remaining meals and the committee dashboard"><figcaption><b>Review recorded page</b>, shown after you submit.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ───────────── Member dashboard ───────────── -->
+<section class="section num part-3" id="mydash">
+  <header>
+    <h2>Committee member dashboard</h2>
+    <p class="lead">What a committee member sees after signing in: the committee's scores, and their own record.</p>
+    <p class="where"><span><b>Top bar:</b> Dashboard</span><span><b>Address:</b> <code>/committee/dashboard</code></span><span><b>Used by:</b> committee members</span></p>
+  </header>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Today's scores and your own count</h3>
+      <p>The first four cards are the whole committee: today's score, how many members have reviewed, the 7-day average and the lowest-scoring area.</p>
+      <ol class="keys cols">
+        <li><strong>My reviews this month</strong> counts the meal reviews you have filed.</li>
+        <li><strong>My last review</strong> shows your most recent score and its date.</li>
+        <li><strong>Sign out</strong> is here, at the top right of the page.</li>
+      </ol>
+    </div>
+    <figure><img src="img/member-top.png" alt="Six cards: committee score, reviewed today, 7-day average, lowest area, my reviews this month and my last review"><figcaption><b>Committee member dashboard, top of the page.</b></figcaption></figure>
+  </div>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Your record, the committee, and what students said</h3>
+      <ol class="keys cols">
+        <li><strong>My record</strong> repeats your last review, area by area, with what you wrote.</li>
+        <li><strong>Reviewed today</strong> lists every member. Your own name is marked <strong>(you)</strong>.</li>
+      </ol>
+      <p style="margin-top:2mm">Below these two cards, <strong>What students said today</strong> is shown <strong>for context only</strong> and is <strong>never mixed into the committee score</strong>. Beside it, <strong>Committee Reviews</strong> lists the written reviews, newest first, with the member's name, date and meal.</p>
+    </div>
+    <figure><img src="img/member-lower.png" alt="My record, the Reviewed today list, student tap results and the list of committee reviews"><figcaption><b>Lower part of the page.</b> The two charts above these cards are explained under Committee dashboard.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ───────────── Student dashboard ───────────── -->
+<section class="section num part-4" id="students">
+  <header>
+    <h2>Student feedback dashboard</h2>
+    <p class="lead">Everything students told you, from the dish form and from the quick taps. The two are shown in separate parts of the page.</p>
+    <p class="where"><span><b>Top bar:</b> Students</span><span><b>Address:</b> <code>/dashboard</code></span><span><b>Used by:</b> admin, dean</span></p>
+  </header>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>The dish form numbers</h3>
+      <ol class="keys cols">
+        <li><strong>Today's average</strong> is students' overall score out of 5. The small line under it compares with yesterday.</li>
+        <li><strong>Best dish today</strong>, with its score.</li>
+        <li><strong>Lowest dish today</strong>. This is the dish to look into first.</li>
+      </ol>
+    </div>
+    <figure><img src="img/students-top.png" alt="Six cards: today's average, responses today, 7-day average, best dish, lowest dish and the date"><figcaption><b>Student feedback dashboard, top of the page.</b></figcaption></figure>
+  </div>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>The trend and each dish's score</h3>
+      <ol class="keys">
+        <li>Click <strong>1 month</strong> to see 30 days instead of 7. Click <strong>7 days</strong> to go back.</li>
+      </ol>
+    </div>
+    <figure><img src="img/students-charts.png" alt="A line chart of the daily score beside a bar chart of today's score per dish"><figcaption><b>Charts.</b> Left: the daily average. Right: today's score for each dish on the form.</figcaption></figure>
+  </div>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Quick taps, meal by meal</h3>
+      <ol class="keys">
+        <li>The bar shows the taps for that meal: <strong>green is Good</strong>, <strong>red is Bad</strong>. The figures on the right are Good, Bad and Skipped, then the <strong>% liked</strong>.</li>
+      </ol>
+      <p class="note"><b>Skips do not lower the score.</b> The percentage counts only students who ate the meal.</p>
+    </div>
+    <figure><img src="img/students-taps.png" alt="Breakfast, lunch and dinner each with a green and red bar and a percentage"><figcaption><b>Quick taps card.</b> One row per meal, with that meal's dishes.</figcaption></figure>
+  </div>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>What students asked for</h3>
+      <p>The left list holds suggestions typed on the <strong>dish form</strong>. The right list holds notes added to a <strong>quick tap</strong>, each tagged with its meal. Both are <strong>anonymous</strong>.</p>
+    </div>
+    <figure><img src="img/students-suggestions.png" alt="Two lists of student suggestions"><figcaption><b>Suggestions</b>, at the bottom of the page. Both lists scroll.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ───────────── Committee dashboard ───────────── -->
+<section class="section num part-4" id="committee">
+  <header>
+    <h2>Committee dashboard</h2>
+    <p class="lead">How the Food Committee scored the mess, who took part, and what they wrote.</p>
+    <p class="where"><span><b>Top bar:</b> Committee</span><span><b>Address:</b> <code>/dashboard/committee</code></span><span><b>Used by:</b> admin, dean</span></p>
+  </header>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Score and participation</h3>
+      <ol class="keys cols">
+        <li><strong>Participation</strong> is the share of active members who filed a review today.</li>
+        <li><strong>Lowest today</strong> names the weakest of the five areas, and the best one beside it.</li>
+        <li><strong>Manage members</strong> opens the Members page. Only an admin sees this button.</li>
+      </ol>
+    </div>
+    <figure><img src="img/committee-top.png" alt="Six cards: committee score, reviewed today, active members, participation, 7-day average and lowest area"><figcaption><b>Committee dashboard, top of the page.</b></figcaption></figure>
+  </div>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>The five areas and the trend</h3>
+      <ol class="keys">
+        <li>Click <strong>1 month</strong> to see 30 days instead of 7.</li>
+      </ol>
+      <p>The left chart shows today's score for each of the five areas. A bar that is <strong>amber or red</strong> is the area to raise with the kitchen. Click an area name under the right chart to add its line to the trend.</p>
+    </div>
+    <figure><img src="img/committee-charts.png" alt="A bar chart of the five areas beside a line chart of the committee score over seven days"><figcaption><b>Charts.</b> Left: today by area. Right: the committee score day by day.</figcaption></figure>
+  </div>
+
+  <div class="step stack">
+    <div class="txt">
+      <h3>Who reviewed, and what they wrote</h3>
+      <p><strong>Reviewed today</strong> lists every active member. <strong>Committee Reviews</strong> shows each written review with the <strong>member's name</strong>, the date and the meal, so you can follow up with the right person.</p>
+    </div>
+    <figure><img src="img/committee-low.png" alt="The Reviewed today list beside the written committee reviews"><figcaption><b>Committee dashboard, bottom of the page.</b></figcaption></figure>
+  </div>
+</section>
+
+<!-- ───────────── Student home ───────────── -->
+<section class="section follow num part-4" id="home">
+  <header>
+    <h2>What students see</h2>
+    <p class="lead">Students open this page on a phone and <strong>never sign in</strong>.</p>
+    <p class="where"><span><b>Address:</b> <code>/home</code></span><span><b>Used by:</b> everyone, no sign-in</span></p>
+  </header>
+
+  <div class="step side narrow phonecol">
+    <div class="txt">
+      <h3>Today's menu and one tap per meal</h3>
+      <ol class="keys">
+        <li>The <strong>day tabs</strong> show the rest of the week's menu. Only <strong>today</strong> can be rated.</li>
+        <li>Each meal has three buttons: <strong>Good</strong>, <strong>Bad</strong> and <strong>Skipped</strong>. A student taps one after eating.</li>
+        <li><strong>Sign in</strong> is where you, the committee and management sign in.</li>
+      </ol>
+      <table style="margin-top:4mm">
+        <thead><tr><th style="width:38%">Rule</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td>One tap per meal per day</td><td>Each phone can rate breakfast, lunch and dinner once each</td></tr>
+          <tr><td>Only after the meal starts</td><td>Buttons stay grey until serving time: breakfast 7:30 am, lunch 12:00 pm, dinner 7:30 pm</td></tr>
+          <tr><td>Undo for 10 minutes</td><td>A student can press <strong>Undo</strong> within 10 minutes. After that the tap is final</td></tr>
+          <tr><td>“Menu not published yet”</td><td>The mess office has not published that meal. Students can still rate it after eating</td></tr>
+          <tr><td>Nothing tied to the student</td><td>No name, email, roll number or IP address is stored</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure class="phone"><img src="img/home-phone.png" alt="The student page on a phone: day tabs, and a breakfast card with Good, Bad and Skipped buttons"><figcaption><b>Student page on a phone.</b> The percentage is the share who liked the meal.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ───────────── Help ───────────── -->
+<section class="section num part-5" id="help">
+  <header>
+    <h2>Colours and quick answers</h2>
+    <p class="lead">The same colours mean the same thing on every page.</p>
+  </header>
+
+  <div class="step">
+    <h3>What the colours mean</h3>
+    <table>
+      <thead><tr><th style="width:22%">Colour</th><th>Score out of 5<br>(dish form, committee)</th><th>% liked<br>(quick taps)</th><th style="width:30%">Read it as</th></tr></thead>
+      <tbody>
+        <tr><td><span class="sw" style="background:var(--green)"></span>Green</td><td>Above 3.5</td><td>70% and above</td><td>Going well</td></tr>
+        <tr><td><span class="sw" style="background:#b97a0a"></span>Amber</td><td>2.5 to 3.5</td><td>40% to 69%</td><td>Watch it</td></tr>
+        <tr><td><span class="sw" style="background:var(--red)"></span>Red</td><td><strong>Below 2.5</strong></td><td><strong>Below 40%</strong></td><td><strong>Needs action</strong></td></tr>
+        <tr><td><span class="sw" style="background:#a79c88"></span><span class="nw">Grey --</span></td><td colspan="2">No data yet</td><td><strong>Not a zero</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="step">
+    <h3>Quick answers</h3>
+    <table>
+      <thead><tr><th style="width:38%">Question</th><th>Answer</th></tr></thead>
+      <tbody>
+        <tr><td>“Incorrect email or password”</td><td>Check the email is the one the admin registered. New members use the <strong>one-time password</strong>, not one of their own.</td></tr>
+        <tr><td>A member forgot their password</td><td>Admin: <strong>Members</strong>, then <strong>Reset password</strong> on their row. Send them the new one-time password.</td></tr>
+        <tr><td>I closed the page before copying a one-time password</td><td>It cannot be shown again. Click <strong>Reset password</strong> to make a new one.</td></tr>
+        <tr><td>Students say the menu is missing</td><td>That meal is not published. Open <strong>Menu</strong>, type the dishes and click <strong>Save</strong>.</td></tr>
+        <tr><td>I typed the menu but students cannot see it</td><td>You have not saved. Click <strong>Save</strong> on the day, or <strong>Save all 7 days</strong>.</td></tr>
+        <tr><td>The Submit review button will not click</td><td>Rate <strong>every dish</strong> and <strong>all five areas</strong> first.</td></tr>
+        <tr><td>A meal tab says “Reviewed” and shows no form</td><td>You have already reviewed that meal today. Pick an amber meal.</td></tr>
+        <tr><td>A card shows <span class="nw">“--”</span></td><td>Nobody has rated yet. It is not a score of zero.</td></tr>
+        <tr><td>A member has left the committee</td><td>Admin: <strong>Members</strong>, then <strong>Deactivate</strong>. Their past reviews are kept.</td></tr>
+        <tr><td>Can the three scores be combined into one?</td><td><strong>No.</strong> Quick taps, the dish form and committee reviews measure different things from different people, so MessMate keeps them apart.</td></tr>
+      </tbody>
+    </table>
+    <p class="note"><b>Can the mess office edit the Google Sheet directly?</b> Yes. Staff can type the menu straight into the <code>menu</code> tab, one row per date. Those edits reach students <strong>within 30 seconds</strong>.</p>
+  </div>
+</section>
+
+<script>
+document.querySelectorAll('.section.num').forEach((sec, i) => {
+  const hs = [...sec.querySelectorAll('.step h3')];
+  if (hs.length < 2) return;
+  const ol = document.createElement('ol'); ol.className = 'glance';
+  hs.forEach((h, k) => { const li = document.createElement('li'); li.innerHTML = '<b>' + (i + 1) + '.' + (k + 1) + '</b>' + h.textContent; ol.appendChild(li); });
+  sec.querySelector('header').appendChild(ol);
+});
+</script>
+</body>
+</html>
