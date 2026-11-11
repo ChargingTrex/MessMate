@@ -36,7 +36,8 @@
       <p class="eyebrow">Menu Editor</p>
       <h1>Week of {{ week_label }}{% if is_current_week %} <span class="badge badge-active">This week</span>{% endif %}</h1>
       <p>{{ published_meals }} of {{ total_meals }} meals published · {{ full_days }} of 7 days complete.
-         Separate dishes with commas. A blank meal shows students "Menu not published yet".</p>
+         One dish per line as <code>Category: Dish</code> (e.g. <code>Rice: Steamed Rice</code>); a dish without a category also works.
+         A blank meal shows students "Menu not published yet".</p>
     </div>
     <nav class="week-nav" aria-label="Week">
       <a href="{{ url_for('admin_menu', start=prev_start) }}" class="btn-secondary" rel="prev">◀ Prev</a>
@@ -74,7 +75,8 @@
     <div class="menu-import-head">
       <div>
         <h2>Import from CSV</h2>
-        <p class="subtext">Columns <code>Date, Breakfast, Lunch, Dinner</code>. Dates as YYYY-MM-DD, dishes separated by commas. Re-importing a date updates it.</p>
+        <p class="subtext">Laid out like the mess's weekly sheet: columns <code>Meal, Category</code>, then one column per date (YYYY-MM-DD or DD-MM-YYYY), one row per category. Rows for any other meal, such as Snacks, are skipped. Re-importing a date updates it.
+          The older <code>Date, Breakfast, Lunch, Dinner</code> layout still imports.</p>
       </div>
       <a class="btn-secondary" href="{{ url_for('admin_menu_template_csv', start=start) }}">Download blank template</a>
     </div>
@@ -114,11 +116,12 @@
               <span class="meal-status {{ 'on' if day.published[meal] else 'off' }}" aria-hidden="true"></span>
               {{ meal }} <span class="subtext">{{ timings[meal] }}</span>
             </label>
-            <textarea class="menu-input" rows="2"
+            {% set lines = (day[meal] or day.template[meal] or '').split('\n') | length %}
+            <textarea class="menu-input" rows="{{ [[lines, 3] | max, 12] | min }}"
                       id="{{ day.date }}-{{ meal }}" name="{{ meal }}"
                       data-meal="{{ meal }}" data-date="{{ day.date }}"
                       data-template="{{ day.template[meal] }}"
-                      placeholder="{{ day.template[meal] or 'Idli, Sambar, Coconut Chutney' }}">{{ day[meal] }}</textarea>
+                      placeholder="{{ day.template[meal] or 'Main Item: Idli' }}">{{ day[meal] }}</textarea>
           </div>
           {% endfor %}
         </div>

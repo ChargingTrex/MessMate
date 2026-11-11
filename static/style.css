@@ -1376,6 +1376,42 @@ body.home-body {
     color: var(--text-3);
 }
 
+/* A menu with categories reads as the mess's own sheet: a quiet label column
+   and the dishes beside it, one line per row, instead of a cloud of pills. */
+.home-body .menu-items-categorised {
+    display: grid;
+    grid-template-columns: minmax(6.5rem, max-content) 1fr;
+    gap: 0;
+    border-top: 1px solid var(--border);
+}
+.home-body .menu-items-categorised li {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    column-gap: var(--sp-3);
+    align-items: baseline;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    padding: var(--sp-2) 0;
+}
+.home-body .menu-items-categorised .menu-cat {
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+}
+.home-body .menu-items-categorised .menu-dish {
+    color: var(--text-3);
+    font-weight: 500;
+}
+/* An uncategorised dish in a categorised list spans both columns */
+.home-body .menu-items-categorised li:not(:has(.menu-cat)) { display: block; }
+
+.specials-dishes li.specials-more {
+    background: transparent;
+    font-weight: 400;
+}
+
 /* Empty state: a lead line and what to do about it. Full width so it reads
    as a message, not as a disabled chip; muted text, never below AA. */
 .home-body .menu-empty {

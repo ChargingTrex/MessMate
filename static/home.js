@@ -22,6 +22,25 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   const li = (text, cls) => `<li${cls ? ` class="${cls}"` : ""}>${esc(text)}</li>`;
 
+  // A meal arrives as [{category, dishes: [...]}] (sheets.menu_groups). The
+  // cards show the category beside its dishes; the spotlight only names dishes.
+  function groupItem(group) {
+    const dishes = esc((group.dishes || []).join(", "));
+    return group.category
+      ? `<li><span class="menu-cat">${esc(group.category)}</span> <span class="menu-dish">${dishes}</span></li>`
+      : `<li>${dishes}</li>`;
+  }
+  const dishNames = groups => (groups || []).flatMap(g => g.dishes || []);
+
+  // The spotlight is a glance, not the menu: the first few dishes, then a count
+  const SPOTLIGHT_MAX = 6;
+  function spotlightItems(groups) {
+    const names = dishNames(groups);
+    const shown = names.slice(0, SPOTLIGHT_MAX).map(d => li(d));
+    if (names.length > SPOTLIGHT_MAX) shown.push(li(`+${names.length - SPOTLIGHT_MAX} more`, "specials-more"));
+    return shown.join("");
+  }
+
   // Same markup as the template's empty state: the lead line is test API,
   // the hint says what the student can do about it.
   function emptyItem(meal, isToday) {
@@ -152,7 +171,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const dishes = todayData[activeMeal] || [];
       if (dishesList) {
         if (dishes.length > 0) {
-          dishesList.innerHTML = dishes.map(d => li(d)).join("");
+          dishesList.innerHTML = spotlightItems(dishes);
         } else {
           dishesList.innerHTML = `<li class="specials-loading">Menu not published yet. You can still rate it after you eat.</li>`;
         }
@@ -173,7 +192,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const dishes = isToday ? (todayData[nextMeal] || []) : [];
         if (dishesList) {
           dishesList.innerHTML = dishes.length
-            ? dishes.map(d => li(d)).join("")
+            ? spotlightItems(dishes)
             : `<li class="specials-loading">Menu not published</li>`;
         }
       } else {
@@ -216,8 +235,9 @@ document.addEventListener("DOMContentLoaded", function () {
       const listEl = document.getElementById("menu-" + meal.toLowerCase());
       if (!listEl) return;
       const items = dayData[meal] || [];
+      listEl.classList.toggle("menu-items-categorised", items.some(g => g.category));
       if (items.length > 0) {
-        listEl.innerHTML = items.map(i => li(i)).join("");
+        listEl.innerHTML = items.map(groupItem).join("");
       } else {
         listEl.innerHTML = emptyItem(meal, dateStr === window.MESSMATE_TODAY_ISO);
       }
@@ -304,7 +324,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const TICKER_ITEMS = [];
   (window.MESSMATE_MEALS || ["Breakfast", "Lunch", "Dinner"]).forEach(meal => {
-    const dishes = todayMenu[meal] || [];
+    const dishes = dishNames(todayMenu[meal]);
     const when = timings[meal] ? ` (${timings[meal]})` : "";
     if (dishes.length) {
       TICKER_ITEMS.push(`${icons[meal] || "🍽️"} ${meal}${when}: ${dishes.join(", ")}`);

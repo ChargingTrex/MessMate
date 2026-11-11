@@ -248,10 +248,20 @@
               test API) and adds what the student can do about it. home.js
               rebuilds the same markup when the day switcher runs.
             #}
-            <ul class="menu-items" id="menu-{{ meal|lower }}">
+            {#
+              Each group is one category from the mess's sheet ("Rice: Mint
+              Pulao / Steamed Rice"). A menu typed without categories keeps
+              its one-chip-per-dish look.
+            #}
+            {% set categorised = menu[meal] | selectattr('category') | list %}
+            <ul class="menu-items{% if categorised %} menu-items-categorised{% endif %}" id="menu-{{ meal|lower }}">
                 {% if menu[meal] %}
-                    {% for item in menu[meal] %}
-                    <li>{{ item }}</li>
+                    {% for group in menu[meal] %}
+                    {% if group.category %}
+                    <li><span class="menu-cat">{{ group.category }}</span> <span class="menu-dish">{{ group.dishes | join(', ') }}</span></li>
+                    {% else %}
+                    <li>{{ group.dishes | join(', ') }}</li>
+                    {% endif %}
                     {% endfor %}
                 {% else %}
                     <li class="menu-empty">
