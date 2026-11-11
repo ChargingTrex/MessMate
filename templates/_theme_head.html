@@ -1,0 +1,12 @@
+{#
+  Theme bootstrap (_theme_head.html), included in every <head>.
+  Fonts for both themes, the token sheet, and a tiny inline script that
+  applies a remembered light / dark choice before the page paints, so a
+  light-mode visitor never sees a dark flash. Settings: ui_config.py.
+#}
+<meta name="color-scheme" content="{{ 'light dark' if ui.default_theme == 'light' else 'dark light' }}">
+<script>(function(){try{var t=localStorage.getItem({{ ui.theme_storage_key|tojson }});if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{ ui.fonts_url }}" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('ui_tokens') }}">

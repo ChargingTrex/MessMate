@@ -1,5 +1,5 @@
 {#
-  Shared <head> for the dark admin shell (_head.html)
+  Shared <head> for every page but the student home (_head.html)
   ---------------------------------------------------
   Set `page_title` before including. Chart.js is NOT loaded here — only the
   two dashboards need it, and they add it themselves.
@@ -8,10 +8,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{ page_title }}</title>
 <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ url_for('ui_tokens') }}">
+{% include '_theme_head.html' %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <script>window.MESSMATE_UI = {{ ui.json }};</script>
 <script defer src="{{ url_for('static', filename='app-shell.js') }}"></script>
+<script defer src="{{ url_for('static', filename='theme.js') }}"></script>

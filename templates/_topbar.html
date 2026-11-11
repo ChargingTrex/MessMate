@@ -19,6 +19,7 @@
 <header class="app-topbar">
   <div class="app-topbar-inner">
     <a class="app-brand" href="{{ url_for('home') }}" aria-label="MessMate student home">
+      {% include '_brand_mark.html' %}
       <span class="live-dot" title="Live"></span>
       <span class="brand-logo">MESSMATE</span>
     </a>
@@ -56,5 +57,6 @@
       {% endif %}
       {% endif %}
     </nav>
+    {% include '_theme_toggle.html' %}
   </div>
 </header>

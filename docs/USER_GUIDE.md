@@ -3,7 +3,7 @@
 MessMate collects feedback on the college mess food in three separate ways and shows it to the people who can act on it. This guide covers what each kind of user can do and what to expect.
 
 | You are | Start here | Sign-in needed |
-|---|---|---|
+| --- | --- | --- |
 | A student | `/home`, today's menu | No |
 | A food committee member | `/signin` | Yes, with the account the admin gave you |
 | An admin | `/signin` or `/admin/login` | Yes, the admin password |
@@ -22,7 +22,7 @@ Nothing you submit is linked to you. MessMate stores no name, email, roll number
 Open **`/home`**. It shows today's breakfast, lunch and dinner with serving times:
 
 | Meal | Served |
-|---|---|
+| --- | --- |
 | Breakfast | 7:30 to 9:30 am |
 | Lunch | 12:00 to 2:30 pm |
 | Dinner | 7:30 to 9:30 pm |
@@ -68,7 +68,7 @@ You can send **one dish-by-dish review every 4 hours** from the same phone or br
 ### Messages you might see
 
 | Message | What it means |
-|---|---|
+| --- | --- |
 | You've already rated lunch today | This device has rated that meal. Use Undo on the card within 10 minutes to change it. |
 | Dinner isn't being served yet | The meal's serving time hasn't started. Try again once you've eaten. |
 | Ratings open on the day itself | You're looking at another day. Switch back to today's tab. |
@@ -188,7 +188,7 @@ There's no delete. Deactivating keeps a member's past reviews and the record of 
 ### Dashboards
 
 | Dashboard | Address | Shows |
-|---|---|---|
+| --- | --- | --- |
 | Student feedback | `/dashboard` | The dish-form score today and over 7 days, response count, best and lowest dish, each dish's score, the 7-day trend, quick-tap results per meal, and student suggestions from both the form and the quick taps |
 | Committee | `/dashboard/committee` | The committee score, members reviewed, active members, participation, 7-day average, lowest area, today by area, the 7-day trend, who reviewed today, and the written reviews |
 

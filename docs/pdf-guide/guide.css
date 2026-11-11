@@ -1,0 +1,113 @@
+/* MessMate printed guide. A4, set in Inter with the app's dark-theme navy and blue, on white paper so it prints cleanly.
+   Hierarchy, top down: Part (running head) > numbered section (h2) > numbered step (h3) > red numbered keys.
+   The crimson of the markers is reserved for "click here": it appears on the screenshots and on the matching
+   numbers in the text, and nowhere else. */
+@page { size: A4; margin: 17mm 15mm 14mm;
+  @top-left { content: "MessMate user guide"; font: 600 7.6pt "Inter", sans-serif; color: #64748b; }
+  @bottom-right { content: counter(page); font: 700 8.6pt "Inter", sans-serif; color: #0f1724; } }
+@page :first { margin: 0; @top-left { content: none; } @top-right { content: none; } @bottom-right { content: none; } }
+@page front { @top-right { content: "Before you start"; font: 600 7.6pt "Inter", sans-serif; color: #2563eb; } }
+@page p1 { @top-right { content: "Part 1 · Get started"; font: 600 7.6pt "Inter", sans-serif; color: #2563eb; } }
+@page p2 { @top-right { content: "Part 2 · Run the mess office"; font: 600 7.6pt "Inter", sans-serif; color: #2563eb; } }
+@page p3 { @top-right { content: "Part 3 · Review the food"; font: 600 7.6pt "Inter", sans-serif; color: #2563eb; } }
+@page p4 { @top-right { content: "Part 4 · Read the results"; font: 600 7.6pt "Inter", sans-serif; color: #2563eb; } }
+@page p5 { @top-right { content: "Part 5 · Reference"; font: 600 7.6pt "Inter", sans-serif; color: #2563eb; } }
+.pg-front { page: front; } .part-1 { page: p1; } .part-2 { page: p2; } .part-3 { page: p3; } .part-4 { page: p4; } .part-5 { page: p5; }
+
+:root { --navy: #0f1724; --ink: #1e293b; --ink-2: #334155; --muted: #64748b; --rule: #e2e8f0; --tint: #f1f5f9; --blue: #2563eb; --blue-tint: #eff4ff;
+  --mark: #e6195a; --red: #b91c1c; --red-tint: #fef2f2; --amber: #b45309; --green: #15803d; }
+* { box-sizing: border-box; }
+html { font-size: 9.7pt; }
+body { margin: 0; font-family: "Inter", "Segoe UI", Helvetica, Arial, sans-serif; color: var(--ink); line-height: 1.46; -webkit-print-color-adjust: exact; print-color-adjust: exact; counter-reset: sec; }
+h1, h2, h3 { color: var(--navy); margin: 0; line-height: 1.15; text-wrap: balance; letter-spacing: -.015em; }
+p { margin: 0; }
+strong { font-weight: 700; color: var(--navy); }
+code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .9em; background: var(--tint); border: 1px solid var(--rule); border-radius: 3px; padding: 0 .3em; white-space: nowrap; color: var(--navy); }
+.nw { white-space: nowrap; }
+
+/* ── Cover: the app's dark shell ── */
+.cover { height: 297mm; padding: 24mm 20mm 18mm; background: var(--navy); color: #e2e8f0; display: grid; grid-template-rows: auto 1fr auto; break-after: page; }
+.wordmark { font-weight: 800; font-size: 12.5pt; letter-spacing: .12em; color: #60a5fa; display: flex; align-items: center; gap: 3mm; }
+.wordmark::before { content: ""; width: 3mm; height: 3mm; border-radius: 50%; background: #22c55e; }
+.cover h1 { font-size: 50pt; font-weight: 800; letter-spacing: -.03em; color: #fff; max-width: 10ch; margin-top: 18mm; line-height: 1.02; }
+.cover .sub { font-size: 14pt; color: #cbd5e1; max-width: 34ch; margin-top: 7mm; line-height: 1.4; }
+.cover .sub strong { color: #fff; }
+.cover-shot { margin: 14mm -20mm 0 0; border: 1px solid #334155; border-right: 0; border-radius: 3mm 0 0 3mm; overflow: hidden; }
+.cover-shot img { width: 100%; display: block; }
+.cover-foot { display: flex; justify-content: space-between; font-size: 9pt; color: #94a3b8; border-top: 1px solid #334155; padding-top: 4mm; }
+
+/* ── Level 1: numbered section ── */
+.section { break-before: page; }
+.section.num { counter-increment: sec; counter-reset: st; }
+.section.follow { break-before: auto; margin-top: 10mm; }
+.section > header { margin-bottom: 6mm; break-inside: avoid; break-after: avoid; }
+h2 { font-size: 23pt; font-weight: 800; display: flex; align-items: baseline; gap: 4mm; }
+.section.num h2::before { content: counter(sec); color: var(--blue); font-size: 23pt; font-weight: 800; min-width: 8mm; }
+.lead { font-size: 11.2pt; color: var(--ink-2); margin-top: 2.2mm; max-width: 66ch; line-height: 1.42; }
+.where { display: flex; margin-top: 4mm; border-top: 1.4pt solid var(--navy); border-bottom: 1px solid var(--rule); font-size: 8.8pt; color: var(--ink-2); }
+.where span { padding: 1.9mm 6mm 1.9mm 0; margin-right: 6mm; border-right: 1px solid var(--rule); }
+.where span:last-child { border-right: 0; margin-right: 0; }
+.where b { color: var(--muted); font-weight: 600; margin-right: 1mm; }
+.section > header:not(:has(.where)) { border-bottom: 1.4pt solid var(--navy); padding-bottom: 4mm; }
+.glance { list-style: none; margin: 3mm 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 1.2mm 5mm; font-size: 8.8pt; color: var(--ink-2); }
+.glance li b { color: var(--blue); font-weight: 700; margin-right: 1.2mm; font-variant-numeric: tabular-nums; }
+
+/* ── Level 2: numbered step ── */
+.step { break-inside: avoid; margin-bottom: 7mm; }
+.step:last-child { margin-bottom: 0; }
+.section.num .step { counter-increment: st; }
+.step h3 { font-size: 13pt; font-weight: 700; margin-bottom: 2mm; display: flex; align-items: baseline; gap: 2.6mm; }
+.section.num .step h3::before { content: counter(sec) "." counter(st); color: var(--blue); font-weight: 700; font-size: 10pt; font-variant-numeric: tabular-nums; flex: none; }
+.step .txt > p { color: var(--ink-2); max-width: 70ch; }
+.step .txt > p + p { margin-top: 2mm; }
+.side { display: grid; grid-template-columns: minmax(0, 80mm) minmax(0, 1fr); gap: 8mm; align-items: start; }
+.side.narrow { grid-template-columns: minmax(0, 1fr) 64mm; }
+.side.narrow.phonecol { grid-template-columns: minmax(0, 1fr) 54mm; }
+.stack .txt { margin-bottom: 3.6mm; }
+.stack .keys.cols { display: grid; grid-template-columns: 1fr 1fr; column-gap: 8mm; }
+
+/* ── Level 3: numbered keys, the same crimson disc as on the screenshot ── */
+.keys { list-style: none; margin: 2.8mm 0 0; padding: 0; counter-reset: k; }
+.keys li { counter-increment: k; position: relative; padding-left: 7.6mm; margin-bottom: 2mm; color: var(--ink-2); min-height: 5.2mm; }
+.keys li::before { content: counter(k); position: absolute; left: 0; top: 0; width: 5.2mm; height: 5.2mm; border-radius: 50%; background: var(--mark); color: #fff; font: 700 8.4pt/5.2mm Arial, Helvetica, sans-serif; text-align: center; }
+.plain { margin: 2.6mm 0 0; padding-left: 4.5mm; color: var(--ink-2); }
+.plain li { margin-bottom: 1.3mm; }
+.plain li::marker { color: var(--blue); }
+.plain.two { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10mm; }
+
+figure { margin: 0; }
+figure img { display: block; width: 100%; border-radius: 2mm; border: 1px solid #1e293b; }
+figcaption { font-size: 8pt; color: var(--muted); margin-top: 1.5mm; }
+figcaption b { font-weight: 600; color: var(--ink-2); }
+figure.phone img { width: 52mm; margin-inline: auto; }
+figure.strip img { border-radius: 1.2mm; }
+
+/* Callouts: blue = good to know, red = do not miss */
+.note { margin-top: 3.2mm; background: var(--blue-tint); border: 1px solid #dbe6ff; border-radius: 2mm; padding: 2.4mm 3.4mm; color: var(--ink-2); break-inside: avoid; }
+.note b:first-child { color: var(--blue); font-weight: 700; }
+.note.warn { background: var(--red-tint); border-color: #fde0e0; }
+.note.warn b:first-child { color: var(--red); }
+
+table { border-collapse: collapse; width: 100%; font-size: 9pt; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 8.2pt; border-bottom: 1.2pt solid var(--navy); padding: 1.5mm 2.5mm 1.5mm 0; vertical-align: bottom; }
+td { border-bottom: 1px solid var(--rule); padding: 1.5mm 2.5mm 1.5mm 0; vertical-align: top; color: var(--ink-2); }
+td:first-child { color: var(--navy); font-weight: 600; }
+td.c, th.c { text-align: center; padding-right: 0; }
+.yes { color: var(--green); font-weight: 700; } .no { color: #94a3b8; }
+tr.part td { background: var(--tint); color: var(--navy); font-weight: 700; font-size: 8.4pt; padding: 1.2mm 2mm; border-bottom: 0; }
+td.n { color: var(--blue); font-weight: 700; width: 7mm; font-variant-numeric: tabular-nums; }
+.toc a, .tasks a { color: var(--navy); font-weight: 700; text-decoration: none; }
+.toc a::after, .tasks a::after { content: attr(data-p); }
+
+/* ── Front matter ── */
+.front { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10mm; }
+.front h3, .pg-front .step h3 { font-size: 12.5pt; margin-bottom: 2.6mm; }
+.kinds { margin: 0; display: grid; gap: 2.2mm; }
+.kinds dt { font-weight: 700; color: var(--navy); }
+.kinds dd { margin: 0; color: var(--ink-2); }
+.legend { display: grid; gap: 2.2mm; }
+.legend div { display: grid; grid-template-columns: 13mm 1fr; gap: 3mm; align-items: center; color: var(--ink-2); }
+.disc { width: 5.2mm; height: 5.2mm; border-radius: 50%; background: var(--mark); color: #fff; font: 700 8.4pt/5.2mm Arial, sans-serif; text-align: center; justify-self: center; }
+.ring { width: 12mm; height: 6mm; border: 2.2pt solid var(--mark); border-radius: 1.6mm; justify-self: center; }
+.boldkey { font-weight: 700; color: var(--navy); justify-self: center; }
+.sw { display: inline-block; width: 3.2mm; height: 3.2mm; border-radius: 50%; vertical-align: -.3mm; margin-right: 1.5mm; }

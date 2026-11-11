@@ -22,13 +22,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MessMate — Today's Menu 🍽️</title>
     <meta name="description" content="Check today's mess menu, rate your meals and give quick feedback for Breakfast, Lunch and Dinner.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-    <link rel="stylesheet" href="{{ url_for('ui_tokens') }}">
+    {% include '_theme_head.html' %}
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script>window.MESSMATE_UI = {{ ui.json }};</script>
+    <script defer src="{{ url_for('static', filename='theme.js') }}"></script>
 </head>
 <body class="home-body">
 
@@ -36,6 +34,7 @@
     <header class="home-header-bar">
         <div class="home-header-inner">
             <div class="home-brand">
+                {% include '_brand_mark.html' %}
                 <span class="live-dot" title="Live"></span>
                 <span class="brand-logo">MESSMATE</span>
             </div>
@@ -45,6 +44,7 @@
             <nav class="home-nav">
                 <a href="{{ url_for('index') }}" class="home-nav-link">Rate Dish</a>
                 <a href="{{ url_for('signin') }}" class="home-nav-link home-nav-cta">Sign in</a>
+                {% include '_theme_toggle.html' %}
             </nav>
         </div>
     </header>

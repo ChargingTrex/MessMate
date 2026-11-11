@@ -16,12 +16,20 @@ Functions:
   get_daily_summary()                — Read daily_summary tab
   update_daily_summary_for_today()   — Recalculate and upsert today's summary
   get_all_suggestions()              — Read all non-blank suggestions
+
+READS ARE CACHED. Every tab is read into memory once and served from there
+until the next scheduled refresh: every 30 minutes on the clock, plus a few
+minutes before breakfast, lunch and dinner open (see "Read cache" below).
+Writes still go straight to Google, and also patch the cached copy, so the
+app always sees its own writes immediately.
 """
 
 import os
 import json
 import time
+import threading
 import gspread
+from gspread.utils import numericise
 from google.oauth2.service_account import Credentials
 from datetime import datetime, timedelta
 
@@ -51,26 +59,264 @@ def get_client():
         else:
             # Local development — credentials stored as file
             creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
-        _client = gspread.authorize(creds)
+        _client = gspread.authorize(creds, http_client=_RetryOn429HTTPClient)
     return _client
+
+
+class _RetryOn429HTTPClient(gspread.HTTPClient):
+    """
+    Retries a request that Google refused for quota (HTTP 429), waiting 1, 2
+    then 4 seconds. Only 429: it means the request was NOT applied, so a retried
+    append cannot double-write a row. A 5xx might have been applied, so it is
+    left to fail. gspread's own BackOffHTTPClient is not used because it can
+    retry indefinitely, which would hang a worker past gunicorn's timeout.
+    """
+    RETRY_WAITS = (1, 2, 4)
+
+    def request(self, *args, **kwargs):
+        for wait in self.RETRY_WAITS:
+            try:
+                return super().request(*args, **kwargs)
+            except gspread.exceptions.APIError as e:
+                if e.code != 429:
+                    raise
+                print(f"Sheets quota hit (429); retrying in {wait}s", flush=True)
+                time.sleep(wait)
+        return super().request(*args, **kwargs)
+
+
+# Spreadsheet and worksheet handles. open_by_key() and .worksheet() each fetch
+# the spreadsheet's metadata, so resolving a tab per call cost two reads
+# before any data moved. Handles stay valid for the life of the process.
+_spreadsheet = None
+_worksheets = {}   # tab name -> gspread.Worksheet
 
 
 def get_sheet(tab_name):
     """
     Gets the spreadsheet by SPREADSHEET_ID env var and returns the named worksheet.
+    Handles are cached, so only the first call per tab touches the API.
     Returns None on error (logged to console).
     """
+    global _spreadsheet
     try:
-        client = get_client()
+        if tab_name in _worksheets:
+            return _worksheets[tab_name]
         spreadsheet_id = os.environ.get("SPREADSHEET_ID")
         if not spreadsheet_id:
             print("ERROR: SPREADSHEET_ID environment variable not set")
             return None
-        spreadsheet = client.open_by_key(spreadsheet_id)
-        return spreadsheet.worksheet(tab_name)
+        if _spreadsheet is None:
+            _spreadsheet = get_client().open_by_key(spreadsheet_id)
+        worksheet = _spreadsheet.worksheet(tab_name)
+        _worksheets[tab_name] = worksheet
+        return worksheet
     except Exception as e:
         print(f"Error accessing sheet '{tab_name}': {e}")
         return None
+
+
+# ── Read cache ────────────────────────────────────────────────────────────────
+# Google allows ~60 reads a minute for the whole app (one service account), and
+# reading a tab is a read whether or not anything changed. So each tab is read
+# once and kept in memory until the next REFRESH POINT:
+#
+#   * every REFRESH_EVERY_MINUTES on the clock (:00 and :30), and
+#   * PRE_MEAL_REFRESH_MINUTES before each meal opens (MEAL_OPENS, below),
+#     so a menu fixed just before service is what students see when it opens.
+#
+# A tab loaded before a refresh point is stale after it and is re-read on its
+# next use; start_refresh_scheduler() also re-reads every loaded tab right at
+# each point so the first visitor afterwards does not wait for Google.
+#
+# Writes made through this module go to Google first and then patch the cached
+# copy (_cache_append / _cache_replace), so a submission shows on the dashboard
+# at once and the one-review-per-meal check sees it. Admin writes to the roster
+# and the menu drop that tab instead, and the next read fetches it fresh.
+#
+# What the cache does NOT see until the next refresh point: rows typed into the
+# sheet by hand, rows written by scripts (seed_demo.py etc.), and writes made
+# by ANOTHER process. The Procfile runs one gunicorn worker, so that is only a
+# concern if workers are added — each would then hold its own cache.
+REFRESH_EVERY_MINUTES = 30
+PRE_MEAL_REFRESH_MINUTES = 10
+RETRY_FAILED_LOAD_SECONDS = 60   # after a failed refresh, serve stale data this long
+
+_cache_lock = threading.RLock()
+_tab_cache = {}       # tab -> {"records": [dict, ...], "loaded_at": datetime}
+_failed_at = {}       # tab -> time.monotonic() of the last failed load
+
+
+def refresh_points(day):
+    """Every refresh time on a calendar day, sorted, as datetimes."""
+    start = datetime(day.year, day.month, day.day)
+    points = {start + timedelta(minutes=m)
+              for m in range(0, 24 * 60, REFRESH_EVERY_MINUTES)}
+    for hour, minute in MEAL_OPENS.values():
+        opens = start + timedelta(hours=hour, minutes=minute)
+        points.add(opens - timedelta(minutes=PRE_MEAL_REFRESH_MINUTES))
+    return sorted(points)
+
+
+def next_refresh_after(moment):
+    """The first refresh point strictly after `moment`."""
+    for point in refresh_points(moment):
+        if point > moment:
+            return point
+    return refresh_points(moment + timedelta(days=1))[0]
+
+
+def invalidate_cache(tab=None):
+    """Drops one tab's cached rows (or every tab's), so the next read refetches."""
+    with _cache_lock:
+        if tab is None:
+            _tab_cache.clear()
+            _failed_at.clear()
+        else:
+            _tab_cache.pop(tab, None)
+            _failed_at.pop(tab, None)
+
+
+def _load_tab(tab):
+    """One API read: the whole tab as record dicts. Raises on failure."""
+    worksheet = get_sheet(tab)
+    if not worksheet:
+        raise LookupError(f"sheet '{tab}' is unavailable")
+    return worksheet.get_all_records()
+
+
+def _cached_records(tab):
+    """
+    The tab's rows, from memory when fresh. Returns a new list each call so a
+    caller cannot reorder the cache, but the dicts are shared: do not mutate.
+
+    If a refresh fails and an older copy exists, the older copy is served (and
+    the load is not retried for RETRY_FAILED_LOAD_SECONDS) — a dashboard a
+    little out of date beats an empty one. With nothing cached, it raises, and
+    each caller's own try/except decides what failure means.
+    """
+    with _cache_lock:
+        entry = _tab_cache.get(tab)
+        now = datetime.now()
+        if entry and now < next_refresh_after(entry["loaded_at"]):
+            return list(entry["records"])
+
+        failed = _failed_at.get(tab)
+        if entry and failed is not None and \
+                time.monotonic() - failed < RETRY_FAILED_LOAD_SECONDS:
+            return list(entry["records"])
+
+        try:
+            records = _load_tab(tab)
+        except Exception as e:
+            _failed_at[tab] = time.monotonic()
+            if entry:
+                print(f"Refreshing '{tab}' failed, serving cached copy: {e}")
+                return list(entry["records"])
+            raise
+
+        _tab_cache[tab] = {"records": records, "loaded_at": now}
+        _failed_at.pop(tab, None)
+        return list(records)
+
+
+def _as_read(value):
+    """A written value as get_all_records() would hand it back."""
+    if value is None:
+        return ""
+    return numericise(str(value))
+
+
+def _cache_append(tab, headers, rows):
+    """Adds just-written rows to the cached copy, if the tab is cached."""
+    with _cache_lock:
+        entry = _tab_cache.get(tab)
+        if entry is None:
+            return   # nothing cached: the next read loads the tab, rows included
+        for row in rows:
+            entry["records"].append(
+                {h: _as_read(v) for h, v in zip(headers, row)})
+
+
+def _cache_replace(tab, headers, match, row):
+    """Replaces the first cached record where match(record) is true, or appends."""
+    with _cache_lock:
+        entry = _tab_cache.get(tab)
+        if entry is None:
+            return
+        record = {h: _as_read(v) for h, v in zip(headers, row)}
+        for index, existing in enumerate(entry["records"]):
+            if match(existing):
+                entry["records"][index] = record
+                return
+        entry["records"].append(record)
+
+
+def _cache_remove(tab, match):
+    """Drops the first cached record where match(record) is true."""
+    with _cache_lock:
+        entry = _tab_cache.get(tab)
+        if entry is None:
+            return
+        for index, existing in enumerate(entry["records"]):
+            if match(existing):
+                del entry["records"][index]
+                return
+
+
+def refresh_all():
+    """Re-reads every tab that has been loaded. One API read per tab."""
+    with _cache_lock:
+        tabs = list(_tab_cache)
+    for tab in tabs:
+        try:
+            records = _load_tab(tab)
+        except Exception as e:
+            print(f"Scheduled refresh of '{tab}' failed, keeping cached copy: {e}")
+            continue
+        with _cache_lock:
+            _tab_cache[tab] = {"records": records, "loaded_at": datetime.now()}
+            _failed_at.pop(tab, None)
+
+
+_scheduler_started = False
+
+
+def start_refresh_scheduler():
+    """
+    Starts a background thread that refreshes the cache at each refresh point,
+    so the first request after one is served from memory. Safe to call more
+    than once; does nothing without SPREADSHEET_ID (tests, scripts).
+    """
+    global _scheduler_started
+    if _scheduler_started or not os.environ.get("SPREADSHEET_ID"):
+        return
+    _scheduler_started = True
+
+    def run():
+        while True:
+            wait = (next_refresh_after(datetime.now()) - datetime.now()).total_seconds()
+            time.sleep(max(wait, 0) + 1)   # +1s: land just past the point
+            try:
+                refresh_all()
+            except Exception as e:   # the thread must never die
+                print(f"Cache refresh error: {e}")
+
+    threading.Thread(target=run, name="sheets-cache-refresh", daemon=True).start()
+
+
+# Column order of the student tabs, for patching the cache after a write.
+# Must match row 1 of each tab, as the committee *_HEADERS lists below do.
+RESPONSE_HEADERS = [
+    "Timestamp", "Overall", "Rice_Curry", "Rice_Rasam", "Chapati",
+    "Chapati_Gravy", "Poriyal", "Sweet", "Salad", "Curd", "Papad",
+    "Pickle", "Review", "Suggestion"
+]
+SUMMARY_HEADERS = [
+    "Date", "Avg_Overall", "Response_Count", "Avg_Rice_Curry",
+    "Avg_Rice_Rasam", "Avg_Chapati", "Avg_Chapati_Gravy", "Avg_Poriyal",
+    "Avg_Sweet", "Avg_Salad", "Avg_Curd", "Avg_Papad", "Avg_Pickle"
+]
 
 
 def append_response(data_dict):
@@ -110,6 +356,7 @@ def append_response(data_dict):
         ]
 
         worksheet.append_row(row_data, value_input_option='RAW')
+        _cache_append("responses", RESPONSE_HEADERS, [row_data])
         return True
     except Exception as e:
         print(f"Error appending response: {e}")
@@ -127,12 +374,8 @@ def get_today_responses(date_override=None):
 
     Returns list of record dicts.
     """
-    worksheet = get_sheet("responses")
-    if not worksheet:
-        return []
-
     try:
-        records = worksheet.get_all_records()
+        records = _cached_records("responses")
 
         if date_override:
             target_date = datetime.strptime(date_override, "%Y-%m-%d").date()
@@ -170,12 +413,8 @@ def get_daily_summary():
     Reads all rows from the 'daily_summary' tab.
     Returns list of record dicts.
     """
-    worksheet = get_sheet("daily_summary")
-    if not worksheet:
-        return []
-
     try:
-        return worksheet.get_all_records()
+        return _cached_records("daily_summary")
     except Exception as e:
         print(f"Error reading daily summary: {e}")
         return []
@@ -268,6 +507,9 @@ def update_daily_summary_for_today(date_override=None):
             # Row doesn't exist — append it
             worksheet.append_row(row_data)
 
+        _cache_replace("daily_summary", SUMMARY_HEADERS,
+                       lambda r: str(r.get("Date", "")).strip() == today_str,
+                       row_data)
         return True
     except Exception as e:
         print(f"Error updating daily summary: {e}")
@@ -281,12 +523,8 @@ def get_all_suggestions():
 
     Does NOT reverse order — let app.py handle display ordering.
     """
-    worksheet = get_sheet("responses")
-    if not worksheet:
-        return []
-
     try:
-        records = worksheet.get_all_records()
+        records = _cached_records("responses")
         suggestions = []
 
         for record in records:
@@ -352,43 +590,29 @@ DISH_RATING_HEADERS = [
 DIMENSIONS = ["Taste", "Quality", "Variety", "Hygiene", "Menu"]
 
 # ── Roster cache ──────────────────────────────────────────────────────────────
-# A roster read costs 0.5-2s and counts against Google's 100-reads/100s quota,
-# so it is cached. Writes invalidate it immediately, which is what makes a
-# newly added member able to log in at once rather than up to a minute later.
+# The roster lives in the read cache like every tab. Writes invalidate it
+# immediately, which is what makes a newly added member able to log in at once
+# and a deactivated one locked out at once.
 #
-# Each gunicorn worker holds its own cache. A member added in worker A is
-# invisible to worker B until the TTL lapses — self-healing, and the admin who
-# did the adding always sees their own change because that worker was
-# invalidated by the write.
-ROSTER_TTL_SECONDS = 60
-_roster_cache = None  # tuple: (fetched_at_monotonic, [records]) or None
-
+# Each gunicorn worker holds its own cache. With more than one worker, a change
+# made in worker A reaches worker B only at the next refresh point (up to
+# REFRESH_EVERY_MINUTES) — including a deactivation. Keep one worker, or move
+# the roster to a shared store, before scaling out.
 
 def invalidate_roster_cache():
     """Drops the cached roster so the next read hits Sheets. Call after every write."""
-    global _roster_cache
-    _roster_cache = None
+    invalidate_cache(COMMITTEE_MEMBERS_TAB)
 
 
 def get_committee_roster(force_refresh=False):
     """
-    Returns all committee_members rows as dicts, cached for ROSTER_TTL_SECONDS.
+    Returns all committee_members rows as dicts, from the read cache.
     Returns [] on error (never raises).
     """
-    global _roster_cache
-
-    if not force_refresh and _roster_cache is not None:
-        fetched_at, records = _roster_cache
-        if (time.monotonic() - fetched_at) < ROSTER_TTL_SECONDS:
-            return records
-
+    if force_refresh:
+        invalidate_roster_cache()
     try:
-        worksheet = get_sheet(COMMITTEE_MEMBERS_TAB)
-        if not worksheet:
-            return []
-        records = worksheet.get_all_records()
-        _roster_cache = (time.monotonic(), records)
-        return records
+        return _cached_records(COMMITTEE_MEMBERS_TAB)
     except Exception as e:
         print(f"Error reading committee roster: {e}")
         return []
@@ -551,10 +775,10 @@ def append_committee_review(data_dict, dish_ratings=None):
             dish_sheet = get_sheet(COMMITTEE_DISH_RATINGS_TAB)
             if not dish_sheet:
                 return False
-            dish_sheet.append_rows(
-                [[stamp, date_str, meal, email, dish, rating]
-                 for dish, rating in dish_ratings],
-                value_input_option="RAW")
+            dish_rows = [[stamp, date_str, meal, email, dish, rating]
+                         for dish, rating in dish_ratings]
+            dish_sheet.append_rows(dish_rows, value_input_option="RAW")
+            _cache_append(COMMITTEE_DISH_RATINGS_TAB, DISH_RATING_HEADERS, dish_rows)
 
         row_data = [
             stamp,                               # Timestamp
@@ -570,6 +794,7 @@ def append_committee_review(data_dict, dish_ratings=None):
             meal,                                # Meal — Breakfast / Lunch / Dinner
         ]
         worksheet.append_row(row_data, value_input_option="RAW")
+        _cache_append(COMMITTEE_REVIEWS_TAB, REVIEW_HEADERS, [row_data])
         return True
     except Exception as e:
         print(f"Error appending committee review: {e}")
@@ -588,10 +813,7 @@ def get_committee_reviews(days=None):
     Returns a list of record dicts, oldest first. [] on error.
     """
     try:
-        worksheet = get_sheet(COMMITTEE_REVIEWS_TAB)
-        if not worksheet:
-            return []
-        records = worksheet.get_all_records()
+        records = _cached_records(COMMITTEE_REVIEWS_TAB)
 
         if days is None:
             return records
@@ -665,10 +887,7 @@ def get_committee_dish_ratings(date_str=None):
     append_committee_review(). [] on error.
     """
     try:
-        worksheet = get_sheet(COMMITTEE_DISH_RATINGS_TAB)
-        if not worksheet:
-            return []
-        records = worksheet.get_all_records()
+        records = _cached_records(COMMITTEE_DISH_RATINGS_TAB)
 
         def key(r):
             return (str(r.get("Date", "")).strip(),
@@ -786,34 +1005,21 @@ def week_start(date_str=None):
     return (day - timedelta(days=day.weekday())).strftime("%Y-%m-%d")
 
 
-# Menu reads happen on every home-page load, so they are cached like the roster.
-# A shorter TTL than the roster: a menu correction should appear quickly.
-MENU_TTL_SECONDS = 30
-_menu_cache = None  # (fetched_at_monotonic, [records]) or None
+# Menu reads happen on every home-page load and come from the read cache. A
+# menu saved in the admin editor drops the cached copy, so it shows at once.
 
 
 def invalidate_menu_cache():
     """Drops the cached menu. Called after every menu write."""
-    global _menu_cache
-    _menu_cache = None
+    invalidate_cache(MENU_TAB)
 
 
 def get_menu_records(force_refresh=False):
     """All rows of the menu tab as dicts, cached. [] on error."""
-    global _menu_cache
-
-    if not force_refresh and _menu_cache is not None:
-        fetched_at, records = _menu_cache
-        if (time.monotonic() - fetched_at) < MENU_TTL_SECONDS:
-            return records
-
+    if force_refresh:
+        invalidate_menu_cache()
     try:
-        worksheet = get_sheet(MENU_TAB)
-        if not worksheet:
-            return []
-        records = worksheet.get_all_records()
-        _menu_cache = (time.monotonic(), records)
-        return records
+        return _cached_records(MENU_TAB)
     except Exception as e:
         print(f"Error reading menu: {e}")
         return []
@@ -955,13 +1161,9 @@ def append_meal_rating(meal, rating, suggestion=""):
             return False
 
         stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        worksheet.append_row([
-            stamp,
-            stamp[:10],
-            meal,
-            rating,
-            suggestion,
-        ], value_input_option="RAW")
+        row = [stamp, stamp[:10], meal, rating, suggestion]
+        worksheet.append_row(row, value_input_option="RAW")
+        _cache_append(MEAL_RATINGS_TAB, MEAL_RATING_HEADERS, [row])
         return stamp
     except Exception as e:
         print(f"Error appending meal rating: {e}")
@@ -973,10 +1175,7 @@ def get_meal_ratings(date_str=None):
     Meal ratings, optionally for one date. [] on error.
     """
     try:
-        worksheet = get_sheet(MEAL_RATINGS_TAB)
-        if not worksheet:
-            return []
-        records = worksheet.get_all_records()
+        records = _cached_records(MEAL_RATINGS_TAB)
         if date_str is None:
             return records
         return [r for r in records
@@ -1055,6 +1254,10 @@ def delete_meal_rating(timestamp, date_str, meal):
                     and str(record.get("Date", "")).strip() == date_str
                     and str(record.get("Meal", "")).strip().title() == meal):
                 worksheet.delete_rows(index + 2)   # row 1 is the header
+                _cache_remove(MEAL_RATINGS_TAB, lambda r: (
+                    str(r.get("Timestamp", "")).strip() == timestamp
+                    and str(r.get("Date", "")).strip() == date_str
+                    and str(r.get("Meal", "")).strip().title() == meal))
                 return True
         return False
     except Exception as e:

@@ -17,7 +17,8 @@ window.MessMateCharts = (function () {
   const css = getComputedStyle(document.documentElement);
   const token = (name, fallback) => (css.getPropertyValue(name).trim() || fallback);
 
-  // Every colour comes from /ui/tokens.css (ui_config.DESIGN_TOKENS); the
+  // Every colour comes from /ui/tokens.css (ui_config.THEMES, whichever
+  // theme is in force when the page draws); the
   // thresholds from window.MESSMATE_UI (ui_config.SCORE_BANDS). Nothing here
   // is a literal that could drift from the stylesheet.
   const UI = window.MESSMATE_UI || {};
@@ -31,6 +32,7 @@ window.MessMateCharts = (function () {
     red:     token("--score-red", "#EF5350"),
     amber:   token("--score-amber", "#FFB300"),
     green:   token("--score-green", "#66BB6A"),
+    muted:   token("--chart-muted", "rgba(148, 163, 184, 0.35)"),
     dimensions: [1, 2, 3, 4, 5].map(i => token(`--chart-dim-${i}`, "#888")),
   };
 
@@ -44,13 +46,13 @@ window.MessMateCharts = (function () {
   if (window.Chart) {
     Chart.defaults.color = THEME.text;
     Chart.defaults.borderColor = THEME.grid;
-    Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    Chart.defaults.font.family = token("--font-sans", "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif");
     Chart.defaults.font.size = 12;
     Chart.defaults.maintainAspectRatio = false;
 
-    // Tooltips: readable on the dark shell, and not a system default box.
-    Chart.defaults.plugins.tooltip.backgroundColor = "rgba(15, 23, 36, 0.95)";
-    Chart.defaults.plugins.tooltip.borderColor = "rgba(255, 255, 255, 0.14)";
+    // Tooltips: readable in either theme, and not a system default box.
+    Chart.defaults.plugins.tooltip.backgroundColor = token("--tooltip-bg", "rgba(15, 23, 36, 0.95)");
+    Chart.defaults.plugins.tooltip.borderColor = token("--tooltip-border", "rgba(255, 255, 255, 0.14)");
     Chart.defaults.plugins.tooltip.borderWidth = 1;
     Chart.defaults.plugins.tooltip.titleColor = THEME.strong;
     Chart.defaults.plugins.tooltip.bodyColor = token("--text-3", "#cbd5e1");
@@ -144,8 +146,8 @@ window.MessMateCharts = (function () {
             if (!on) {
               // A filled dot at low opacity reads as "off" without the
               // hollow-box look an unfilled swatch gives.
-              item.fillStyle = "rgba(148, 163, 184, 0.35)";
-              item.strokeStyle = "rgba(148, 163, 184, 0.35)";
+              item.fillStyle = THEME.muted;
+              item.strokeStyle = THEME.muted;
             }
           });
           return items;
