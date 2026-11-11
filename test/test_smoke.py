@@ -75,7 +75,6 @@ class LocalTransport:
         os.environ["SPREADSHEET_ID"] = "fake-spreadsheet-id"
         os.environ["DASHBOARD_TOKEN"] = "vc2026"
         os.environ["PILOT_MODE"] = "true"
-        os.environ["PILOT_ADMIN_PASSWORD"] = "smoke-admin-password"
 
         import auth
         self.admin_password = "smoke-admin-password"
@@ -282,6 +281,8 @@ def smoke(t):
     if t.writes_allowed:
         check("pilot accounts are listed in pilot mode",
               'id="pilot-accounts"' in body and 'data-pilot="admin@messmate.demo"' in body)
+        check("the sign-in page never carries a password",
+              "data-password" not in body and "smoke-admin-password" not in body)
         door = t.session()
         _, page = t.get(door, "/signin")
         token = CSRF_RE.search(page).group(1)

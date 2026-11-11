@@ -290,18 +290,20 @@ requires a real admin session**.
 
 Set `PILOT_MODE=true` and open `/signin`. The page lists one account per role
 — a student (no account), five committee members, a read-only dean and the
-admin. Picking a card fills the form; the sign-in is the real one, so a
-wrong `PILOT_ADMIN_PASSWORD` is refused like any wrong password. Run
-`python seed_demo.py --yes` first so the member accounts exist.
+admin. Picking a card fills in the **email only**: each account has its own
+password, given out privately, so the page never carries a secret and a
+student who finds the sign-in page cannot open another role.
 
 ```env
 PILOT_MODE=true
-PILOT_ADMIN_PASSWORD=<the admin password>     # must match ADMIN_PASSWORD_HASH
-PILOT_MEMBER_PASSWORD=MessMate@2026           # what seed_demo.py writes
-VIEWER_PASSWORD=<optional; defaults to DASHBOARD_TOKEN>
+ADMIN_PASSWORD_HASH=<from: python manage_committee.py hash-admin-password>
+VIEWER_PASSWORD=<the dean's password; defaults to DASHBOARD_TOKEN>
 ```
 
-Pilot mode puts passwords on a page. **Leave it off in production.**
+Committee members' passwords are hashes in the `committee_members` tab; set
+or reset them from **Members → Reset password**. `seed_demo.py --yes` rewrites
+every member's password to its shared demo value, so re-running it on a sheet
+the public can reach undoes any per-account passwords.
 
 ## Notes
 
