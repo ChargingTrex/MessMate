@@ -99,6 +99,7 @@ tests/
 ├── committee_admin_tests.robot         # 29 UI  tests (TC90–TC118)
 ├── committee_dashboard_tests.robot     # 27 UI  tests (TC120–TC146)
 ├── committee_api_tests.robot           # 23 API tests (TC150–TC172)
+├── menu_categories_tests.robot         # 11 UI  tests (TC200–TC210), menu categories & CSV uploads
 ├── run_tests.sh                        # Shell test runner script
 └── results/                            # Auto-generated reports (gitignored)
 
@@ -108,8 +109,13 @@ test/
 ├── test_smoke.py             # 26 checks across 15 features, ~1 second
 ├── test_committee.py         # 59 checklist checks
 ├── test_e2e_committee.py     # 64 steps across 9 committee journeys
-└── test_e2e_student.py       # 53 steps across 9 student journeys
+├── test_e2e_student.py       # 53 steps across 9 student journeys
+├── test_menu_categories.py   # 61 unit tests: category parsing, both CSV layouts
+└── test_e2e_menu.py          # 57 steps across 7 menu-category & upload journeys
 ```
+
+Menu categories and CSV uploads have their own test plan, with a manual
+test script and every case ID: [docs/MENU_CATEGORIES_TEST_PLAN.md](docs/MENU_CATEGORIES_TEST_PLAN.md).
 
 **159 Robot test cases** in total, plus **202 credential-free Python checks**.
 
@@ -405,6 +411,8 @@ python test/test_smoke.py            # 26 checks, 15 features, ~1 second
 python test/test_committee.py        # 59 checks, one per checklist item
 python test/test_e2e_committee.py    # 64 steps across 9 committee journeys
 python test/test_e2e_student.py      # 53 steps across 9 student journeys
+python test/test_menu_categories.py  # 61 unit tests: menu categories, CSV layouts
+python test/test_e2e_menu.py         # 57 steps across 7 menu & upload journeys
 ```
 
 ### Smoke tests
