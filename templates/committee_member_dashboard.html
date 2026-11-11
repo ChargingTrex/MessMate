@@ -37,10 +37,6 @@
       {% else %}
       <a href="{{ url_for('committee') }}" class="submit-btn btn-inline">File today's review</a>
       {% endif %}
-      <form method="POST" action="{{ url_for('committee_logout') }}">
-        {{ csrf_field() }}
-        <button type="submit" class="btn-secondary">Sign out</button>
-      </form>
     </div>
   </div>
 

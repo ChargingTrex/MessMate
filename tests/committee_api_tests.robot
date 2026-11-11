@@ -39,14 +39,14 @@ TC152 Rating Page Redirects When Unauthenticated
     ${response}=    GET    ${BASE_URL}/committee
     ...    expected_status=any    allow_redirects=${FALSE}
     Should Be Equal As Integers    ${response.status_code}    302
-    Should Contain    ${response.headers['Location']}    /committee/login
+    Should Contain    ${response.headers['Location']}    /signin
 
 TC153 Roster Redirects When Unauthenticated
     [Tags]    smoke    api    security
     ${response}=    GET    ${BASE_URL}/admin/members
     ...    expected_status=any    allow_redirects=${FALSE}
     Should Be Equal As Integers    ${response.status_code}    302
-    Should Contain    ${response.headers['Location']}    /admin/login
+    Should Contain    ${response.headers['Location']}    /signin
 
 # ── SECTION 2: The privilege boundary ─────────────────────────────────────
 
@@ -67,7 +67,7 @@ TC156 Token Does Not Open The Roster
     ${response}=    GET    url=${BASE_URL}/admin/members?token=${DASHBOARD_TOKEN}
     ...    expected_status=any    allow_redirects=${FALSE}
     Should Be Equal As Integers    ${response.status_code}    302
-    Should Contain    ${response.headers['Location']}    /admin/login
+    Should Contain    ${response.headers['Location']}    /signin
 
 TC157 Token Cannot Add A Member
     [Tags]    smoke    api    security

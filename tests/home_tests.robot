@@ -128,7 +128,7 @@ TC192 Menu Editor Is Closed Without An Admin Session
     Sign Out Of Admin
     Go To    ${MENU_EDITOR_URL}
     Wait Until Page Contains Element    id=password    timeout=${TIMEOUT}
-    Location Should Contain    /admin/login
+    Location Should Contain    /signin
 
 TC193 Dashboard Token Cannot Open The Menu Editor
     [Tags]    smoke    home    security
