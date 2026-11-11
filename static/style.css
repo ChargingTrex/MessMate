@@ -1154,22 +1154,26 @@ body.home-body {
     margin-bottom: 12px;
 }
 
+/* The spotlight's dishes: one per line inside a rounded panel, like the menu */
 .specials-dishes {
     list-style: none;
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-2);
+    flex-direction: column;
+    padding: var(--sp-1) var(--sp-4);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
 }
 
 .specials-dishes li {
-    background: var(--accent-bg-hover);
-    border: 1px solid var(--accent-border);
-    border-radius: var(--r-pill);
-    padding: var(--sp-1) var(--sp-3);
-    font-size: var(--fs-sm);
-    color: var(--accent-ink);
+    padding: 6px 0;
+    font-size: var(--fs-md);
+    color: var(--text-3);
     font-weight: 500;
+    border-bottom: 1px solid var(--border);
 }
+.specials-dishes li:last-child { border-bottom: 0; }
+.specials-dishes:has(> .specials-loading) { background: transparent; border: 0; padding: 0; }
 
 .specials-loading {
     color: var(--text-faint) !important;
@@ -1358,23 +1362,29 @@ body.home-body {
 }
 
 /* ── Menu items ───────────────────────────────────────────────────────────── */
+/* The menu reads like a printed card: every dish on its own line, inside one
+   rounded panel, with a hairline between lines. No pills. */
 .home-body .menu-items {
     list-style: none;
     margin: 0 0 var(--sp-4) 0;
-    padding: 0;
+    padding: var(--sp-1) var(--sp-4);
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-2);
+    flex-direction: column;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
 }
 
 .home-body .menu-items li {
-    background: var(--accent-bg);
-    border: 1px solid var(--accent-border);
-    border-radius: var(--r-pill);
-    padding: var(--sp-1) var(--sp-3);
+    padding: var(--sp-2) 0;
     font-size: var(--fs-md);
     color: var(--text-3);
+    border-bottom: 1px solid var(--border);
 }
+.home-body .menu-items li:last-child { border-bottom: 0; }
+
+/* An unpublished meal is a message, not a menu: no panel around it */
+.home-body .menu-items:has(> .menu-empty) { background: transparent; border: 0; padding: 0; }
 
 /* A menu with categories reads as the mess's own sheet: a quiet label column
    and the dishes beside it, one line per row, instead of a cloud of pills. */
@@ -1382,7 +1392,6 @@ body.home-body {
     display: grid;
     grid-template-columns: minmax(6.5rem, max-content) 1fr;
     gap: 0;
-    border-top: 1px solid var(--border);
 }
 .home-body .menu-items-categorised li {
     display: grid;
@@ -1390,10 +1399,6 @@ body.home-body {
     grid-column: 1 / -1;
     column-gap: var(--sp-3);
     align-items: baseline;
-    background: transparent;
-    border: 0;
-    border-bottom: 1px solid var(--border);
-    border-radius: 0;
     padding: var(--sp-2) 0;
 }
 .home-body .menu-items-categorised .menu-cat {
@@ -1408,7 +1413,7 @@ body.home-body {
 .home-body .menu-items-categorised li:not(:has(.menu-cat)) { display: block; }
 
 .specials-dishes li.specials-more {
-    background: transparent;
+    color: var(--text-muted);
     font-weight: 400;
 }
 
