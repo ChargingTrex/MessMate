@@ -13,7 +13,7 @@ in-memory sheets backend.
   M6  The older Date/Breakfast/Lunch/Dinner layout still uploads
   M7  Bad uploads are refused without touching the sheet
 
-Step IDs (E2E-Mn.k) match docs/MENU_CATEGORIES_TEST_PLAN.md. The pure parsing
+Step IDs (E2E-Mn.k) match docs/TEST_PLAN.md. The pure parsing
 rules are unit-tested in test/test_menu_categories.py; this file checks that
 the routes, templates and storage put them together correctly.
 

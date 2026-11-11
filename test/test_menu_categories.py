@@ -15,7 +15,7 @@ that touch storage use the in-memory sheets fake.
   UT-GRID   app._parse_menu_grid                    the template layout
   UT-MEAL   app._parse_menu_by_meal                 the older layout
 
-Test IDs match docs/MENU_CATEGORIES_TEST_PLAN.md.
+Test IDs match docs/TEST_PLAN.md.
 
 Runs with NO Google credentials.
 

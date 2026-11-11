@@ -7,7 +7,7 @@ Documentation     Menu categories and CSV upload layouts, in a real browser.
 ...
 ...               Run against the in-memory backend (test/fake_server.py), one
 ...               suite at a time. Test IDs match
-...               docs/MENU_CATEGORIES_TEST_PLAN.md (TC200–TC210).
+...               docs/TEST_PLAN.md (TC200–TC210).
 Resource          resources/common.resource
 Resource          resources/committee_keywords.resource
 Library           OperatingSystem
