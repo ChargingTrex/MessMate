@@ -1,0 +1,10 @@
+{#
+  Light / dark switch (_theme_toggle.html), included by the two headers.
+  static/theme.js fills in the label ("Light" or "Dark", the theme it will
+  switch to) and remembers the choice. Without scripting it reads "Theme"
+  and the device setting applies.
+#}
+<button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch colour theme">
+  <svg class="theme-toggle-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 0 0 0-13Zm0 1.5v10a5 5 0 0 1 0-10Z"/></svg>
+  <span class="theme-toggle-label">Theme</span>
+</button>
