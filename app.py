@@ -131,7 +131,7 @@ def parse_rating(val):
     Returns int if val is a digit string 1-5, else "" (empty string).
     NEVER returns None or 0 — blank columns must be empty strings.
     """
-    if val and val.isdigit():
+    if val and val.isdigit() and 1 <= int(val) <= 5:
         return int(val)
     return ""
 
