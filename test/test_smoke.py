@@ -74,6 +74,7 @@ class LocalTransport:
         os.environ["FLASK_SECRET_KEY"] = "smoke-test-secret-key"
         os.environ["SPREADSHEET_ID"] = "fake-spreadsheet-id"
         os.environ["DASHBOARD_TOKEN"] = "vc2026"
+        os.environ["VIEWER_PASSWORD"] = "vc2026"   # the dean signs in with the token here, whatever .env says
         os.environ["PILOT_MODE"] = "true"
 
         import auth
