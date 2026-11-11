@@ -114,8 +114,9 @@ test/
 └── test_e2e_menu.py          # 57 steps across 7 menu-category & upload journeys
 ```
 
-Menu categories and CSV uploads have their own test plan, with a manual
-test script and every case ID: [docs/MENU_CATEGORIES_TEST_PLAN.md](docs/MENU_CATEGORIES_TEST_PLAN.md).
+The site-wide test plan — every page and role, a manual test script mapped
+to the automated cases, coverage gaps, and the full case catalogue — is
+[docs/TEST_PLAN.md](docs/TEST_PLAN.md).
 
 **159 Robot test cases** in total, plus **202 credential-free Python checks**.
 
