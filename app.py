@@ -80,6 +80,14 @@ limiter = Limiter(
 )
 
 
+# Sheets reads are cached (see sheets.py, "Read cache"). The refresh thread is
+# started by the first request rather than at import, so the debug reloader's
+# watcher process — which never serves a request — does not run one too.
+@app.before_request
+def _start_sheets_cache_refresh():
+    sheets.start_refresh_scheduler()
+
+
 # ── Error Handlers ────────────────────────────────────────────────────────────
 
 @app.errorhandler(429)

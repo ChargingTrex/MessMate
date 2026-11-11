@@ -5,7 +5,7 @@ An in-memory stand-in for the gspread worksheet API, so the app can be tested
 without Google credentials.
 
 Only the surface sheets.py actually uses is implemented, which means the real
-sheets.py logic runs against it: the roster TTL cache, row construction, the
+sheets.py logic runs against it: the read cache, row construction, the
 col_values row lookup, update_cell, and get_all_records all execute for real.
 The only thing replaced is the network.
 
@@ -131,8 +131,7 @@ class FakeBook:
         }
         # "ok" | "unavailable" (get_sheet returns None) | "raise" (simulated outage)
         self.mode = "ok"
-        sheets.invalidate_roster_cache()
-        sheets.invalidate_menu_cache()
+        sheets.invalidate_cache()   # every tab: a new book means fresh data
 
     def get_sheet(self, tab_name):
         if self.mode == "raise":
@@ -173,6 +172,7 @@ class FakeBook:
         self.reviews().rows.append(
             [f"{date} 13:00:00", date, email.lower(), name] + list(scores)
             + [review, meal])
+        sheets.invalidate_cache(sheets.COMMITTEE_REVIEWS_TAB)
 
     def seed_student_response(self, date, overall, review="", suggestion="",
                               items=None):
@@ -194,6 +194,7 @@ class FakeBook:
             raise ValueError(f"items must have 10 values, got {len(scores)}")
         row = [f"{date} 12:30:00", overall] + scores + [review, suggestion]
         self.responses().rows.append(row)
+        sheets.invalidate_cache("responses")
 
 
     def menu(self):
@@ -210,6 +211,7 @@ class FakeBook:
     def seed_meal_rating(self, date, meal, rating, suggestion=""):
         self.meal_ratings().rows.append(
             [f"{date} 13:00:00", date, meal, rating, suggestion])
+        sheets.invalidate_cache(sheets.MEAL_RATINGS_TAB)
 
 
 def install():
