@@ -25,6 +25,7 @@ app always sees its own writes immediately.
 """
 
 import os
+import re
 import json
 import time
 import threading
@@ -936,6 +937,38 @@ MEAL_TIMINGS = {
 
 RATINGS = ["good", "bad", "skip"]
 
+# ── Menu categories ──────────────────────────────────────────────────────────
+# The rows of the mess's own weekly sheet, in its order and under its names
+# (snacks are not served as a meal here, so they are left out). A dish is
+# stored as "Category: Dish", one per line, inside the meal's cell — so the
+# menu tab keeps its Date/Breakfast/Lunch/Dinner columns and a dish typed
+# without a category still works. The labels describe the sheet's rows, not
+# the dish in them: the mess sometimes puts a gravy under "Korma" or a curry
+# under "Dry Poriyal", and the app keeps their naming rather than guess.
+# A repeated name ("Spread" for butter and jam) is two rows in the CSV
+# template, shown to students as one line.
+MENU_CATEGORIES = {
+    "Breakfast": [
+        "Main Item", "Side Dish", "Chutney", "Vada / Banana", "Egg",
+        "Bread", "Spread", "Spread", "Beverage",
+    ],
+    "Lunch": [
+        "Bread", "Side Dish", "Rice", "Sambar / Kulambu", "Poriyal / Kootu",
+        "Rasam", "Papad / Fryums", "Curd", "Pickle", "Podi / Oil & Thogayal",
+        "Sweet / Fruits",
+    ],
+    "Dinner": [
+        "Rice", "Dry Poriyal", "Bread / Tiffin", "Korma", "Rasam", "Curd",
+        "Pickle", "Milk / Tea / Coffee",
+    ],
+}
+
+
+def _menu_text(pairs):
+    """[("Main Item", "Idiy"), ("", "Tea")] -> "Main Item: Idiy\\nTea"."""
+    return "\n".join(f"{c}: {d}" if c else d for c, d in pairs if d)
+
+
 # ── Weekly template ──────────────────────────────────────────────────────────
 # A starting point for the admin menu editor, keyed by weekday (0=Monday).
 # It is deliberately NOT shown to students: a day with nothing published
@@ -943,41 +976,101 @@ RATINGS = ["good", "bad", "skip"]
 # that happens to be wrong is a worse message than an honest blank, so the
 # template only ever reaches the sheet when an admin fills a day from it and
 # saves. seed_demo.py reuses it for demo data.
+#
+# The dishes are Sai University's menu for the 2nd week of November 2026,
+# under the categories above. The mess rotates its menu, so treat this as a
+# week to adapt, not the week to publish.
+_B, _L, _D = (MENU_CATEGORIES[m] for m in MEALS)
+
 WEEKLY_MENU_DEFAULTS = {
     0: {  # Monday
-        "Breakfast": "Idli, Medu Vada, Sambar, Coconut Chutney, Coffee/Tea",
-        "Lunch":     "Steamed Rice, Drumstick Sambar, Beans Poriyal, Curd, Papad, Pickle",
-        "Dinner":    "Phulka Chapati, Paneer Butter Masala, Jeera Rice, Dal Tadka, Green Salad",
+        "Breakfast": _menu_text(zip(_B, [
+            "Mix Veg Sevai", "Tiffin Sambar", "Coconut Chutney", "Masala Vada",
+            "Boiled Egg", "Bread", "Butter", "Jam", "Coffee"])),
+        "Lunch": _menu_text(zip(_L, [
+            "Chapathi", "Green Gram Kurma", "Steamed Rice", "Mullangi Sambar",
+            "Beetroot Chana Poriyal", "Tomato Rasam", "Fryums", "Curd", "",
+            "Gongura Thovayal", "Mix Fruit"])),
+        "Dinner": _menu_text(zip(_D, [
+            "Mint Pulao / Steamed Rice", "Veg Makhanwala", "Chappathi",
+            "Andhra Tomato Pappu", "Rasam", "Curd", "Pickle / Podi & Oil",
+            "Milk"])),
     },
     1: {  # Tuesday
-        "Breakfast": "Poori, Aloo Masala, Kesari Bath, Coffee/Tea",
-        "Lunch":     "Steamed Rice, Tomato Rasam, Cabbage Poriyal, Mor Kuzhambu, Appalam, Pickle",
-        "Dinner":    "Soft Chapati, Mix Veg Korma, Steamed Rice, Moong Dal, Cut Fruits",
+        "Breakfast": _menu_text(zip(_B, [
+            "Idly", "Tiffin Sambar", "Peanut Chutney", "Banana", "Boiled Egg",
+            "Bread", "Butter", "Jam", "Coffee"])),
+        "Lunch": _menu_text(zip(_L, [
+            "Malabar Paratha", "Paneer Peas Curry", "Mushroom Biryani",
+            "Onion Raitha", "Steamed Rice", "Garlic Rasam", "Fryums", "Curd",
+            "Pickle", "Poondu Podi & Oil", "Sago Dal Payasam"])),
+        "Dinner": _menu_text(zip(_D, [
+            "Steamed Rice", "Aloo Peas Masala Dry", "Mix Veg Uttapam",
+            "Kaikari Sambar", "Rasam", "Curd", "Thengai Thogayal", "Milk"])),
     },
     2: {  # Wednesday
-        "Breakfast": "Pongal, Medu Vada, Sambar, Ginger Chutney, Coffee/Tea",
-        "Lunch":     "Veg Pulao, Onion Raita, Steamed Rice, Karakuzhambu, Potato Fry, Curd",
-        "Dinner":    "Chapati, Aloo Gobi Masala, Steamed Rice, Yellow Dal, Fresh Salad",
+        "Breakfast": _menu_text(zip(_B, [
+            "Pongal", "Tiffin Sambar", "Coconut Chutney", "Medhu Vada",
+            "Boiled Egg", "Bread", "Butter", "Jam", "Coffee"])),
+        "Lunch": _menu_text(zip(_L, [
+            "Chappathi", "Dal Tadka", "Steamed Rice", "Bonda Mor Kuzhambu",
+            "Kovakkai Kara Masala", "Mysore Rasam", "Fryums", "Curd", "",
+            "Mint Thovayal", "Green Banana"])),
+        "Dinner": _menu_text(zip(_D, [
+            "Steamed Rice", "Paneer Butter Masala", "Malabar Parotta",
+            "Karaikudi Chicken Curry", "Rasam", "Curd", "Pickle / Podi & Oil",
+            "Milk"])),
     },
     3: {  # Thursday
-        "Breakfast": "Rava Upma, Coconut Chutney, Sambar, Banana, Coffee/Tea",
-        "Lunch":     "Steamed Rice, Arachuvitta Sambar, Beetroot Poriyal, Mysore Rasam, Curd, Papad",
-        "Dinner":    "Parotta / Chapati, Chana Masala, Veg Fried Rice, Veg Manchurian Gravy",
+        "Breakfast": _menu_text(zip(_B, [
+            "Podi Dosa", "Tiffin Sambar", "Mix Dal Kara Chutney", "Banana",
+            "Boiled Egg", "Bread", "Butter", "Jam", "Coffee"])),
+        "Lunch": _menu_text(zip(_L, [
+            "Malabar Paratha", "Veg Salna", "Steamed Rice",
+            "Mix Vathal Kara Kuzhambu", "Pudalangai Kootu", "Aravai Rasam",
+            "Appalam", "Curd", "Pickle", "Curry Leaves Podi & Oil",
+            "Thinai Arisi Payasam"])),
+        "Dinner": _menu_text(zip(_D, [
+            "Veg Chettinad / Steamed Rice", "Cucumber Raita", "Chappathi",
+            "Chow Chow Kurma", "Rasam", "Curd", "Onion Peanut Thogayal",
+            "Milk"])),
     },
     4: {  # Friday
-        "Breakfast": "Masala Dosa, Potato Masala, Sambar, Tomato Chutney, Coffee/Tea",
-        "Lunch":     "Steamed Rice, Pepper Rasam, Aviyal, Vatha Kuzhambu, Curd, Sweet Payasam",
-        "Dinner":    "Phulka Chapati, Kadai Paneer, Peas Pulao, Dal Makhani, Cucumber Salad",
+        "Breakfast": _menu_text(zip(_B, [
+            "Rava Kichadi", "Tiffin Sambar", "Coconut Chutney", "Masala Vada",
+            "", "Bread", "Butter", "Jam", "Coffee"])),
+        "Lunch": _menu_text(zip(_L, [
+            "Chapathi", "Double Beans Kurma", "Soya Peas Pulao",
+            "Mix Veg Masala Dry", "Steamed Rice", "Lemon Rasam", "Fryums",
+            "Curd", "", "Beetroot Thogayal", "Cut Watermelon"])),
+        "Dinner": _menu_text(zip(_D, [
+            "Steamed Rice", "Kalan Peas Semi Gravy", "Kal Dosa", "Egg Curry",
+            "Rasam", "Curd", "Pickle / Podi & Oil", "Milk"])),
     },
     5: {  # Saturday
-        "Breakfast": "Aloo Paratha, Curd, Pickle, Boiled Egg / Sprouts, Coffee/Tea",
-        "Lunch":     "Lemon Rice, Curd Rice, Potato Kara Curry, Appalam, Pickle",
-        "Dinner":    "Chapati, Dal Palak, Steamed Rice, Tomato Soup / Rasam, Green Salad",
+        "Breakfast": _menu_text(zip(_B, [
+            "Set Dosa", "Vada Curry", "Kara Chutney", "", "Boiled Egg",
+            "Bread", "Butter", "Jam", "Coffee"])),
+        "Lunch": _menu_text(zip(_L, [
+            "Chapathi", "Mirchi Ka Salan", "Steamed Rice",
+            "Mochai Puli Kuzhambu", "Cabbage Kootu", "Arachuvitta Rasam",
+            "Appalam", "Curd", "Pickle", "Dal Podi & Oil", "Fruit Kesari"])),
+        "Dinner": _menu_text(zip(_D, [
+            "Jeera Pulao / Steamed Rice", "Mix Veg Tawa Dry", "Malabar Parotta",
+            "Vegetable Salna", "Rasam", "Curd", "Mint Thogayal", "Milk"])),
     },
     6: {  # Sunday
-        "Breakfast": "Chole Bhature, Onion Pickle, Sweet Kesari, Coffee/Tea",
-        "Lunch":     "Special Veg Biryani, Onion Raita, Brinjal Gravy, Veg Cutlet, Gulab Jamun",
-        "Dinner":    "Phulka Chapati, Paneer Tikka Masala, Steamed Rice, Dal Fry, Ice Cream",
+        "Breakfast": _menu_text(zip(_B, [
+            "Semiya Bath", "Tiffin Sambar", "Coconut Chutney", "Methu Vada",
+            "Boiled Egg", "Bread", "Butter", "Jam", "Coffee"])),
+        "Lunch": _menu_text(zip(_L, [
+            "", "Veg Briyani", "Chicken Briyani", "Plain Salan", "Steamed Rice",
+            "Aravai Puli Rasam", "Mix Veg 65", "Onion Raitha", "Pickle", "",
+            "Ice Cream"])),
+        "Dinner": _menu_text(zip(_D, [
+            "Steamed Rice", "Lauki Chana Masala", "Chappathi",
+            "Chettinad Veg Kurma", "Mint Rasam", "Curd",
+            "Pickle / Dal Podi & Oil", "Milk"])),
     },
 }
 
@@ -1025,13 +1118,66 @@ def get_menu_records(force_refresh=False):
         return []
 
 
-def _split_items(raw):
+_CATEGORY_RE = re.compile(r"^([^:]{1,40}):(.*)$")
+
+
+def menu_entries(raw):
     """
-    'Idli, Sambar, Coconut Chutney' -> ['Idli', 'Sambar', 'Coconut Chutney'].
-    Accepts commas or newlines so staff can type it either way.
+    A meal cell as [(category, dish), ...], in order.
+
+        'Main Item: Pongal\\nChutney: Coconut Chutney, Tea'
+        -> [('Main Item', 'Pongal'), ('Chutney', 'Coconut Chutney'), ('', 'Tea')]
+
+    Dishes are separated by commas or newlines. "Category: Dish" carries a
+    category; a bare dish has category "". A category with no dish after it
+    (a blank row left from the template) is dropped, not published.
     """
     text = str(raw or "").replace("\n", ",")
-    return [part.strip() for part in text.split(",") if part.strip()]
+    entries = []
+    for part in text.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        match = _CATEGORY_RE.match(part)
+        if match:
+            category, dish = match.group(1).strip(), match.group(2).strip()
+            if dish:
+                entries.append((category, dish))
+        else:
+            entries.append(("", part))
+    return entries
+
+
+def _split_items(raw):
+    """
+    The dish names of a meal cell, categories left off — what ratings and the
+    committee form key on. 'Idli, Rice: Sambar' -> ['Idli', 'Sambar'].
+    """
+    return [dish for _, dish in menu_entries(raw)]
+
+
+def menu_groups(raw):
+    """
+    A meal cell for display: [{"category": str, "dishes": [str]}, ...].
+    Consecutive dishes under one category share a group ("Spread: Butter,
+    Jam"); a dish without a category is a group of its own, as before.
+    """
+    groups = []
+    for category, dish in menu_entries(raw):
+        if category and groups and groups[-1]["category"] == category:
+            groups[-1]["dishes"].append(dish)
+        else:
+            groups.append({"category": category, "dishes": [dish]})
+    return groups
+
+
+def normalise_menu_text(raw):
+    """
+    The stored form of a meal cell: one "Category: Dish" (or bare dish) per
+    line, blank category rows dropped, so a template row nobody filled in
+    never counts as published.
+    """
+    return _menu_text(menu_entries(raw))
 
 
 def _menu_rows_by_date():
@@ -1049,6 +1195,16 @@ def get_menu_for_date(date_str=None):
     target = date_str or datetime.now().strftime("%Y-%m-%d")
     row = _menu_rows_by_date().get(target, {})
     return {meal: _split_items(row.get(meal, "")) for meal in MEALS}
+
+
+def get_menu_groups_for_date(date_str=None):
+    """
+    Same date lookup as get_menu_for_date(), shaped for display:
+    {"Breakfast": [{"category": "Main Item", "dishes": ["Pongal"]}, ...], ...}.
+    """
+    target = date_str or datetime.now().strftime("%Y-%m-%d")
+    row = _menu_rows_by_date().get(target, {})
+    return {meal: menu_groups(row.get(meal, "")) for meal in MEALS}
 
 
 def get_menu_week(start_date=None, days=7):
@@ -1124,7 +1280,8 @@ def save_menu_week(days):
         dates = [str(v).strip() for v in worksheet.col_values(1)]
         new_rows = []
         for date_str, breakfast, lunch, dinner in days:
-            row_data = [date_str, breakfast, lunch, dinner]
+            row_data = [date_str] + [normalise_menu_text(m)
+                                     for m in (breakfast, lunch, dinner)]
             if date_str in dates:
                 row_index = dates.index(date_str) + 1   # gspread is 1-indexed
                 worksheet.update(f"A{row_index}:D{row_index}", [row_data])

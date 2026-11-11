@@ -104,6 +104,11 @@ def _inject_auth_role():
     return {"auth_role": role}
 
 
+# A stored meal cell ("Main Item: Pongal\nChutney: Coconut Chutney") as its
+# dish names, for templates that show plain chips.
+app.add_template_filter(sheets._split_items, "dishes")
+
+
 # ── Error Handlers ────────────────────────────────────────────────────────────
 
 @app.errorhandler(429)
@@ -1427,7 +1432,7 @@ def _render_home(selected_date=None, rated="", rated_as="", rated_meal=""):
         selected_date = today
 
     try:
-        menu = sheets.get_menu_for_date(selected_date)
+        menu = sheets.get_menu_groups_for_date(selected_date)
         tallies = sheets.summarise_meal_ratings(today)
         week = sheets.get_menu_week()
     except Exception as e:
@@ -1449,7 +1454,7 @@ def _render_home(selected_date=None, rated="", rated_as="", rated_meal=""):
         d_str = day_info.get("date")
         if d_str:
             week_menu_lookup[d_str] = {
-                meal: sheets._split_items(day_info.get(meal, ""))
+                meal: sheets.menu_groups(day_info.get(meal, ""))
                 for meal in sheets.MEALS
             }
     week_meta = [{"date": d["date"], "label": d["label"], "is_today": d["is_today"]}
@@ -1702,19 +1707,23 @@ MENU_IMPORT_MAX_BYTES = 1_000_000   # 1 MB — a year of menus is a few KB
 @auth.admin_required
 def admin_menu_template_csv():
     """
-    A blank CSV for one week, matching the importer's columns. Defaults to the
-    week being viewed (?start=YYYY-MM-DD), so "download, fill, upload" round-trips
-    the same seven days.
+    A blank CSV for one week, laid out like the mess's own weekly sheet: a row
+    per category of each meal (sheets.MENU_CATEGORIES), a column per date.
+    Defaults to the week being viewed (?start=YYYY-MM-DD), so "download, fill,
+    upload" round-trips the same seven days. The weekday row under the header
+    is for the person filling it in; the importer skips it.
     """
     start = sheets.week_start(request.args.get("start") or None)
     start_dt = datetime.strptime(start, "%Y-%m-%d")
+    days = [start_dt + timedelta(days=offset) for offset in range(7)]
 
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["Date", "Breakfast", "Lunch", "Dinner"])
-    for offset in range(7):
-        date_str = (start_dt + timedelta(days=offset)).strftime("%Y-%m-%d")
-        writer.writerow([date_str, "", "", ""])
+    writer.writerow(["Meal", "Category"] + [d.strftime("%Y-%m-%d") for d in days])
+    writer.writerow(["", ""] + [d.strftime("%A") for d in days])
+    for meal in sheets.MEALS:
+        for category in sheets.MENU_CATEGORIES[meal]:
+            writer.writerow([meal, category] + [""] * len(days))
 
     return Response(
         buf.getvalue(),
@@ -1728,13 +1737,16 @@ def admin_menu_template_csv():
 @csrf.protect
 def admin_menu_import():
     """
-    Bulk-imports menus from an uploaded CSV. Columns (header row,
-    case-insensitive, any order): Date, Breakfast, Lunch, Dinner. Date is
-    YYYY-MM-DD; each meal cell is a comma-separated dish list (quote the cell so
-    its own commas do not split the row). Rows write through save_menu_week(),
-    which upserts by date, so re-importing a date updates it rather than
-    duplicating. A blank meal cell publishes nothing for that meal, exactly like
-    the editor.
+    Bulk-imports menus from an uploaded CSV, in either layout:
+
+      grid (the download)  Meal, Category, <date>, <date>, ... — see
+                           _parse_menu_grid()
+      by meal (older)      Date, Breakfast, Lunch, Dinner — see
+                           _parse_menu_by_meal()
+
+    Either way, days write through save_menu_week(), which upserts by date, so
+    re-importing a date updates it rather than duplicating. A blank meal cell
+    publishes nothing for that meal, exactly like the editor.
     """
     start = str(request.form.get("start", "")).strip()
     start = start if DATE_RE.match(start) else sheets.week_start()
@@ -1752,48 +1764,145 @@ def admin_menu_import():
     except UnicodeDecodeError:
         return _render_menu(start, error="Could not read that file — save it as UTF-8 CSV."), 400
 
-    reader = csv.DictReader(io.StringIO(text))
-    columns = {(name or "").strip().lower(): name for name in (reader.fieldnames or [])}
-    missing = [c for c in ("date", "breakfast", "lunch", "dinner") if c not in columns]
-    if missing:
-        return _render_menu(
-            start,
-            error="CSV needs a header row with columns: Date, Breakfast, Lunch, Dinner.",
-        ), 400
+    rows = list(csv.reader(io.StringIO(text)))
+    header = [h.strip().lower() for h in (rows[0] if rows else [])]
+    parse = _parse_menu_grid if {"meal", "category"} <= set(header) else _parse_menu_by_meal
+    by_date, skipped, error = parse(rows)
+
+    if error:
+        return _render_menu(start, error=error), 400
+    if not by_date:
+        msg = "No valid rows found in that CSV."
+        if skipped:
+            msg += " " + " ".join(skipped)
+        return _render_menu(start, error=msg), 400
+
+    days = [by_date[d] for d in sorted(by_date)]
+    if not sheets.save_menu_week(days):
+        return _render_menu(start, error="Could not save the imported menu."), 500
+
+    note = f"Imported {len(days)} day{'s' if len(days) != 1 else ''}."
+    if skipped:
+        note += " " + " ".join(skipped)
+
+    imported_start = sheets.week_start(days[0][0])
+    return _render_menu(imported_start, success=note, saved_dates=list(by_date))
+
+
+def _plural(n, word):
+    return f"{word}{'s' if n != 1 else ''}"
+
+
+def _parse_menu_by_meal(rows):
+    """
+    The older layout: header Date, Breakfast, Lunch, Dinner (case-insensitive,
+    any order), one row per date, YYYY-MM-DD. Each meal cell is a dish list,
+    commas or newlines, "Category: Dish" allowed. The last row for a date wins.
+
+    Returns (by_date, skipped_notes, error).
+    """
+    header = [h.strip().lower() for h in (rows[0] if rows else [])]
+    if any(c not in header for c in ("date", "breakfast", "lunch", "dinner")):
+        return {}, [], ("CSV needs a header row with columns Meal, Category and one "
+                        "per date — or the older Date, Breakfast, Lunch, Dinner.")
+    col = {name: header.index(name) for name in ("date", "breakfast", "lunch", "dinner")}
 
     def cell(row, key):
-        return str(row.get(columns[key], "") or "").strip()
+        i = col[key]
+        return row[i].strip() if i < len(row) else ""
 
-    by_date = {}      # last row for a date wins
-    bad_lines = []
-    for line_no, row in enumerate(reader, start=2):   # line 1 is the header
+    by_date, bad_lines = {}, []
+    for line_no, row in enumerate(rows[1:], start=2):   # line 1 is the header
         date_str = cell(row, "date")
         if not date_str:
-            continue                                  # skip blank lines
+            continue                                     # skip blank lines
         if not DATE_RE.match(date_str):
             bad_lines.append(str(line_no))
             continue
         by_date[date_str] = (date_str, cell(row, "breakfast"),
                              cell(row, "lunch"), cell(row, "dinner"))
 
-    days = list(by_date.values())
-    if not days:
-        msg = "No valid rows found in that CSV."
-        if bad_lines:
-            s_ = "s" if len(bad_lines) > 1 else ""
-            msg = f"No valid rows — bad date on line{s_} {', '.join(bad_lines)}."
-        return _render_menu(start, error=msg), 400
-
-    if not sheets.save_menu_week(days):
-        return _render_menu(start, error="Could not save the imported menu."), 500
-
-    note = f"Imported {len(days)} day{'s' if len(days) != 1 else ''}."
+    skipped = []
     if bad_lines:
-        s_ = "s" if len(bad_lines) > 1 else ""
-        note += f" Skipped line{s_} {', '.join(bad_lines)} (bad date)."
+        skipped.append(f"Skipped {_plural(len(bad_lines), 'line')} "
+                       f"{', '.join(bad_lines)} (bad date).")
+    return by_date, skipped, None
 
-    imported_start = sheets.week_start(sorted(by_date)[0])
-    return _render_menu(imported_start, success=note, saved_dates=list(by_date))
+
+# Date headers in the grid. ISO is what the template writes; day-first is what
+# the mess's sheet uses and what Excel turns ISO into on an Indian locale.
+_GRID_DATE_FORMATS = ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%d.%m.%Y")
+
+
+def _grid_date(text):
+    for fmt in _GRID_DATE_FORMATS:
+        try:
+            return datetime.strptime(text.strip(), fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return None
+
+
+def _parse_menu_grid(rows):
+    """
+    The template's layout, which is the mess's weekly sheet turned into a CSV:
+
+        Meal,      Category,  2026-11-09,     2026-11-10, ...
+        ,          ,          Monday,         Tuesday, ...     <- skipped
+        Breakfast, Main Item, Mix Veg Sevai,  Idly, ...
+        ,          Side Dish, Tiffin Sambar,  Tiffin Sambar, ...
+
+    A blank Meal carries the one above it down, as a merged cell would. Rows
+    for a meal the app does not serve (Snacks) are skipped. Each filled cell
+    becomes "Category: Dish"; a cell with commas is several dishes under one
+    category. A date column with nothing in it is left alone rather than
+    blanking a day that may already be published.
+
+    Returns (by_date, skipped_notes, error).
+    """
+    header = [h.strip() for h in rows[0]]
+    lowered = [h.lower() for h in header]
+    meal_i, cat_i = lowered.index("meal"), lowered.index("category")
+    date_cols = [(i, d) for i, d in ((i, _grid_date(h)) for i, h in enumerate(header)) if d]
+    if not date_cols:
+        return {}, [], ("No date columns found. Put dates in the header row as "
+                        "YYYY-MM-DD or DD-MM-YYYY.")
+
+    meals_by_name = {m.lower(): m for m in sheets.MEALS}
+    pairs = {(d, m): [] for _, d in date_cols for m in sheets.MEALS}
+    other_meals, meal = [], None
+    for row in rows[1:]:
+        def cell(i):
+            return row[i].strip() if i < len(row) else ""
+
+        if cell(meal_i):
+            meal = cell(meal_i)
+        if meal is None:
+            continue                          # the weekday row, before any meal
+        known = meals_by_name.get(meal.lower())
+        if not known:
+            if meal not in other_meals:
+                other_meals.append(meal)
+            continue
+        category = cell(cat_i)
+        for i, date_str in date_cols:
+            for dish in sheets._split_items(cell(i)):
+                pairs[(date_str, known)].append((category, dish))
+
+    by_date = {}
+    for _, date_str in date_cols:
+        cells = [sheets._menu_text(pairs[(date_str, m)]) for m in sheets.MEALS]
+        if any(cells):
+            by_date[date_str] = tuple([date_str] + cells)
+
+    skipped = []
+    if other_meals:
+        skipped.append(f"Skipped {', '.join(other_meals)} — only "
+                       f"{', '.join(sheets.MEALS)} are published.")
+    empty = len(date_cols) - len(by_date)
+    if by_date and empty:
+        skipped.append(f"Left {empty} empty {_plural(empty, 'day')} unchanged.")
+    return by_date, skipped, None
 
 
 @app.route("/health", methods=["GET"])

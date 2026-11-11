@@ -15,6 +15,7 @@ Usage:
     python test/test_e2e_home.py
 """
 
+import io
 import os
 import re
 import sys
@@ -586,6 +587,93 @@ def h8_integrity_and_undo():
         LIMITER.enabled = False
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# H9 — The mess's categorised menu, typed or uploaded
+# ══════════════════════════════════════════════════════════════════════════════
+
+def h9_categories_and_grid_import():
+    journey("H9 — A categorised menu reaches students, by editor or CSV grid")
+    BOOK.reset()
+    admin = Admin()
+    admin.login()
+
+    step("a cell parses into categories and dishes",
+         sheets.menu_entries("Main Item: Pongal\nSpread: Butter\nSpread: Jam\nTea")
+         == [("Main Item", "Pongal"), ("Spread", "Butter"), ("Spread", "Jam"), ("", "Tea")])
+    step("consecutive dishes in one category share a line",
+         sheets.menu_groups("Spread: Butter\nSpread: Jam")
+         == [{"category": "Spread", "dishes": ["Butter", "Jam"]}])
+    step("ratings still key on the bare dish names",
+         sheets._split_items("Rice: Steamed Rice, Curd") == ["Steamed Rice", "Curd"])
+
+    admin.save_menu(TODAY, breakfast="Main Item: Pongal\nEgg:\nChutney: Coconut Chutney")
+    stored = BOOK.menu().rows[0][1] if BOOK.menu().rows else ""
+    step("a template row left blank is not stored",
+         stored == "Main Item: Pongal\nChutney: Coconut Chutney", repr(stored))
+
+    breakfast = re.search(r'<ul class="menu-items[^"]*" id="menu-breakfast">.*?</ul>',
+                          home().get_data(as_text=True), re.S)
+    html = breakfast.group(0) if breakfast else ""
+    step("the home card shows each category beside its dish",
+         "menu-items-categorised" in html
+         and '<span class="menu-cat">Main Item</span>' in html
+         and '<span class="menu-dish">Pongal</span>' in html, html[:300])
+
+    # ── The download is the mess's grid ───────────────────────────────────
+    start = sheets.week_start(TODAY)
+    template = admin.client.get(f"/admin/menu/template.csv?start={start}").get_data(as_text=True)
+    lines = template.splitlines()
+    step("the template has a column per date and a row per category",
+         lines[0].startswith("Meal,Category," + start)
+         and "Breakfast,Main Item" in template and "Dinner,Korma" in template
+         and len(lines) == 2 + sum(len(c) for c in sheets.MENU_CATEGORIES.values()),
+         lines[0])
+
+    # ── Upload a filled grid, the way the mess writes it ──────────────────
+    BOOK.reset()
+    d1 = datetime.strptime(start, "%Y-%m-%d")
+    d2 = d1 + timedelta(days=1)
+    grid = "\n".join([
+        f"Meal,Category,{d1:%d-%m-%Y},{d2:%d-%m-%Y},Notes",
+        ",,Monday,Tuesday,",
+        "Breakfast,Main Item,Mix Veg Sevai,Idly,",
+        ",Spread,Butter,Butter,",
+        ",Spread,Jam,Jam,",
+        "Snacks,Tea,Tea,Tea,",
+        ",Snack 1,Aloo Samosa,Veg Puff,",
+        "Dinner,Rice,\"Mint Pulao, Steamed Rice\",,",
+    ])
+    token = admin._csrf("/admin/menu")
+    response = admin.client.post("/admin/menu/import", data={
+        "csrf_token": token, "start": start,
+        "file": (io.BytesIO(grid.encode()), "week.csv")},
+        content_type="multipart/form-data")
+    body = response.get_data(as_text=True)
+    rows = {r[0]: r for r in BOOK.menu().rows}
+    step("a grid with day-first dates imports both days",
+         response.status_code == 200 and set(rows) == {d1.strftime("%Y-%m-%d"),
+                                                      d2.strftime("%Y-%m-%d")},
+         f"status={response.status_code} rows={list(rows)}")
+    first = rows.get(d1.strftime("%Y-%m-%d"), ["", "", "", ""])
+    step("categories come from the Category column, the meal carries down",
+         first[1] == "Main Item: Mix Veg Sevai\nSpread: Butter\nSpread: Jam"
+         and first[3] == "Rice: Mint Pulao\nRice: Steamed Rice", repr(first))
+    step("snack rows are skipped, and the admin is told",
+         "Snack" not in " ".join(" ".join(r) for r in rows.values())
+         and "Skipped Snacks" in body)
+
+    old = "Date,Breakfast,Lunch,Dinner\n" + f'{TODAY},"Idli, Sambar",,\n'
+    token = admin._csrf("/admin/menu")
+    response = admin.client.post("/admin/menu/import", data={
+        "csrf_token": token, "start": start,
+        "file": (io.BytesIO(old.encode()), "old.csv")},
+        content_type="multipart/form-data")
+    step("the older Date/Breakfast/Lunch/Dinner layout still imports",
+         response.status_code == 200
+         and any(r[0] == TODAY and r[1] == "Idli\nSambar" for r in BOOK.menu().rows),
+         str(BOOK.menu().rows))
+
+
 def report():
     print(f"\n{'=' * 70}\nSTUDENT HOME END-TO-END SUMMARY\n{'=' * 70}")
     journeys = {}
@@ -618,4 +706,5 @@ if __name__ == "__main__":
     h6_layers_stay_separate()
     h7_outage()
     h8_integrity_and_undo()
+    h9_categories_and_grid_import()
     sys.exit(report())

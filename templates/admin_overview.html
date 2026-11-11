@@ -126,7 +126,7 @@
           <span class="meal-block-name">{% if meal == 'Breakfast' %}🌅{% elif meal == 'Lunch' %}🍛{% else %}🌙{% endif %} {{ meal }}</span>
           <span class="meal-block-time">{{ timings[meal] }}</span>
         </div>
-        {{ chips(today_menu[meal].split(',') | map('trim') | reject('equalto', '') | list if today_menu and today_menu[meal] else []) }}
+        {{ chips(today_menu[meal] | dishes if today_menu else []) }}
         <div class="tap-row" title="{{ tally.good }} good, {{ tally.bad }} bad, {{ tally.skip }} skipped">
           {% if tally.total %}
           <div class="tap-bar" aria-hidden="true">
