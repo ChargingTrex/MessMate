@@ -3,8 +3,8 @@
   ----------------------
   One door for every role. The email decides where you land: the admin,
   the read-only dean, or a committee member. With PILOT_MODE on, the demo's
-  pilot accounts are listed beside the form: picking one fills it in, and the
-  sign-in that follows is the real one.
+  pilot accounts are listed beside the form: picking one fills in its email.
+  Every account has its own password, so the page never carries one.
 
   Test Automation Attributes:
     - id="signin-form", id="email", id="password", id="signin-btn"
@@ -72,15 +72,15 @@
     {% if pilot_mode %}
     <section class="card signin-card" id="pilot-accounts" aria-labelledby="pilot-title">
       <h2 id="pilot-title">Pilot accounts</h2>
-      <p class="subtext-line">{{ pilot_accounts|length }} accounts, one per role. Pick one to fill the
-         form — it still signs in properly, so you see the same checks a real login makes.</p>
+      <p class="subtext-line">{{ pilot_accounts|length }} accounts, one per role. Pick one to fill in
+         its email, then type the password you were given.</p>
       <ul class="pilot-list">
         {% for a in pilot_accounts %}
         <li>
           {% if a.href %}
           <a class="pilot-card" href="{{ a.href }}" data-pilot="{{ a.email }}">
           {% else %}
-          <button type="button" class="pilot-card" data-pilot="{{ a.email }}" data-password="{{ a.password }}">
+          <button type="button" class="pilot-card" data-pilot="{{ a.email }}">
           {% endif %}
             <span class="pilot-avatar tone-{{ a.tone }}" aria-hidden="true">{{ a.initials }}</span>
             <span class="pilot-body">
@@ -93,25 +93,24 @@
         </li>
         {% endfor %}
       </ul>
-      <p class="pilot-note">Every committee pilot account uses the same password. The Admin card
-         only works when <code>PILOT_ADMIN_PASSWORD</code> matches the real admin password —
-         the demo never bypasses a check.</p>
+      <p class="pilot-note">Each account has its own password, given out privately by the
+         MessMate team. Students never need one: the menu and ratings are open to everyone.</p>
     </section>
     {% endif %}
   </main>
 </div>
 
 <script>
-  // A pilot card fills the form and hands focus to the Sign in button. It
-  // never submits by itself: the visitor sees what a sign-in needs.
+  // A pilot card fills in the email and hands focus to the password field.
+  // It never carries a password: each account's is given out privately.
   document.querySelectorAll("button.pilot-card").forEach(card => {
     card.addEventListener("click", () => {
       document.getElementById("email").value = card.dataset.pilot;
-      document.getElementById("password").value = card.dataset.password;
+      document.getElementById("password").value = "";
       document.querySelectorAll(".pilot-card").forEach(c => c.classList.toggle("is-picked", c === card));
-      const btn = document.getElementById("signin-btn");
-      btn.focus();
-      btn.scrollIntoView({ block: "center", behavior: "smooth" });
+      const pw = document.getElementById("password");
+      pw.focus();
+      pw.scrollIntoView({ block: "center", behavior: "smooth" });
     });
   });
 </script>
