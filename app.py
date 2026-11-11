@@ -88,6 +88,22 @@ def _start_sheets_cache_refresh():
     sheets.start_refresh_scheduler()
 
 
+# Who is signed in, for the sign-in / sign-out control in every header.
+# Read from the session, not from per-route template variables, so a header
+# never offers "Sign in" to someone who is already signed in.
+@app.context_processor
+def _inject_auth_role():
+    if auth.is_admin_session():
+        role = "admin"
+    elif auth.is_viewer_session():
+        role = "viewer"
+    elif auth.current_member():
+        role = "member"
+    else:
+        role = None
+    return {"auth_role": role}
+
+
 # ── Error Handlers ────────────────────────────────────────────────────────────
 
 @app.errorhandler(429)
@@ -467,7 +483,7 @@ def committee_login():
 def committee_logout():
     """Clears the member session."""
     auth.logout_member()
-    return redirect(url_for("committee_login"))
+    return redirect(url_for("signin"))
 
 
 @app.route("/committee/password", methods=["GET", "POST"])
@@ -838,7 +854,7 @@ def admin_login():
 @csrf.protect
 def admin_logout():
     auth.logout_admin()
-    return redirect(url_for("admin_login"))
+    return redirect(url_for("signin"))
 
 
 # ── Admin: member management ──────────────────────────────────────────────────

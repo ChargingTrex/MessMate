@@ -4,7 +4,14 @@
   score_class  — the red / amber / green band for a 1-5 score
   sparkline    — a 7-point inline SVG for a stat card; absence renders nothing
   chips        — a dish list as pills, or the "not published" placeholder
+  icon         — the sign-in / sign-out glyphs, 16px, in the text colour
 #}
+
+{% macro icon(name) -%}
+<svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+{%- if name == 'sign-in' -%}<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/>
+{%- else -%}<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>{%- endif -%}</svg>
+{%- endmacro %}
 
 {% macro score_class(score) -%}
   {{- ui.score_class(score) -}}

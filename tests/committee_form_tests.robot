@@ -68,7 +68,7 @@ TC67 Rating Page Is Unreachable Without A Session
     Sign Out Of Committee
     Go To    ${COMMITTEE_URL}
     Wait Until Page Contains Element    id=email    timeout=${TIMEOUT}
-    Location Should Contain    /committee/login
+    Location Should Contain    /signin
 
 # ── SECTION 2: Forced first-login password change ─────────────────────────
 
@@ -255,7 +255,7 @@ TC85 Signing Out Ends The Session
     Wait Until Page Contains Element    id=email    timeout=${TIMEOUT}
     Go To    ${COMMITTEE_URL}
     Wait Until Page Contains Element    id=email    timeout=${TIMEOUT}
-    Location Should Contain    /committee/login
+    Location Should Contain    /signin
 
 *** Keywords ***
 Element Text Should Be Contains

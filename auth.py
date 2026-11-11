@@ -252,7 +252,7 @@ def login_required(view):
     def wrapped(*args, **kwargs):
         if current_member() is None:
             logout_member()  # clear a session whose member was deactivated
-            return redirect(url_for("committee_login"))
+            return redirect(url_for("signin", next=request.path))
         return view(*args, **kwargs)
     return wrapped
 
@@ -279,7 +279,7 @@ def admin_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
         if not is_admin_session():
-            return redirect(url_for("admin_login", next=request.path))
+            return redirect(url_for("signin", next=request.path))
         return view(*args, **kwargs)
     return wrapped
 

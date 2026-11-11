@@ -14,6 +14,7 @@
     {% set page_title = 'MessMate — Review Recorded' %}{% include '_head.html' %}
 </head>
 <body class="page-narrow">
+{% from '_macros.html' import icon %}
 {% set active = 'committee' %}{% include '_topbar.html' %}
 
     <main class="page">
@@ -51,9 +52,9 @@
             {% endif %}
 
             <div class="thanks-actions">
-                <form method="POST" action="{{ url_for('committee_logout') }}">
+                <form method="POST" action="{{ url_for('signout') }}">
                     {{ csrf_field() }}
-                    <button type="submit" class="submit-btn">Sign out</button>
+                    <button type="submit" class="submit-btn">{{ icon('sign-out') }}Sign out</button>
                 </form>
                 <a href="{{ url_for('committee_member_dashboard') }}" class="btn-secondary">Committee dashboard</a>
             </div>

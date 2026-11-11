@@ -31,6 +31,7 @@
 <body class="home-body">
 
     <!-- ── Modern Header Bar ─────────────────────────────────────── -->
+    {% from '_macros.html' import icon %}
     <header class="home-header-bar">
         <div class="home-header-inner">
             <div class="home-brand">
@@ -43,7 +44,14 @@
             </div>
             <nav class="home-nav">
                 <a href="{{ url_for('index') }}" class="home-nav-link">Rate Dish</a>
-                <a href="{{ url_for('signin') }}" class="home-nav-link home-nav-cta">Sign in</a>
+                {% if auth_role %}
+                <form method="POST" action="{{ url_for('signout') }}" class="home-nav-form">
+                    {{ csrf_field() }}
+                    <button type="submit" class="home-nav-link">{{ icon('sign-out') }}Sign out</button>
+                </form>
+                {% else %}
+                <a href="{{ url_for('signin') }}" class="home-nav-link home-nav-cta">{{ icon('sign-in') }}Sign in</a>
+                {% endif %}
                 {% include '_theme_toggle.html' %}
             </nav>
         </div>

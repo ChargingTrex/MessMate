@@ -39,7 +39,7 @@ TC93 Roster Is Unreachable Without An Admin Session
     Sign Out Of Admin
     Go To    ${ADMIN_MEMBERS_URL}
     Wait Until Page Contains Element    id=password    timeout=${TIMEOUT}
-    Location Should Contain    /admin/login
+    Location Should Contain    /signin
 
 TC94 Dashboard Token Cannot Open The Roster
     [Tags]    smoke    admin    security
@@ -49,7 +49,7 @@ TC94 Dashboard Token Cannot Open The Roster
     Sign Out Of Admin
     Go To    ${BASE_URL}/admin/members?token=${DASHBOARD_TOKEN}
     Wait Until Page Contains Element    id=password    timeout=${TIMEOUT}
-    Location Should Contain    /admin/login
+    Location Should Contain    /signin
     Page Should Not Contain Element    id=members-table
 
 TC95 Admin Sign Out Ends The Session
@@ -59,7 +59,7 @@ TC95 Admin Sign Out Ends The Session
     Wait Until Page Contains Element    id=password    timeout=${TIMEOUT}
     Go To    ${ADMIN_MEMBERS_URL}
     Wait Until Page Contains Element    id=password    timeout=${TIMEOUT}
-    Location Should Contain    /admin/login
+    Location Should Contain    /signin
 
 # ── SECTION 2: Roster table ───────────────────────────────────────────────
 

@@ -233,14 +233,14 @@ def phase_1():
         sheets.update_committee_member("member@sai.edu", Active="FALSE")
         response = client.get("/committee")
         check("P1-5", "member deactivated mid-session loses access immediately",
-              response.status_code == 302 and "login" in response.headers.get("Location", ""),
+              response.status_code == 302 and "/signin" in response.headers.get("Location", ""),
               f"status={response.status_code}")
         sheets.update_committee_member("member@sai.edu", Active="TRUE")
 
     with app.test_client() as client:
         response = client.get("/committee")
         check("P1-6", "/committee while logged out redirects to login",
-              response.status_code == 302 and "/committee/login" in response.headers.get("Location", ""))
+              response.status_code == 302 and "/signin" in response.headers.get("Location", ""))
 
     with app.test_client() as client:
         login_member(client, "member@sai.edu", "goodpassword")
@@ -248,7 +248,7 @@ def phase_1():
         client.post("/committee/logout", data={"csrf_token": token})
         response = client.get("/committee")
         check("P1-7", "logout clears the session",
-              response.status_code == 302 and "login" in response.headers.get("Location", ""))
+              response.status_code == 302 and "/signin" in response.headers.get("Location", ""))
 
     with app.test_client() as client:
         response = login_admin(client)
@@ -307,7 +307,7 @@ def phase_2():
     with app.test_client() as client:
         response = client.get("/admin/members?token=vc2026")
         check("P2-2", "/admin/members refuses a ?token=-only request",
-              response.status_code == 302 and "/admin/login" in response.headers.get("Location", ""),
+              response.status_code == 302 and "/signin" in response.headers.get("Location", ""),
               f"status={response.status_code} — token must not reach the roster UI")
 
     with app.test_client() as client:
