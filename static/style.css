@@ -1416,6 +1416,12 @@ body.home-body {
     color: var(--text-muted);
     font-weight: 400;
 }
+.specials-more-btn {
+    background: none; border: 0; padding: 0; min-height: 24px;
+    font: inherit; color: var(--accent-ink); cursor: pointer;
+    text-decoration: underline; text-underline-offset: 3px;
+}
+.specials-more-btn:hover { color: var(--text-strong); }
 
 /* Empty state: a lead line and what to do about it. Full width so it reads
    as a message, not as a disabled chip; muted text, never below AA. */

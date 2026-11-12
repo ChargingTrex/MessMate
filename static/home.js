@@ -33,12 +33,19 @@ document.addEventListener("DOMContentLoaded", function () {
   const dishNames = groups => (groups || []).flatMap(g => g.dishes || []);
 
   // The spotlight is a glance, not the menu: the first few dishes, then a count
+  // The count is a button that opens the rest in place. The open/closed
+  // choice survives the clock re-rendering the spotlight every minute.
   const SPOTLIGHT_MAX = 6;
+  let spotlightExpanded = false;
   function spotlightItems(groups) {
     const names = dishNames(groups);
-    const shown = names.slice(0, SPOTLIGHT_MAX).map(d => li(d));
-    if (names.length > SPOTLIGHT_MAX) shown.push(li(`+${names.length - SPOTLIGHT_MAX} more`, "specials-more"));
-    return shown.join("");
+    const extra = names.length - SPOTLIGHT_MAX;
+    if (extra <= 0) return names.map(d => li(d)).join("");
+    const visible = spotlightExpanded ? names : names.slice(0, SPOTLIGHT_MAX);
+    const label = spotlightExpanded ? "Show less" : `+${extra} more`;
+    return visible.map(d => li(d)).join("") +
+      `<li class="specials-more"><button type="button" class="specials-more-btn" ` +
+      `aria-expanded="${spotlightExpanded}">${esc(label)}</button></li>`;
   }
 
   // Same markup as the template's empty state: the lead line is test API,
@@ -201,6 +208,17 @@ document.addEventListener("DOMContentLoaded", function () {
         if (dishesList)  dishesList.innerHTML = `<li class="specials-loading">Tomorrow's menu is under the next day's tab.</li>`;
       }
     }
+  }
+
+  // One listener for the list: its contents are replaced on every render
+  const spotlightList = document.getElementById("activeMealDishes");
+  if (spotlightList) {
+    spotlightList.addEventListener("click", e => {
+      if (!e.target.closest(".specials-more-btn")) return;
+      spotlightExpanded = !spotlightExpanded;
+      highlightActiveMeal();
+      spotlightList.querySelector(".specials-more-btn")?.focus();
+    });
   }
 
   highlightActiveMeal();
